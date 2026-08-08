@@ -39,6 +39,19 @@ app.get('/api/users', async (_req, res) => {
   }
 });
 
+// Category routes (Prisma integration)
+app.get('/api/categories', async (_req, res) => {
+  try {
+    const categories = await prisma.category.findMany({
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true }
+    });
+    res.json(categories);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch categories' });
+  }
+});
+
 app.post('/api/users', async (req, res) => {
   try {
     const { email, name } = req.body;
