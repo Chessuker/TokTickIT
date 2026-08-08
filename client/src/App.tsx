@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 
 interface BackendHealth {
   status: string
+  service?: string
   timestamp: string
   database: string
   message?: string
@@ -32,10 +33,10 @@ function App() {
       setHealth(data)
     } catch (err) {
       setHealth({
-        status: 'OFFLINE',
+        status: 'offline',
         timestamp: new Date().toISOString(),
         database: 'UNREACHABLE',
-        message: 'Could not connect to backend server'
+        message: `Could not reach the backend at ${API_URL}. Make sure the server is running.`
       })
     } finally {
       setLoadingHealth(false)
@@ -87,8 +88,7 @@ function App() {
       <nav className="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
         <div className="container">
           <a className="navbar-brand d-flex align-items-center gap-2 fw-bold" href="#">
-            <i className="bi bi-tiktok text-danger fs-4"></i>
-            <span>TikTokIT Platform</span>
+            <span>TokTickIT Platform</span>
           </a>
           <div className="d-flex align-items-center gap-2">
             <span className="badge bg-primary px-3 py-2 rounded-pill">
@@ -108,7 +108,7 @@ function App() {
           <div className="container-fluid py-2">
             <h1 className="display-5 fw-bold text-dark mb-3">
               <i className="bi bi-rocket-takeoff text-primary me-2"></i>
-              TikTokIT Stack Ready
+              TokTickIT Stack Ready
             </h1>
             <p className="col-md-10 fs-5 text-muted">
               React + TypeScript + Vite frontend styled with Bootstrap 5, powered by Node.js + Express + Prisma backend connected to PostgreSQL.
@@ -138,24 +138,39 @@ function App() {
                     <p className="mt-2 text-muted">Connecting to backend server...</p>
                   </div>
                 ) : (
-                  <ul className="list-group list-group-flush fs-6">
-                    <li className="list-group-item d-flex justify-content-between align-items-center py-3">
-                      <span><i className="bi bi-hdd-network me-2 text-muted"></i>Express API Status</span>
-                      <span className={`badge ${health?.status === 'OK' ? 'bg-success' : 'bg-danger'} px-3 py-2`}>
-                        {health?.status || 'UNKNOWN'}
-                      </span>
-                    </li>
-                    <li className="list-group-item d-flex justify-content-between align-items-center py-3">
-                      <span><i className="bi bi-database-check me-2 text-muted"></i>PostgreSQL & Prisma</span>
-                      <span className={`badge ${health?.database === 'CONNECTED' ? 'bg-success' : 'bg-danger'} px-3 py-2`}>
-                        {health?.database || 'DISCONNECTED'}
-                      </span>
-                    </li>
-                    <li className="list-group-item d-flex justify-content-between align-items-center py-3">
-                      <span><i className="bi bi-clock-history me-2 text-muted"></i>Last Health Check</span>
-                      <small className="text-muted">{health?.timestamp ? new Date(health.timestamp).toLocaleTimeString() : 'N/A'}</small>
-                    </li>
-                  </ul>
+                  <>
+                    {health?.status !== 'ok' && (
+                      <div className="alert alert-danger d-flex align-items-start gap-2" role="alert">
+                        <i className="bi bi-exclamation-triangle-fill mt-1"></i>
+                        <div>
+                          <strong>Backend unavailable.</strong>{' '}
+                          {health?.message || 'The API did not return a healthy status.'}
+                        </div>
+                      </div>
+                    )}
+                    <ul className="list-group list-group-flush fs-6">
+                      <li className="list-group-item d-flex justify-content-between align-items-center py-3">
+                        <span><i className="bi bi-hdd-network me-2 text-muted"></i>Express API Status</span>
+                        <span className={`badge ${health?.status === 'ok' ? 'bg-success' : 'bg-danger'} px-3 py-2`}>
+                          {health?.status || 'unknown'}
+                        </span>
+                      </li>
+                      <li className="list-group-item d-flex justify-content-between align-items-center py-3">
+                        <span><i className="bi bi-tag me-2 text-muted"></i>Service</span>
+                        <span className="text-muted">{health?.service || 'N/A'}</span>
+                      </li>
+                      <li className="list-group-item d-flex justify-content-between align-items-center py-3">
+                        <span><i className="bi bi-database-check me-2 text-muted"></i>PostgreSQL & Prisma</span>
+                        <span className={`badge ${health?.database === 'CONNECTED' ? 'bg-success' : 'bg-danger'} px-3 py-2`}>
+                          {health?.database || 'DISCONNECTED'}
+                        </span>
+                      </li>
+                      <li className="list-group-item d-flex justify-content-between align-items-center py-3">
+                        <span><i className="bi bi-clock-history me-2 text-muted"></i>Last Health Check</span>
+                        <small className="text-muted">{health?.timestamp ? new Date(health.timestamp).toLocaleTimeString() : 'N/A'}</small>
+                      </li>
+                    </ul>
+                  </>
                 )}
               </div>
             </div>
@@ -175,7 +190,7 @@ function App() {
                       type="email"
                       className="form-aria-input form-control"
                       id="userEmail"
-                      placeholder="user@example.com"
+                      placeholder="admin@toktickit.xyz"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -187,7 +202,7 @@ function App() {
                       type="text"
                       className="form-aria-input form-control"
                       id="userName"
-                      placeholder="John Doe"
+                      placeholder="TokTickIT Admin"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                     />
@@ -253,7 +268,7 @@ function App() {
 
       <footer className="footer mt-auto py-3 bg-dark text-white-50 text-center">
         <div className="container">
-          <small>TikTokIT © 2026 — React + Vite + Bootstrap + Node.js + Express + Prisma + PostgreSQL</small>
+          <small>TokTickIT © 2026 — React + Vite + Bootstrap + Node.js + Express + Prisma + PostgreSQL</small>
         </div>
       </footer>
     </div>

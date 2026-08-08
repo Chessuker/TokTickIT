@@ -20,7 +20,8 @@ app.get('/api/health', async (_req, res) => {
   const isHealthy = dbStatus === 'CONNECTED';
 
   res.status(isHealthy ? 200 : 503).json({
-    status: isHealthy ? 'OK' : 'ERROR',
+    status: isHealthy ? 'ok' : 'error',
+    service: 'TokTickIT API',
     timestamp: new Date().toISOString(),
     database: dbStatus
   });

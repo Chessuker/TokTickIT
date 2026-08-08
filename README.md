@@ -1,4 +1,4 @@
-# TikTokIT Full-Stack Platform
+# TokTickIT Full-Stack Platform
 
 A modern full-stack web application built with **React**, **TypeScript**, **Vite**, **Bootstrap 5**, **Node.js**, **Express**, **Prisma ORM**, and **PostgreSQL**.
 
@@ -16,7 +16,7 @@ A modern full-stack web application built with **React**, **TypeScript**, **Vite
 ## 📁 Project Structure
 
 ```
-TikTokIT/
+TokTickIT/
 ├── client/                 # React + TypeScript + Vite Frontend
 │   ├── src/
 │   │   ├── App.tsx         # Main application component with Bootstrap UI
@@ -59,7 +59,7 @@ Copy `.env.example` to `server/.env` and update your PostgreSQL connection URL a
 ```bash
 # In server/.env
 PORT=5000
-DATABASE_URL="postgresql://postgres:admin@localhost:5433/tiktokit?schema=public"
+DATABASE_URL="postgresql://postgres:admin@localhost:5433/toktikit?schema=public"
 ```
 
 ---
