@@ -17,8 +17,10 @@ app.get('/api/health', async (_req, res) => {
     dbStatus = 'UNREACHABLE';
   }
 
-  res.json({
-    status: 'OK',
+  const isHealthy = dbStatus === 'CONNECTED';
+
+  res.status(isHealthy ? 200 : 503).json({
+    status: isHealthy ? 'OK' : 'ERROR',
     timestamp: new Date().toISOString(),
     database: dbStatus
   });

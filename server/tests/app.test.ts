@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import request from 'supertest';
 import { app } from '../src/app.js';
+import { prisma } from '../src/db.js';
 
 vi.mock('../src/db.js', () => ({
   prisma: {
@@ -22,6 +23,15 @@ describe('Express API Endpoints', () => {
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('OK');
     expect(res.body.database).toBe('CONNECTED');
+  });
+
+  it('GET /api/health returns 503 and ERROR status when the database is unreachable', async () => {
+    vi.mocked(prisma.$queryRaw).mockRejectedValueOnce(new Error('connection refused'));
+
+    const res = await request(app).get('/api/health');
+    expect(res.status).toBe(503);
+    expect(res.body.status).toBe('ERROR');
+    expect(res.body.database).toBe('UNREACHABLE');
   });
 
   it('GET /api/users returns list of users', async () => {
