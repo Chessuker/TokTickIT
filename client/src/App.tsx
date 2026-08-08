@@ -113,11 +113,18 @@ function App() {
             <p className="col-md-10 fs-5 text-muted">
               React + TypeScript + Vite frontend styled with Bootstrap 5, powered by Node.js + Express + Prisma backend connected to PostgreSQL.
             </p>
-            <div className="d-flex flex-wrap gap-2 pt-2">
+            <div className="d-flex flex-wrap align-items-center gap-3 pt-2">
               <button onClick={checkHealth} className="btn btn-outline-primary btn-lg" disabled={loadingHealth}>
                 <i className={`bi ${loadingHealth ? 'bi-arrow-repeat spin' : 'bi-arrow-clockwise'} me-2`}></i>
                 Refresh API Health Check
               </button>
+              {!loadingHealth && (
+                <span className="text-muted">
+                  System Status: <strong className={health?.status === 'ok' ? 'text-success' : 'text-danger'}>
+                    {health?.status === 'ok' ? 'Online' : 'Offline'}
+                  </strong>
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -152,7 +159,7 @@ function App() {
                       <li className="list-group-item d-flex justify-content-between align-items-center py-3">
                         <span><i className="bi bi-hdd-network me-2 text-muted"></i>Express API Status</span>
                         <span className={`badge ${health?.status === 'ok' ? 'bg-success' : 'bg-danger'} px-3 py-2`}>
-                          {health?.status || 'unknown'}
+                          {health?.status === 'ok' ? 'Online' : 'Offline'}
                         </span>
                       </li>
                       <li className="list-group-item d-flex justify-content-between align-items-center py-3">
