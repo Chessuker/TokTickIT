@@ -11,7 +11,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "prisma:generate": "prisma generate",
-    "prisma:db:push": "prisma db push"
+    "prisma:db:push": "prisma db push",
+    "prisma:migrate": "prisma migrate deploy",
+    "prisma:seed": "tsx src/seed.ts"
+  },
+  "prisma": {
+    "seed": "tsx src/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.3.1",
