@@ -1,7 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
-import request from 'supertest';
-import { app } from '../src/app.js';
-import { prisma } from '../src/db.js';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../src/db.js', () => ({
   prisma: {
@@ -17,7 +14,22 @@ vi.mock('../src/db.js', () => ({
   }
 }));
 
+import request from 'supertest';
+import { app } from '../src/app.js';
+import { prisma } from '../src/db.js';
+
 describe('Express API Endpoints', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([{ '?column?': 1 }]);
+    vi.mocked(prisma.user.findMany).mockResolvedValue([
+      { id: '1', email: 'test@example.com', name: 'Test User', createdAt: new Date().toISOString() }
+    ]);
+    vi.mocked(prisma.user.create).mockImplementation(({ data }: { data: { email: string; name?: string } }) =>
+      Promise.resolve({ id: '2', ...data, createdAt: new Date().toISOString() })
+    );
+  });
+
   it('GET /api/health returns 200 OK and database status', async () => {
     const res = await request(app).get('/api/health');
     expect(res.status).toBe(200);
