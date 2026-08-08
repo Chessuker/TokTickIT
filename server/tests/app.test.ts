@@ -30,19 +30,21 @@ describe('Express API Endpoints', () => {
     );
   });
 
-  it('GET /api/health returns 200 OK and database status', async () => {
+  it('GET /api/health returns 200 with status ok, the service name, and database status', async () => {
     const res = await request(app).get('/api/health');
     expect(res.status).toBe(200);
-    expect(res.body.status).toBe('OK');
+    expect(res.body.status).toBe('ok');
+    expect(res.body.service).toBe('TokTickIT API');
     expect(res.body.database).toBe('CONNECTED');
   });
 
-  it('GET /api/health returns 503 and ERROR status when the database is unreachable', async () => {
+  it('GET /api/health returns 503 and error status when the database is unreachable', async () => {
     vi.mocked(prisma.$queryRaw).mockRejectedValueOnce(new Error('connection refused'));
 
     const res = await request(app).get('/api/health');
     expect(res.status).toBe(503);
-    expect(res.body.status).toBe('ERROR');
+    expect(res.body.status).toBe('error');
+    expect(res.body.service).toBe('TokTickIT API');
     expect(res.body.database).toBe('UNREACHABLE');
   });
 
