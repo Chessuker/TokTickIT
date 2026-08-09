@@ -135,9 +135,3 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 ## Contact
 
 Project author: Chessuker
-
-If you have questions, open an issue or reach out via GitHub.
-
----
-
-This README is intentionally generic so you can adapt it to the repository's purpose. If you tell me more about TokTickIT (what it does, languages used, or usage examples), I can customize this README with concrete commands, badges, examples, and screenshots.
