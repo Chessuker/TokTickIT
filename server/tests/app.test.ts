@@ -10,6 +10,12 @@ vi.mock('../src/db.js', () => ({
       create: vi.fn().mockImplementation(({ data }) =>
         Promise.resolve({ id: '2', ...data, createdAt: new Date().toISOString() })
       )
+    },
+    category: {
+      findMany: vi.fn().mockResolvedValue([
+        { id: '1', name: 'Hardware' },
+        { id: '2', name: 'Software' }
+      ])
     }
   }
 }));
@@ -28,6 +34,10 @@ describe('Express API Endpoints', () => {
     vi.mocked(prisma.user.create).mockImplementation(({ data }: { data: { email: string; name?: string } }) =>
       Promise.resolve({ id: '2', ...data, createdAt: new Date().toISOString() })
     );
+    vi.mocked(prisma.category.findMany).mockResolvedValue([
+      { id: '1', name: 'Hardware' },
+      { id: '2', name: 'Software' }
+    ]);
   });
 
   it('GET /api/health returns 200 with status ok, the service name, and database status', async () => {
@@ -70,5 +80,26 @@ describe('Express API Endpoints', () => {
       .send({ name: 'No Email' });
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('Email is required');
+  });
+
+  it('GET /api/categories returns categories ordered by name', async () => {
+    const res = await request(app).get('/api/categories');
+    expect(res.status).toBe(200);
+    expect(prisma.category.findMany).toHaveBeenCalledWith({
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true }
+    });
+    expect(res.body).toEqual([
+      { id: '1', name: 'Hardware' },
+      { id: '2', name: 'Software' }
+    ]);
+  });
+
+  it('GET /api/categories returns 500 when the database call fails', async () => {
+    vi.mocked(prisma.category.findMany).mockRejectedValueOnce(new Error('connection refused'));
+
+    const res = await request(app).get('/api/categories');
+    expect(res.status).toBe(500);
+    expect(res.body.error).toBe('Failed to fetch categories');
   });
 });

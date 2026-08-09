@@ -8,6 +8,7 @@
     "build:client": "npm --prefix client run build",
     "build:server": "npm --prefix server run build",
     "test:server": "npm --prefix server run test",
+    "test:client": "npm --prefix client run test",
     "prisma:generate": "npm --prefix server run prisma:generate",
     "prisma:db:push": "npm --prefix server run prisma:db:push"
   }

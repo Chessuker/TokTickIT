@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import CategoryList from './components/CategoryList'
 
 interface BackendHealth {
   status: string
@@ -36,7 +37,7 @@ function App() {
         status: 'offline',
         timestamp: new Date().toISOString(),
         database: 'UNREACHABLE',
-        message: `Could not reach the backend at ${API_URL}. Make sure the server is running.`
+        message: `Could not reach backend server at ${API_URL}.`
       })
     } finally {
       setLoadingHealth(false)
@@ -83,201 +84,214 @@ function App() {
   }, [])
 
   return (
-    <div className="min-vh-100 bg-light">
-      {/* Navigation */}
-      <nav className="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
-        <div className="container">
-          <a className="navbar-brand d-flex align-items-center gap-2 fw-bold" href="#">
-            <span>TokTickIT Platform</span>
-          </a>
-          <div className="d-flex align-items-center gap-2">
-            <span className="badge bg-primary px-3 py-2 rounded-pill">
-              <i className="bi bi-bootstrap-fill me-1"></i> Bootstrap 5
-            </span>
-            <span className="badge bg-info text-dark px-3 py-2 rounded-pill">
-              <i className="bi bi-lightning-charge-fill me-1"></i> Vite + React
-            </span>
+    <div className="min-vh-100 py-3">
+      {/* 90s Marquee Ticker */}
+      <div className="retro-marquee mb-3">
+        <div className="retro-marquee-content">
+          🌐 WELCOME TO TokTickIT CYBER PORTAL 2000! ★ BEST VIEWED IN NETSCAPE NAVIGATOR 4.0 AT 800x600 ★ SYSTEM ONLINE ★ POWERED BY EXPRESS + REACT + PRISMA ★
+        </div>
+      </div>
+
+      {/* Main Window Frame */}
+      <div className="retro-window">
+        <div className="retro-window-header">
+          <span>🖥️ TokTickIT_Cyber_Station_v1.0.exe</span>
+          <div className="window-controls">
+            <div className="window-btn">_</div>
+            <div className="window-btn">□</div>
+            <div className="window-btn">X</div>
           </div>
         </div>
-      </nav>
 
-      {/* Main Content */}
-      <main className="container py-5">
-        {/* Banner */}
-        <div className="p-5 mb-4 bg-white rounded-3 shadow-sm border">
-          <div className="container-fluid py-2">
-            <h1 className="display-5 fw-bold text-dark mb-3">
-              <i className="bi bi-rocket-takeoff text-primary me-2"></i>
-              TokTickIT Stack Ready
-            </h1>
-            <p className="col-md-10 fs-5 text-muted">
-              React + TypeScript + Vite frontend styled with Bootstrap 5, powered by Node.js + Express + Prisma backend connected to PostgreSQL.
+        <div className="retro-window-body">
+          {/* Cyber Hero Banner */}
+          <div className="retro-hero mb-4">
+            <span className="retro-badge badge-yellow blink">★ NEW 1999 EDITION ★</span>
+            <span className="retro-badge badge-pink">HOT SOFTWARE! 🔥</span>
+            <span className="retro-badge badge-cyan">CYBER APPROVED ⚡</span>
+
+            <h1 className="retro-title">TokTickIT Platform</h1>
+            <p className="font-monospace text-light fs-5 mb-3">
+              === WELCOME TO THE LATE 90S INTERNET HIGHWAY ===
             </p>
-            <div className="d-flex flex-wrap align-items-center gap-3 pt-2">
-              <button onClick={checkHealth} className="btn btn-outline-primary btn-lg" disabled={loadingHealth}>
-                <i className={`bi ${loadingHealth ? 'bi-arrow-repeat spin' : 'bi-arrow-clockwise'} me-2`}></i>
-                Refresh API Health Check
+            <p className="font-monospace text-warning small mb-3">
+              React + TypeScript + Vite + Bootstrap 5 + Express + PostgreSQL + Prisma
+            </p>
+
+            <div className="d-flex justify-content-center align-items-center gap-3 flex-wrap">
+              <div className="hit-counter">
+                <span>0</span><span>0</span><span>4</span><span>8</span><span>9</span><span>2</span>
+              </div>
+              <button onClick={checkHealth} className="retro-btn retro-btn-primary" disabled={loadingHealth}>
+                {loadingHealth ? '⌛ PINGING SERVER...' : '🔄 RE-PING API HEALTH'}
               </button>
-              {!loadingHealth && (
-                <span className="text-muted">
-                  System Status: <strong className={health?.status === 'ok' ? 'text-success' : 'text-danger'}>
-                    {health?.status === 'ok' ? 'Online' : 'Offline'}
-                  </strong>
-                </span>
-              )}
             </div>
           </div>
-        </div>
 
-        <div className="row g-4">
-          {/* Backend & DB Status Card */}
-          <div className="col-md-6">
-            <div className="card shadow-sm border-0 h-100">
-              <div className="card-header bg-primary text-white py-3 fw-bold">
-                <i className="bi bi-server me-2"></i> Backend & PostgreSQL Status
-              </div>
-              <div className="card-body">
-                {loadingHealth ? (
-                  <div className="text-center py-4">
-                    <div className="spinner-border text-primary" role="status">
-                      <span className="visually-hidden">Loading...</span>
-                    </div>
-                    <p className="mt-2 text-muted">Connecting to backend server...</p>
-                  </div>
-                ) : (
-                  <>
-                    {health?.status !== 'ok' && (
-                      <div className="alert alert-danger d-flex align-items-start gap-2" role="alert">
-                        <i className="bi bi-exclamation-triangle-fill mt-1"></i>
-                        <div>
-                          <strong>Backend unavailable.</strong>{' '}
-                          {health?.message || 'The API did not return a healthy status.'}
+          <div className="row g-4">
+            {/* System Status Window */}
+            <div className="col-md-6">
+              <div className="retro-window mb-0 h-100">
+                <div className="retro-window-header">
+                  <span>📡 SYSTEM DIAGNOSTICS</span>
+                </div>
+                <div className="retro-window-body">
+                  <div className="retro-well font-monospace">
+                    {loadingHealth ? (
+                      <div className="text-center py-4">
+                        <div className="spinner-border text-primary" role="status">
+                          <span className="visually-hidden">Connecting...</span>
                         </div>
+                        <p className="mt-2 text-primary blink">DIAL-UP CONNECTING TO BACKEND...</p>
+                      </div>
+                    ) : (
+                      <div>
+                        {health?.status !== 'ok' && (
+                          <div className="alert alert-danger mb-3 p-2 small" role="alert">
+                            ⚠️ <strong>MODEM ERROR:</strong> {health?.message || 'Server Unreachable'}
+                          </div>
+                        )}
+                        <table className="retro-table">
+                          <tbody>
+                            <tr>
+                              <th>SERVICE</th>
+                              <td>TokTickIT API</td>
+                            </tr>
+                            <tr>
+                              <th>EXPRESS STATUS</th>
+                              <td>
+                                <span className={`retro-badge ${health?.status === 'ok' ? 'badge-green' : 'badge-pink'}`}>
+                                  {health?.status === 'ok' ? 'ONLINE (200 OK)' : 'OFFLINE'}
+                                </span>
+                              </td>
+                            </tr>
+                            <tr>
+                              <th>POSTGRES & PRISMA</th>
+                              <td>
+                                <span className={`retro-badge ${health?.database === 'CONNECTED' ? 'badge-green' : 'badge-pink'}`}>
+                                  {health?.database || 'DISCONNECTED'}
+                                </span>
+                              </td>
+                            </tr>
+                            <tr>
+                              <th>TIMESTAMP</th>
+                              <td className="small">{health?.timestamp ? new Date(health.timestamp).toLocaleTimeString() : 'N/A'}</td>
+                            </tr>
+                          </tbody>
+                        </table>
                       </div>
                     )}
-                    <ul className="list-group list-group-flush fs-6">
-                      <li className="list-group-item d-flex justify-content-between align-items-center py-3">
-                        <span><i className="bi bi-hdd-network me-2 text-muted"></i>Express API Status</span>
-                        <span className={`badge ${health?.status === 'ok' ? 'bg-success' : 'bg-danger'} px-3 py-2`}>
-                          {health?.status === 'ok' ? 'Online' : 'Offline'}
-                        </span>
-                      </li>
-                      <li className="list-group-item d-flex justify-content-between align-items-center py-3">
-                        <span><i className="bi bi-tag me-2 text-muted"></i>Service</span>
-                        <span className="text-muted">{health?.service || 'N/A'}</span>
-                      </li>
-                      <li className="list-group-item d-flex justify-content-between align-items-center py-3">
-                        <span><i className="bi bi-database-check me-2 text-muted"></i>PostgreSQL & Prisma</span>
-                        <span className={`badge ${health?.database === 'CONNECTED' ? 'bg-success' : 'bg-danger'} px-3 py-2`}>
-                          {health?.database || 'DISCONNECTED'}
-                        </span>
-                      </li>
-                      <li className="list-group-item d-flex justify-content-between align-items-center py-3">
-                        <span><i className="bi bi-clock-history me-2 text-muted"></i>Last Health Check</span>
-                        <small className="text-muted">{health?.timestamp ? new Date(health.timestamp).toLocaleTimeString() : 'N/A'}</small>
-                      </li>
-                    </ul>
-                  </>
-                )}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Add User Card */}
-          <div className="col-md-6">
-            <div className="card shadow-sm border-0 h-100">
-              <div className="card-header bg-dark text-white py-3 fw-bold">
-                <i className="bi bi-person-plus-fill me-2"></i> Add Test User (Prisma DB)
+            {/* Guestbook / User Signup Form */}
+            <div className="col-md-6">
+              <div className="retro-window mb-0 h-100">
+                <div className="retro-window-header">
+                  <span>📝 SIGN THE CYBER GUESTBOOK</span>
+                </div>
+                <div className="retro-window-body">
+                  <div className="retro-well">
+                    <form onSubmit={createUser}>
+                      <div className="mb-3">
+                        <label htmlFor="userEmail" className="form-label font-monospace fw-bold">
+                          📧 CYBER MAIL (EMAIL):
+                        </label>
+                        <input
+                          type="email"
+                          className="retro-input"
+                          id="userEmail"
+                          placeholder="admin@toktickit.xyz"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="mb-3">
+                        <label htmlFor="userName" className="form-label font-monospace fw-bold">
+                          👤 USER HANDLE (NAME):
+                        </label>
+                        <input
+                          type="text"
+                          className="retro-input"
+                          id="userName"
+                          placeholder="TokTickIT Admin"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                        />
+                      </div>
+                      <button type="submit" className="retro-btn retro-btn-success w-100" disabled={submitting}>
+                        {submitting ? '💾 SAVING TO POSTGRES...' : '💾 SUBMIT TO GUESTBOOK'}
+                      </button>
+                    </form>
+                  </div>
+                </div>
               </div>
-              <div className="card-body">
-                <form onSubmit={createUser}>
-                  <div className="mb-3">
-                    <label htmlFor="userEmail" className="form-label font-monospace">Email address</label>
-                    <input
-                      type="email"
-                      className="form-aria-input form-control"
-                      id="userEmail"
-                      placeholder="admin@toktickit.xyz"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label htmlFor="userName" className="form-label font-monospace">Name (Optional)</label>
-                    <input
-                      type="text"
-                      className="form-aria-input form-control"
-                      id="userName"
-                      placeholder="TokTickIT Admin"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                    />
-                  </div>
-                  <button type="submit" className="btn btn-success w-100 py-2 fw-semibold" disabled={submitting}>
-                    {submitting ? (
-                      <span><span className="spinner-border spinner-border-sm me-2"></span>Saving...</span>
+            </div>
+
+            {/* Categories Window Component */}
+            <div className="col-12">
+              <CategoryList />
+            </div>
+
+            {/* User Directory Window */}
+            <div className="col-12">
+              <div className="retro-window mb-0">
+                <div className="retro-window-header">
+                  <span>👥 REGISTERED USERS DIRECTORY (POSTGRESQL)</span>
+                  <button onClick={fetchUsers} className="window-btn px-2">🔄</button>
+                </div>
+                <div className="retro-window-body">
+                  <div className="retro-well p-0">
+                    {users.length === 0 ? (
+                      <div className="p-4 text-center font-monospace text-muted">
+                        📭 [GUESTBOOK IS EMPTY] Create the first user entry above!
+                      </div>
                     ) : (
-                      <span><i className="bi bi-plus-circle me-2"></i>Create User in Database</span>
+                      <div className="table-responsive">
+                        <table className="retro-table mb-0">
+                          <thead>
+                            <tr>
+                              <th>USER ID</th>
+                              <th>HANDLE / NAME</th>
+                              <th>EMAIL ADDRESS</th>
+                              <th>TIMESTAMP</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {users.map((u) => (
+                              <tr key={u.id}>
+                                <td className="font-monospace text-muted">{u.id.substring(0, 8)}...</td>
+                                <td className="fw-bold text-primary">{u.name || 'ANONYMOUS'}</td>
+                                <td>
+                                  <span className="retro-badge badge-yellow">{u.email}</span>
+                                </td>
+                                <td className="font-monospace small">{new Date(u.createdAt).toLocaleString()}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     )}
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
-
-          {/* User Table */}
-          <div className="col-12">
-            <div className="card shadow-sm border-0">
-              <div className="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h5 className="mb-0 fw-bold text-dark">
-                  <i className="bi bi-people-fill text-primary me-2"></i> Registered Users in PostgreSQL
-                </h5>
-                <button onClick={fetchUsers} className="btn btn-sm btn-outline-secondary">
-                  <i className="bi bi-arrow-clockwise me-1"></i> Refresh List
-                </button>
-              </div>
-              <div className="card-body p-0">
-                {users.length === 0 ? (
-                  <div className="p-4 text-center text-muted">
-                    <i className="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
-                    No users stored in PostgreSQL yet. Create one above!
                   </div>
-                ) : (
-                  <div className="table-responsive">
-                    <table className="table table-hover align-middle mb-0">
-                      <thead className="table-light">
-                        <tr>
-                          <th>ID</th>
-                          <th>Name</th>
-                          <th>Email</th>
-                          <th>Created At</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {users.map((u) => (
-                          <tr key={u.id}>
-                            <td className="font-monospace text-muted fs-7">{u.id.substring(0, 8)}...</td>
-                            <td className="fw-semibold">{u.name || <span className="text-muted italic">No Name</span>}</td>
-                            <td><span className="badge bg-light text-dark border">{u.email}</span></td>
-                            <td className="text-muted fs-7">{new Date(u.createdAt).toLocaleString()}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </main>
 
-      <footer className="footer mt-auto py-3 bg-dark text-white-50 text-center">
-        <div className="container">
-          <small>TokTickIT © 2026 — React + Vite + Bootstrap + Node.js + Express + Prisma + PostgreSQL</small>
+        {/* 90s Footer */}
+        <div className="p-3 bg-dark text-center font-monospace text-warning border-top border-secondary">
+          <p className="mb-1">
+            TokTickIT © 1999-2026 — CYBERNETICS DIVISION ★ NETSCAPE NAVIGATOR & IE 5 COMPATIBLE
+          </p>
+          <p className="small text-muted mb-0">
+            [ REACT + VITE + BOOTSTRAP 5 + EXPRESS + PRISMA + POSTGRESQL ]
+          </p>
         </div>
-      </footer>
+      </div>
     </div>
   )
 }
