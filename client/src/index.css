@@ -1,0 +1,261 @@
+/* Late 90s Cyber Web 1.0 Design System */
+
+:root {
+  --win-bg: #c0c0c0;
+  --win-border-light: #ffffff;
+  --win-border-dark: #808080;
+  --win-border-black: #000000;
+  --win-title-bg: linear-gradient(90deg, #000080, #1084d0);
+  --neon-yellow: #ffff00;
+  --neon-green: #00ff66;
+  --neon-cyan: #00ffff;
+  --neon-pink: #ff007f;
+  --retro-font-mono: 'VT323', 'Share Tech Mono', 'Courier New', monospace;
+  --retro-font-title: 'Press Start 2P', 'VT323', cursive, monospace;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #008080;
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(0, 255, 255, 0.08) 0%, transparent 60%),
+    linear-gradient(rgba(0, 0, 0, 0.2) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.2) 1px, transparent 1px);
+  background-size: 100% 100%, 20px 20px, 20px 20px;
+  font-family: 'Courier Prime', 'VT323', 'MS Sans Serif', Tahoma, sans-serif;
+  color: #000000;
+  min-height: 100vh;
+}
+
+#root {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px 15px;
+}
+
+/* 90s Retro Window (Win95/98 Window Frame) */
+.retro-window {
+  background-color: var(--win-bg);
+  border: 2px solid;
+  border-color: var(--win-border-light) var(--win-border-black) var(--win-border-black) var(--win-border-light);
+  box-shadow: 3px 3px 0px rgba(0, 0, 0, 0.5);
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.retro-window-header {
+  background: var(--win-title-bg);
+  color: #ffffff;
+  padding: 4px 8px;
+  font-family: var(--retro-font-mono);
+  font-size: 1.25rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+}
+
+.window-controls {
+  display: flex;
+  gap: 3px;
+}
+
+.window-btn {
+  width: 18px;
+  height: 16px;
+  background: var(--win-bg);
+  border: 1px solid;
+  border-color: var(--win-border-light) var(--win-border-black) var(--win-border-black) var(--win-border-light);
+  color: #000;
+  font-size: 10px;
+  font-weight: bold;
+  line-height: 14px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.window-btn:active {
+  border-color: var(--win-border-black) var(--win-border-light) var(--win-border-light) var(--win-border-black);
+  padding: 1px 0 0 1px;
+}
+
+.retro-window-body {
+  padding: 16px;
+}
+
+/* Inset Box / Well */
+.retro-well {
+  background-color: #ffffff;
+  border: 2px solid;
+  border-color: var(--win-border-dark) var(--win-border-light) var(--win-border-light) var(--win-border-dark);
+  padding: 12px;
+}
+
+/* 90s Retro Buttons */
+.retro-btn {
+  background-color: var(--win-bg);
+  border: 2px solid;
+  border-color: var(--win-border-light) var(--win-border-black) var(--win-border-black) var(--win-border-light);
+  color: #000000;
+  font-family: var(--retro-font-mono);
+  font-size: 1.2rem;
+  font-weight: bold;
+  padding: 6px 16px;
+  cursor: pointer;
+  box-shadow: 1px 1px 0px #000000;
+  text-transform: uppercase;
+}
+
+.retro-btn:hover {
+  background-color: #d4d0c8;
+}
+
+.retro-btn:active {
+  border-color: var(--win-border-black) var(--win-border-light) var(--win-border-light) var(--win-border-black);
+  box-shadow: none;
+  transform: translate(1px, 1px);
+}
+
+.retro-btn-primary {
+  background-color: #000080;
+  color: #ffffff;
+  border-color: #4040c0 #000040 #000040 #4040c0;
+}
+
+.retro-btn-success {
+  background-color: #008000;
+  color: #ffffff;
+  border-color: #00c000 #004000 #004000 #00c000;
+}
+
+/* 90s Banner & Header */
+.retro-hero {
+  background: #000033;
+  color: var(--neon-yellow);
+  border: 3px double var(--neon-cyan);
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+}
+
+.retro-title {
+  font-family: var(--retro-font-title);
+  font-size: 2.2rem;
+  color: var(--neon-yellow);
+  text-shadow: 3px 3px 0px #ff007f, -2px -2px 0px #00ffff;
+  margin: 10px 0;
+  line-height: 1.3;
+}
+
+/* Marquee / Ticker Bar */
+.retro-marquee {
+  background-color: #000000;
+  color: var(--neon-green);
+  font-family: var(--retro-font-mono);
+  font-size: 1.3rem;
+  padding: 6px;
+  border: 2px inset var(--win-border-dark);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.retro-marquee-content {
+  display: inline-block;
+  animation: marquee 18s linear infinite;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+/* Blinking text & badges */
+.blink {
+  animation: blinker 1s step-start infinite;
+}
+
+@keyframes blinker {
+  50% { opacity: 0; }
+}
+
+.retro-badge {
+  display: inline-block;
+  font-family: var(--retro-font-mono);
+  font-size: 1.1rem;
+  font-weight: bold;
+  padding: 2px 8px;
+  border: 2px outset #fff;
+  margin: 4px;
+}
+
+.badge-yellow { background: #ffff00; color: #000; }
+.badge-pink { background: #ff007f; color: #fff; }
+.badge-cyan { background: #00ffff; color: #000; }
+.badge-green { background: #00ff66; color: #000; }
+
+/* Hit Counter Widget */
+.hit-counter {
+  background: #000000;
+  border: 2px inset #808080;
+  padding: 4px 10px;
+  display: inline-flex;
+  gap: 2px;
+  font-family: var(--retro-font-mono);
+  font-size: 1.5rem;
+  color: #ff0000;
+  letter-spacing: 3px;
+  box-shadow: inset 0 0 8px rgba(255, 0, 0, 0.8);
+}
+
+/* 90s Web Table */
+.retro-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 2px solid var(--win-border-dark);
+  background: #ffffff;
+}
+
+.retro-table th {
+  background: #000080;
+  color: #ffffff;
+  font-family: var(--retro-font-mono);
+  font-size: 1.2rem;
+  padding: 8px;
+  border: 1px solid #ffffff;
+  text-align: left;
+}
+
+.retro-table td {
+  padding: 8px;
+  border: 1px solid #d4d0c8;
+  font-size: 1.05rem;
+}
+
+.retro-table tr:nth-child(even) {
+  background-color: #f0f4ff;
+}
+
+.retro-table tr:hover {
+  background-color: #ffffcc;
+}
+
+/* Form Controls 90s Style */
+.retro-input {
+  background-color: #ffffff;
+  border: 2px solid;
+  border-color: var(--win-border-dark) var(--win-border-light) var(--win-border-light) var(--win-border-dark);
+  padding: 6px 10px;
+  font-family: 'Courier Prime', monospace;
+  font-size: 1.1rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.retro-input:focus {
+  outline: 2px solid var(--neon-cyan);
+  background-color: #fffff0;
+}
