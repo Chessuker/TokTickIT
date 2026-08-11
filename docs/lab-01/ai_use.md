@@ -5,7 +5,7 @@
 | Field | Detail |
 | --- | --- |
 | Agent / Tool | [e.g., Antigravity agent, Claude Code] |
-| Model | [e.g., Gemini 3.5 Flash, Claude Sonnet 5] |
+| Model | [e.g., Gemini 3.6 Flash, Claude Sonnet 5] |
 | Thinking Level | [e.g., High / Medium / Low] |
 | Student Name | [Your Name] |
 | Student ID | [Your Student ID] |
