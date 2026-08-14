@@ -1,137 +1,143 @@
 # TokTickIT
 
-TokTickIT is a simple, well-documented project scaffold. This README is a living document — customize the sections below to match the project's goals, setup, and usage.
-
-> Replace this short project description with one or two sentences that explain what TokTickIT does and who it's for.
+TokTickIT is a full-stack IT ticketing/status portal built with a React + Express + PostgreSQL stack, wrapped in a deliberately over-the-top "1999 cyber portal" retro UI. It exposes a health-check endpoint that reports live database connectivity, a category list backed by Postgres, and a simple user directory with create support.
 
 ## Table of contents
 
 - [Features](#features)
 - [Tech stack](#tech-stack)
+- [Project structure](#project-structure)
 - [Requirements](#requirements)
 - [Installation](#installation)
-- [Usage](#usage)
 - [Configuration](#configuration)
-- [Development](#development)
+- [Usage](#usage)
+- [Available scripts](#available-scripts)
 - [Tests](#tests)
-- [Contributing](#contributing)
-- [License](#license)
+- [Lab documentation](#lab-documentation)
 - [Contact](#contact)
 
 ## Features
 
-- Brief, focused bullet points about what the project implements.
-- Example: user authentication, real-time updates, scheduling, CLI tools, REST API, etc.
-- Keep this list concise and focused on user-facing capabilities.
+- **Live health check** — `GET /api/health` runs `SELECT 1` against Postgres and returns `200`/`ok` or `503`/`error` based on real DB connectivity, not a hardcoded response.
+- **Category list** — categories are seeded in Postgres and served through `GET /api/categories`, rendered by the frontend with loading and error states.
+- **User directory** — list existing users (`GET /api/users`) and create new ones from the UI (`POST /api/users`), with server-side email validation.
+- **Retro cyber UI** — a Bootstrap 5-themed "late-90s internet" interface (marquee ticker, window chrome, blinking badges) as the frontend shell.
 
 ## Tech stack
 
-- Languages: (e.g. Python, JavaScript/TypeScript, Go)
-- Frameworks: (e.g. Flask, FastAPI, Express, Next.js)
-- Database: (e.g. PostgreSQL, SQLite, MongoDB)
-- Other: Docker, GitHub Actions, Redis, etc.
+| Layer | Technology |
+| --- | --- |
+| Frontend | React 19, TypeScript, Vite, Bootstrap 5 |
+| Backend | Node.js, Express, TypeScript |
+| Database / ORM | PostgreSQL, Prisma |
+| Testing | Vitest, React Testing Library (frontend), Vitest + Supertest (backend) |
+| Linting | oxlint |
 
-Replace the above with the actual technologies used in this repository.
+## Project structure
+
+```
+TikTokIT/
+├── client/          # React + Vite frontend
+│   └── src/
+│       ├── App.tsx
+│       └── components/CategoryList.tsx
+├── server/          # Express + Prisma backend
+│   ├── src/
+│   │   ├── app.ts       # Express app & routes
+│   │   ├── index.ts     # Entrypoint
+│   │   ├── db.ts        # Prisma client
+│   │   └── seed.ts      # DB seed script
+│   ├── prisma/schema.prisma
+│   └── tests/app.test.ts
+├── docs/lab-01/     # CPE334 Lab 1 write-ups (tests, AI usage, peer review)
+└── package.json     # Root scripts that fan out to client/server
+```
 
 ## Requirements
 
-List any system dependencies or minimum versions, for example:
-
-- Node >= 18
-- Python >= 3.9
-- Docker (optional, for containerized development)
+- Node.js >= 18 (developed on v24)
+- npm >= 10
+- PostgreSQL >= 13 (a local instance or a hosted connection string)
 
 ## Installation
 
-1. Clone the repo:
-
-   git clone https://github.com/Chessuker/TokTickIT.git
-   cd TokTickIT
-
-2. Install dependencies (example):
-
-- For Node/JavaScript projects:
-
-  npm install
-
-- For Python projects (use a virtual environment):
-
-  python -m venv .venv
-  source .venv/bin/activate
-  pip install -r requirements.txt
-
-3. Create and configure environment variables (see [Configuration](#configuration)).
-
-## Usage
-
-Provide one or more short examples showing how to run the project locally and, if relevant, how to build or deploy it.
-
-- Start development server (example):
-
-  npm run dev
-
-- Build for production (example):
-
-  npm run build
-  npm start
-
-- Run a Python app (example):
-
-  uvicorn app.main:app --reload
-
-Add any common CLI commands, API endpoints, or screenshots that help new users get started quickly.
+```bash
+git clone https://github.com/Chessuker/TikTokIT.git
+cd TikTokIT
+npm --prefix client install
+npm --prefix server install
+```
 
 ## Configuration
 
-Describe configuration variables and how to set them (e.g., in a `.env` file). Provide example keys and defaults:
+Copy the example env files and fill in real values:
 
-```
-# .env.example
-DATABASE_URL=postgres://user:pass@localhost:5432/toktickit
-SECRET_KEY=your-secret-key
-PORT=3000
+```bash
+cp server/.env.example server/.env
 ```
 
-## Development
+`server/.env`:
 
-- Branching model and how to make changes (feature branches, PRs, etc.).
-- How to run linters and formatters (e.g. `npm run lint`, `prettier --write .`).
-- How to run migrations if the project uses a database.
-- Add notes on important directories and where to find the main code.
+```
+PORT=5000
+DATABASE_URL="postgresql://user:password@localhost:5432/toktikit?schema=public"
+```
+
+The frontend reads `VITE_API_URL` (defaults to `http://localhost:5000` if unset) — set it in a `client/.env` file if your API isn't running on the default port.
+
+Then generate the Prisma client, push the schema, and seed the database:
+
+```bash
+npm run prisma:generate
+npm run prisma:db:push
+npm --prefix server run prisma:seed
+```
+
+## Usage
+
+Run backend and frontend in separate terminals:
+
+```bash
+npm run dev:server   # http://localhost:5000
+npm run dev:client   # http://localhost:5173
+```
+
+Open `http://localhost:5173` in a browser. The app checks `/api/health` and loads `/api/categories` and `/api/users` on load.
+
+## Available scripts
+
+Run from the repo root (each forwards to the relevant workspace):
+
+| Script | Description |
+| --- | --- |
+| `npm run dev:client` | Start the Vite dev server |
+| `npm run dev:server` | Start the Express server with `tsx watch` |
+| `npm run build:client` | Type-check and build the frontend |
+| `npm run build:server` | Compile the backend with `tsc` |
+| `npm run test:client` | Run frontend tests (Vitest) |
+| `npm run test:server` | Run backend tests (Vitest + Supertest) |
+| `npm run prisma:generate` | Regenerate the Prisma client |
+| `npm run prisma:db:push` | Push `schema.prisma` to the database |
+
+Additional server-only scripts (`npm --prefix server run ...`): `prisma:migrate`, `prisma:seed`.
 
 ## Tests
 
-Explain how to run the test suite and any testing conventions:
+```bash
+npm run test:server   # Supertest against Express, Prisma mocked — no live DB needed
+npm run test:client   # Vitest + React Testing Library
+```
 
-- Run unit tests:
+Both suites currently pass (7 backend / 3 frontend tests). See [docs/lab-01/tests.md](docs/lab-01/tests.md) for the full breakdown of what each test covers.
 
-  npm test
+## Lab documentation
 
-- Run Python pytest:
+This repo doubles as the CPE334 Lab 1 submission. Supporting docs live in [`docs/lab-01/`](docs/lab-01/):
 
-  pytest
-
-Include instructions for running integration tests or end-to-end tests if present.
-
-## Contributing
-
-Thanks for considering contributing! Please:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feat/my-feature`)
-3. Commit your changes with clear messages
-4. Open a Pull Request describing the change
-
-Link to any issue templates, PR templates, or code of conduct if present.
-
-## License
-
-Specify the license (e.g., MIT, Apache-2.0). If you don't have one yet, add a `LICENSE` file and then reference it here.
-
-Example:
-
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+- [tests.md](docs/lab-01/tests.md) — test environment and results
+- [ai_use.md](docs/lab-01/ai_use.md) — AI tool usage log
+- [reviewer.md](docs/lab-01/reviewer.md) — peer review records
 
 ## Contact
 
-Project author: Chessuker
+Project author: [Chessuker](https://github.com/Chessuker) — repo: [github.com/Chessuker/TikTokIT](https://github.com/Chessuker/TikTokIT)
