@@ -140,4 +140,4 @@ This repo doubles as the CPE334 Lab 1 submission. Supporting docs live in [`docs
 
 ## Contact
 
-Project author: [Chessuker](https://github.com/Chessuker) — repo: [github.com/Chessuker/TikTokIT](https://github.com/Chessuker/TikTokIT)
+Project author: [Chessuker](https://github.com/Chessuker) — repo: [github.com/Chessuker/TikTokIT](https://github.com/Chessuker/TokTickIT)
