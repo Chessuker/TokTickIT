@@ -75,7 +75,7 @@ Companion to [specification.md](specification.md). This document defines the vis
 
 | Element | Specification |
 | --- | --- |
-| Field order | Title → Description → Category → Related System → Priority → Attachments |
+| Field order | Summary → Description → Category → Related System → Priority → Attachments |
 | Required fields | _TBD — mark which fields are required_ |
 | Dropdowns | Category and Related System populated from the API; placeholder option shown until chosen |
 | Upload area | Dropzone with an explicit "Browse files" button; helper text lists allowed types (JPG, PNG, WEBP, PDF), size limit (5 MB) and file cap (5) |
@@ -88,9 +88,9 @@ Companion to [specification.md](specification.md). This document defines the vis
 
 | Element | Specification |
 | --- | --- |
-| Desktop (≥ 992 px) | Table: Ticket Number, Title, Category, Status, Priority, Created At, action to open detail |
-| Mobile (< 768 px) | Card list; each card shows Ticket Number, Title, badges and Created At, and is tappable |
-| Search bar | Free-text search across _TBD (title / ticket number / description)_ — maps to the `search` query parameter |
+| Desktop (≥ 992 px) | Table: Ticket Number, Summary, Category, Status, Priority, Created At, action to open detail |
+| Mobile (< 768 px) | Card list; each card shows Ticket Number, Summary, badges and Created At, and is tappable |
+| Search bar | Free-text search across _TBD (summary / ticket number / description)_ — maps to the `search` query parameter |
 | Filters | Category and Status — map to the `category` and `status` query parameters |
 | Sort | `sort` parameter; Created At descending by default, plus _TBD_ |
 | Pagination | Page controls with current page, total pages, and page size; `page` / `pageSize` parameters; default page size _TBD_ |
@@ -102,7 +102,7 @@ Companion to [specification.md](specification.md). This document defines the vis
 
 | Element | Specification |
 | --- | --- |
-| Header | Ticket Number, Title, Status badge, Priority badge, Created At |
+| Header | Ticket Number, Summary, Status badge, Priority badge, Created At |
 | Fields | All ticket fields rendered read-only — no inputs, no edit affordance |
 | Attachment list — active | File name, size, uploaded at, Download action |
 | Attachment list — removed | Rendered muted with a "Removed" marker, removal reason and removal timestamp; no Download action |

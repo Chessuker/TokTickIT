@@ -71,7 +71,7 @@ Deliver the Requester-side Ticketing MVP of TokTickIT: a Development Requester s
 
 | ID | Requirement | Description | Priority |
 | --- | --- | --- | --- |
-| FR-01 | Create Ticket | A requester can submit a new ticket with title, description, category, related system, priority and optional attachments. The backend persists it and returns the generated ticket number. | Must |
+| FR-01 | Create Ticket | A requester can submit a new ticket with summary, description, category, related system, priority and optional attachments. The backend persists it and returns the generated ticket number. | Must |
 | FR-02 | Select Requester | The user picks a Development Requester from a dropdown of active users before using any other screen. The selection persists for the session and can be changed. | Must |
 | FR-03 | My Tickets List | The requester sees only their own tickets, with search, filter, sort and pagination. | Must |
 | FR-04 | Ticket Detail | The requester opens one of their tickets and sees all its fields read-only, plus its attachments. | Must |
@@ -125,7 +125,7 @@ PostgreSQL via Prisma. New and changed models:
 | id | String (uuid) | PK |
 | name | String | Displayed in the selector |
 | email | String | Unique |
-| department | String? | _TBD_ |
+| department | String? | Optional; shown next to the name in the selector |
 | isActive | Boolean | Only active users appear in the selector |
 | createdAt / updatedAt | DateTime | |
 
@@ -135,10 +135,10 @@ PostgreSQL via Prisma. New and changed models:
 | --- | --- | --- |
 | id | String (uuid) | PK |
 | ticketNumber | String | Unique, server-generated (BR-01) |
-| title | String | |
+| summary | String | Ticket Summary from the lab sheet |
 | description | String | |
-| status | Enum | `New` only this sprint (BR-02) |
-| priority | Enum | `Low` / `Medium` / `High` / _TBD_ |
+| status | Enum `TicketStatus` | `New` only this sprint (BR-02); default `New` |
+| priority | Enum `TicketPriority` | `Low` / `Medium` / `High` |
 | requesterId | String | FK → `RequesterUser.id` |
 | categoryId | String | FK → `Category.id` |
 | relatedSystemId | String? | FK → `RelatedSystem.id` |
@@ -153,7 +153,7 @@ PostgreSQL via Prisma. New and changed models:
 | fileName | String | Original file name |
 | mimeType | String | Validated against BR-05 |
 | sizeBytes | Int | Validated against BR-06 |
-| storagePath | String | _TBD — storage location decision_ |
+| storagePath | String | Path of the stored file; _storage location decision TBD_ |
 | isRemoved | Boolean | Soft-removal flag (BR-08) |
 | removedReason | String? | Required when `isRemoved` is true |
 | removedAt | DateTime? | |
@@ -161,7 +161,15 @@ PostgreSQL via Prisma. New and changed models:
 
 ### `Category`
 
-Existing model, reused. _Field changes: TBD._
+Existing Lab 1 model, extended.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| id | String (uuid) | PK |
+| name | String | Unique |
+| description | String? | Shown as helper text in the category dropdown |
+| isActive | Boolean | Default `true`; the API returns active categories only |
+| createdAt / updatedAt | DateTime | |
 
 ### `RelatedSystem`
 
@@ -169,27 +177,31 @@ Existing model, reused. _Field changes: TBD._
 | --- | --- | --- |
 | id | String (uuid) | PK |
 | name | String | Unique |
-| isActive | Boolean | _TBD_ |
+| isActive | Boolean | Default `true`; the API returns active systems only |
+| createdAt / updatedAt | DateTime | |
 
 ### Seed data (idempotent)
 
 | Entity | Minimum required | Notes |
 | --- | --- | --- |
-| `Category` | 4 categories | Reuses the Lab 1 seed set unless changed; _final list TBD_ |
-| `RelatedSystem` | ≥ 6 systems | _list TBD_ |
-| `RequesterUser` (active) | ≥ 4 users | Appear in the selector |
-| `RequesterUser` (inactive) | ≥ 1 user | Must **not** appear in the selector (BR-11) |
+| `Category` | 4 categories | Account and Access, Hardware, Software, Network |
+| `RelatedSystem` | 7 systems | Email, Campus Wi-Fi, VPN, LEB2 App, Grade Submission App, Printer, Corporate Laptop |
+| `RequesterUser` (active) | 4 users | Jennifer Anderson, Sarah Johnson, David Lee, Michael Brown — appear in the selector |
+| `RequesterUser` (inactive) | 1 user | Alex Smith (`isActive = false`) — must **not** appear in the selector (BR-11) |
 
-The seed uses upsert-by-unique-key so it can be re-run safely (BR-12).
+The seed uses upsert-by-unique-key so it can be re-run safely (BR-12). Implemented in `server/src/seed.ts`, with the data itself in `server/src/seedData.ts`.
 
 ### Indexes
 
 | Index | Purpose |
 | --- | --- |
 | `Ticket.ticketNumber` (unique) | Enforces BR-01 |
-| `Ticket.requesterId` | My Tickets listing and ownership checks |
-| `Ticket.createdAt` | Default sort order |
-| `Attachment.ticketId` | Attachment listing |
+| `Ticket.(requesterId, createdAt)` | My Tickets listing — filters by owner and sorts by date in one index |
+| `Ticket.categoryId` / `Ticket.relatedSystemId` | Filtering, and FK lookups |
+| `Ticket.status` / `Ticket.createdAt` | Filtering and default sort |
+| `Attachment.(ticketId, isRemoved)` | Splitting active from removed attachments on the detail page |
+| `RequesterUser.isActive`, `Category.isActive`, `RelatedSystem.isActive` | Selector and dropdown queries return active rows only |
+| `RequesterUser.email` (unique), `Category.name` (unique), `RelatedSystem.name` (unique) | Natural keys the idempotent seed upserts on (BR-12) |
 
 ---
 
