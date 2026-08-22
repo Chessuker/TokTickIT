@@ -57,7 +57,7 @@ TikTokIT/
 
 - Node.js >= 18 (developed on v24)
 - npm >= 10
-- PostgreSQL >= 13 (a local instance or a hosted connection string)
+- PostgreSQL >= 13 — either a local instance, a hosted connection string, or Docker (a `docker-compose.yml` is included)
 
 ## Installation
 
@@ -70,7 +70,13 @@ npm --prefix server install
 
 ## Configuration
 
-Copy the example env files and fill in real values:
+Start a local PostgreSQL with Docker (listens on host port **5433** so it does not clash with an existing 5432 instance):
+
+```bash
+docker compose up -d
+```
+
+Then copy the example env file and fill in real values:
 
 ```bash
 cp server/.env.example server/.env
@@ -80,17 +86,19 @@ cp server/.env.example server/.env
 
 ```
 PORT=5000
-DATABASE_URL="postgresql://user:password@localhost:5432/toktikit?schema=public"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5433/toktikit?schema=public"
 ```
+
+The value above matches the bundled `docker-compose.yml`. Point it at your own instance if you are not using Docker.
 
 The frontend reads `VITE_API_URL` (defaults to `http://localhost:5000` if unset) — set it in a `client/.env` file if your API isn't running on the default port.
 
-Then generate the Prisma client, push the schema, and seed the database:
+Then generate the Prisma client, apply the migrations, and seed the database. The seed is idempotent — running it again never duplicates rows:
 
 ```bash
 npm run prisma:generate
-npm run prisma:db:push
-npm --prefix server run prisma:seed
+npm run prisma:migrate
+npm run prisma:seed
 ```
 
 ## Usage
@@ -118,6 +126,8 @@ Run from the repo root (each forwards to the relevant workspace):
 | `npm run test:server` | Run backend tests (Vitest + Supertest) |
 | `npm run prisma:generate` | Regenerate the Prisma client |
 | `npm run prisma:db:push` | Push `schema.prisma` to the database |
+| `npm run prisma:migrate` | Apply pending migrations (`prisma migrate deploy`) |
+| `npm run prisma:seed` | Seed reference data — safe to re-run |
 
 Additional server-only scripts (`npm --prefix server run ...`): `prisma:migrate`, `prisma:seed`.
 

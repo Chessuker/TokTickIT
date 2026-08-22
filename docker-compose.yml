@@ -1,0 +1,29 @@
+# Local development database for TokTickIT.
+#
+#   docker compose up -d      start PostgreSQL
+#   docker compose down       stop it (data is kept in the named volume)
+#   docker compose down -v    stop it and delete all data
+#
+# Port 5433 is used on the host so this instance does not collide with a
+# PostgreSQL already listening on the default 5432.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: toktickit-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: toktikit
+    ports:
+      - "5433:5432"
+    volumes:
+      - toktickit-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d toktikit"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  toktickit-db-data:
