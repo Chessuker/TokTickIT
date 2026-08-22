@@ -19,13 +19,23 @@ Deliver the Requester-side Ticketing MVP of TokTickIT: a Development Requester s
 
 ## 2. Stakeholder Request Interpretation
 
-_In my own words, what the stakeholder is asking for:_
-
-- **Who the user is:** _TBD_
-- **What problem they have today:** _TBD_
-- **What they expect to be able to do after this sprint:** _TBD_
-- **What "good" looks like to them:** _TBD_
-- **What I deliberately read as out of scope, and why:** _TBD_
+- **Who the user is:** Requesters (KMUTT end-users, students, and staff) requesting IT support services, interacting through a temporary Development Requester identity.
+- **What problem they have today:** Requesters lack a standardized, self-service channel to log IT support tickets, provide supporting attachments, and track the status of their own submitted issues without unauthorized cross-user access.
+- **What they expect to be able to do after this sprint:** 
+  - Select a simulated Development Requester profile to establish their session context.
+  - Create and submit IT support tickets with title/summary, detailed description, category, affected system, requested priority, and validated attachments.
+  - View a scoped list of their own tickets in "My Tickets" with search, filter, sort, and pagination.
+  - Inspect ticket details in a read-only view and manage attachments (upload additional files, download active files, and soft-remove existing attachments with a reason).
+- **What "good" looks like to them:** 
+  - A clean, responsive interface adhering to the Zen Green Theme across mobile, tablet, and desktop viewports.
+  - Form validation with clear inline errors and resilient form state preservation when API submission fails.
+  - Strict data isolation preventing one requester from listing, viewing, or altering another requester's tickets and files.
+  - Automated ticket numbering and predictable seed data for testing.
+- **What I deliberately read as out of scope, and why:** 
+  - Real authentication, JWT tokens, and password management (deferred to Lab 3; simulated via Development Requester Selector).
+  - IT Staff workflows (dashboard queues, ticket claiming, changing IT priority, reassignments).
+  - Ticket lifecycle progression beyond the initial `New` state (e.g., In Progress, Resolved, Closed).
+  - Collaboration mechanisms (Public Comments, Internal Notes, Service Actions Taken).
 
 ---
 
@@ -263,11 +273,12 @@ _Exact request and response payload shapes: TBD._
 
 | ID | Assumption / Decision | Rationale |
 | --- | --- | --- |
-| AD-01 | Ticket Number format is `TKT-YYYY-XXXXXX`, where `YYYY` is the creation year and `XXXXXX` a zero-padded sequence. | Human-readable, sortable, and unique per BR-01. |
-| AD-02 | The selected requester is kept client-side for the session and sent to the API with each request. | No auth this sprint; keeps the server stateless. |
-| AD-03 | _TBD — attachment storage location_ | |
-| AD-04 | _TBD — default page size for My Tickets_ | |
-| AD-05 | _TBD — default sort order_ | |
+| AD-01 | Ticket Number format is generated as `TKT-YYYY-XXXXXX` (e.g., `TKT-2026-000001`), where `YYYY` is the current creation year and `XXXXXX` is a sequential zero-padded integer. | Human-readable, sortable, prevents collision, and strictly enforced by the backend per BR-01. |
+| AD-02 | The active Development Requester is maintained in client-side state/session storage and transmitted via custom header (`X-Requester-Id`) or query parameter on every API request. | Keeps backend services stateless while strictly enforcing server-side ownership checks before Lab 3 auth is introduced. |
+| AD-03 | Attachment files are stored in the local server filesystem under `uploads/attachments/` using unique UUID-prefixed filenames, while saving original names and metadata in PostgreSQL. | Simplifies MVP deployment, avoids filename collisions, and enables safe file streaming without direct public URL exposure. |
+| AD-04 | Default pagination for My Tickets is set to `10` tickets per page, with selectable options of 5, 10, and 25 per page. | Provides optimal balance between initial load performance and usable vertical scrolling across mobile and desktop. |
+| AD-05 | Default sort order for My Tickets is `createdAt` descending (newest tickets first). | Ensures users immediately see their most recently created support tickets at the top of the list. |
+| AD-06 | Soft removal retains the database record with `isRemoved = true`, `removedAt = NOW()`, and a non-empty `removedReason`, permanently revoking file download/streaming routes. | Complies with audit trail requirements while fulfilling BR-08 and BR-09. |
 
 ---
 

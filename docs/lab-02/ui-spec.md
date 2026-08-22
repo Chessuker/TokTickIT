@@ -13,12 +13,12 @@ Companion to [specification.md](specification.md). This document defines the vis
 | `--zg-pale` | `#EAF6EF` | Selected table rows, success callouts, pale badges |
 | `--zg-bg` | `#F5F7F6` | Page background |
 | `--zg-surface` | `#FFFFFF` | Cards, tables, modals |
-| `--zg-border` | _TBD (subtle neutral)_ | Card and input borders |
-| `--zg-shadow` | _TBD (subtle elevation)_ | Card and modal elevation |
-| `--zg-text` | _TBD_ | Body text |
-| `--zg-text-muted` | _TBD_ | Helper text, timestamps, read-only values |
-| `--zg-error` | _TBD (dark red)_ | Validation errors, destructive confirmations |
-| `--zg-warning` | _TBD (amber)_ | Warnings, e.g. the "not a real login" notice |
+| `--zg-border` | #D1D5DB | Card and input borders |
+| `--zg-shadow` | 0 1px 3px rgba(0,0,0,0.1) | Card and modal elevation |
+| `--zg-text` | #1F2937 | Body text |
+| `--zg-text-muted` | #6B7280 | Helper text, timestamps, read-only values |
+| `--zg-error` |#DC2626 | Validation errors, destructive confirmations |
+| `--zg-warning` | #F59E0B | Warnings, e.g. the "not a real login" notice |
 
 ### Editable vs. read-only controls
 
