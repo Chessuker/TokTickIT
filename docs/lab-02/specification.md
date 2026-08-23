@@ -7,7 +7,7 @@
 | Author | Thawat Boonsuk (67070501024) |
 | Status | Draft |
 | Last updated | _TBD_ |
-| Related documents | [ui-spec.md](ui-spec.md), [tests.md](tests.md), [ai-use.md](ai-use.md) |
+| Related documents | [api-spec.md](api-spec.md), [ui-spec.md](ui-spec.md), [tests.md](tests.md), [reviewer.md](reviewer.md), [ai-use.md](ai-use.md) |
 
 ---
 
@@ -195,17 +195,22 @@ The seed uses upsert-by-unique-key so it can be re-run safely (BR-12).
 
 ## 8. API Contract
 
-| Method | Path | Request | Success | Errors |
-| --- | --- | --- | --- | --- |
-| GET | `/api/requesters` | — | `200` list of **active** requesters only (BR-11) | `500` |
-| GET | `/api/categories` | — | `200` list of categories | `500` |
-| GET | `/api/related-systems` | — | `200` list of related systems | `500` |
-| POST | `/api/tickets` | ticket fields + requester id | `201` created ticket incl. `ticketNumber` | `400`, `403`, `500` |
-| GET | `/api/tickets` | query: `requesterId`, `search`, `category`, `status`, `sort`, `page`, `pageSize` | `200` paginated list + page metadata | `400`, `403`, `500` |
-| GET | `/api/tickets/:id` | — | `200` ticket detail with attachments | `403`, `404`, `500` |
-| POST | `/api/tickets/:id/attachments` | multipart file | `201` attachment metadata | `400`, `403`, `404`, `413`, `415`, `500` |
-| GET | `/api/attachments/:id/download` | — | `200` file stream | `403`, `404`, `500` |
-| PATCH | `/api/attachments/:id/remove` | `{ reason }` | `200` updated attachment | `400`, `403`, `404`, `500` |
+The full wire contract — endpoint paths, methods, parameters, request and response shapes, validation rules, pagination metadata, ownership checks, error envelope, and status codes — lives in **[api-spec.md](api-spec.md)**. Summary of the surface:
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/api/requesters` | Active Development Requesters for the selector (BR-11) |
+| GET | `/api/categories` | Active categories |
+| GET | `/api/related-systems` | Active related systems |
+| POST | `/api/tickets` | Create one validated ticket (FR-01) |
+| GET | `/api/tickets` | The selected requester's tickets, with search/filter/sort/pagination (FR-03) |
+| GET | `/api/tickets/:id` | One owned ticket with attachments (FR-04) |
+| POST | `/api/tickets/:id/attachments` | Upload an attachment (FR-05) |
+| GET | `/api/attachments/:id` | Attachment metadata, including removed ones (BR-10) |
+| GET | `/api/attachments/:id/download` | Download an active attachment |
+| PATCH | `/api/attachments/:id/remove` | Soft-remove an attachment with a reason (BR-08) |
+
+The selected requester is carried by an `X-Requester-Id` request header on every requester-scoped endpoint; ownership (BR-04) is enforced from that header on the server, never from a client-supplied body field.
 
 ### Status code meanings
 
@@ -213,14 +218,12 @@ The seed uses upsert-by-unique-key so it can be re-run safely (BR-12).
 | --- | --- |
 | 200 | Request succeeded |
 | 201 | Resource created |
-| 400 | Validation failure (missing or invalid field, missing removal reason, attachment limit exceeded) |
-| 403 | Ownership violation, or download of a removed attachment |
+| 400 | Validation failure, missing requester header, or attachment limit reached |
+| 403 | Ownership violation, unknown/inactive requester, or download of a removed attachment |
 | 404 | Ticket or attachment not found |
 | 413 | Attachment exceeds 5 MB |
 | 415 | Unsupported attachment type |
-| 500 | Unhandled server error |
-
-_Exact request and response payload shapes: TBD._
+| 500 | Unhandled server error — generic message only, details logged server-side |
 
 ---
 
@@ -265,7 +268,8 @@ _Exact request and response payload shapes: TBD._
 - [ ] Evidence attached: screenshots, test run output, traceability matrix.
 - [ ] Screenshot of the `docs/lab-02/` commit kept as evidence that the specification was written before any implementation code (Issue #1).
 - [ ] Every Kanban issue (#1–#7) closed with its acceptance criteria met.
-- [ ] All `docs/lab-02/` documents complete and committed.
+- [ ] All `docs/lab-02/` documents complete and committed: `specification.md`, `api-spec.md`, `ui-spec.md`, `tests.md`, `reviewer.md`, `ai-use.md`.
+- [ ] `reviewer.md` records reviewer identity, PR links, comments given and received, responses, and approvals.
 
 ---
 
@@ -288,7 +292,7 @@ Mapping between the Kanban issues and the requirements in this document.
 
 | Issue | Title | Covers |
 | --- | --- | --- |
-| #1 | Sprint Specifications, Architecture & Test Planning | This document, `ui-spec.md`, `tests.md` |
+| #1 | Sprint Specifications, Architecture & Test Planning | This document, `api-spec.md`, `ui-spec.md`, `tests.md` |
 | #2 | Database Schema & Idempotent Seed Data | FR-08, BR-11, BR-12, §7 Data Changes and Seed data, AC-13 |
 | #3 | Development Requester Context & Simulated Login | FR-02, FR-06, BR-03, BR-11, BR-13, AC-02, AC-14 |
 | #4 | Ticket Creation API & UI with Validation | FR-01, FR-07, BR-01, BR-02, AC-01, AC-12 |
