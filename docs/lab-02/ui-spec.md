@@ -1,6 +1,6 @@
 # Lab 2 — UI Specification (Zen Green Theme)
 
-Companion to [specification.md](specification.md). This document defines the visual language and screen-level behaviour of the Requester Ticketing MVP.
+Companion to [specification.md](specification.md). This document defines the visual language and screen-level behaviour of the Requester Ticketing MVP; the data behind each screen is specified in [api-spec.md](api-spec.md).
 
 ---
 

@@ -260,7 +260,7 @@ List the selected requester's tickets (FR-03, AC-04, AC-10).
 | `status` | enum | — | One of the `TicketStatus` values. Only `New` exists this sprint (X-04). |
 | `sort` | string | `createdAt:desc` | One of `createdAt:desc`, `createdAt:asc`, `ticketNumber:desc`, `ticketNumber:asc`, `priority:desc`, `priority:asc`. |
 | `page` | integer | `1` | ≥ 1. |
-| `pageSize` | integer | `10` | One of `5`, `10`, `25` (AD-04). |
+| `pageSize` | integer | `10` | One of `10`, `20`, `50`. |
 
 - **Secondary sort:** every sort is tie-broken by `id` ascending, so pagination is stable and no row can appear on two pages.
 - **Priority ordering:** `priority:desc` means `High → Medium → Low`, not alphabetical.
@@ -326,7 +326,7 @@ Upload one attachment to an owned ticket (FR-05).
 - The type check uses the sniffed content type, not the client-supplied extension — a `.pdf` rename of an executable is rejected.
 - The size limit is enforced by the upload middleware so an oversized body is refused while streaming, not after being buffered.
 - Soft-removed attachments do **not** count toward the limit of five.
-- The original `fileName` is stored for display but never used as a path. Files are written under `uploads/attachments/` with a generated uuid-prefixed name (AD-03), so `../` and reserved Windows names cannot escape the storage directory.
+- The original `fileName` is stored for display but never used as a path. Files are written under a generated uuid name, so `../` and reserved Windows names cannot escape the storage directory.
 
 **Success** — `201`, body is the created `Attachment`.
 
@@ -439,7 +439,7 @@ Planned tests for this contract are listed in [tests.md](tests.md).
 
 | ID | Decision | Status |
 | --- | --- | --- |
-| API-D-01 | Attachment storage location | Decided (AD-03): local filesystem under `uploads/attachments/`, UUID-prefixed filenames, original name kept in the database |
+| API-D-01 | Attachment storage location — local disk under `server/uploads/` vs. object storage | _TBD_ |
 | API-D-02 | Whether `search` also matches the category or related-system name | _TBD_ |
 | API-D-03 | Rate limiting on upload | Out of scope for Lab 2 |
 | API-D-04 | Response caching headers for reference data | _TBD_ |

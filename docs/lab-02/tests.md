@@ -1,6 +1,6 @@
 # Lab 2 — Test Plan and Results
 
-Companion to [specification.md](specification.md). Acceptance criteria referenced here (AC-01 …) are defined in section 9 of that document.
+Companion to [specification.md](specification.md). Acceptance criteria referenced here (AC-01 …) are defined in section 9 of that document; the endpoints under test are specified in [api-spec.md](api-spec.md).
 
 ---
 
