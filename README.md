@@ -36,7 +36,7 @@ TokTickIT is a full-stack IT ticketing/status portal built with a React + Expres
 ## Project structure
 
 ```
-TikTokIT/
+TokTickIT/
 ├── client/          # React + Vite frontend
 │   └── src/
 │       ├── App.tsx
@@ -62,8 +62,8 @@ TikTokIT/
 ## Installation
 
 ```bash
-git clone https://github.com/Chessuker/TikTokIT.git
-cd TikTokIT
+git clone https://github.com/Chessuker/TokTickIT.git
+cd TokTickIT
 npm --prefix client install
 npm --prefix server install
 ```
@@ -86,7 +86,7 @@ cp server/.env.example server/.env
 
 ```
 PORT=5000
-DATABASE_URL="postgresql://postgres:postgres@localhost:5433/toktikit?schema=public"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5433/toktickit?schema=public"
 ```
 
 The value above matches the bundled `docker-compose.yml`. Point it at your own instance if you are not using Docker.
@@ -150,4 +150,4 @@ This repo doubles as the CPE334 Lab 1 submission. Supporting docs live in [`docs
 
 ## Contact
 
-Project author: [Chessuker](https://github.com/Chessuker) — repo: [github.com/Chessuker/TikTokIT](https://github.com/Chessuker/TokTickIT)
+Project author: [Chessuker](https://github.com/Chessuker) — repo: [github.com/Chessuker/TokTickIT](https://github.com/Chessuker/TokTickIT)

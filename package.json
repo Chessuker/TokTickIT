@@ -1,7 +1,7 @@
 {
-  "name": "toktikit",
+  "name": "toktickit",
   "version": "1.0.0",
-  "description": "TokTikIT Fullstack Application with React, Bootstrap, Express, TypeScript & Prisma",
+  "description": "TokTickIT Fullstack Application with React, Bootstrap, Express, TypeScript & Prisma",
   "scripts": {
     "dev:client": "npm --prefix client run dev",
     "dev:server": "npm --prefix server run dev",
