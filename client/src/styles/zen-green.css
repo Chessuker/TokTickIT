@@ -1,0 +1,398 @@
+/*
+ * Zen Green theme — Lab 2 (docs/lab-02/ui-spec.md §1).
+ *
+ * Imported after index.css so the Lab 1 retro chrome on <body> and #root is
+ * replaced by the Lab 2 application shell. The retro component classes
+ * themselves are left untouched.
+ */
+
+:root {
+  --zg-primary: #006b3c;
+  --zg-secondary: #0b7a46;
+  --zg-pale: #eaf6ef;
+  --zg-bg: #f5f7f6;
+  --zg-surface: #ffffff;
+  --zg-border: #d1d5db;
+  --zg-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --zg-text: #1f2937;
+  --zg-text-muted: #6b7280;
+  --zg-error: #dc2626;
+  --zg-warning: #f59e0b;
+  --zg-warning-bg: #fffbeb;
+  --zg-on-primary: #ffffff;
+  --zg-font: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--zg-bg);
+  background-image: none;
+  font-family: var(--zg-font);
+  color: var(--zg-text);
+  min-height: 100vh;
+}
+
+#root {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Focus ring — V-05: visible on every interactive element. */
+.zg-app :focus-visible {
+  outline: 2px solid var(--zg-secondary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.zg-app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.zg-container {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+/* ---------- Header (ui-spec §3.0) ---------- */
+
+.zg-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  width: 100%;
+  background: var(--zg-primary);
+  color: var(--zg-on-primary);
+  box-shadow: var(--zg-shadow);
+}
+
+.zg-header-bar {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.zg-brand {
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--zg-on-primary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.zg-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.zg-nav-link {
+  color: var(--zg-on-primary);
+  text-decoration: none;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  border-bottom: 3px solid transparent;
+}
+
+.zg-nav-link:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--zg-on-primary);
+}
+
+.zg-nav-link.is-active {
+  font-weight: 600;
+  border-bottom-color: #7bdcb0;
+}
+
+.zg-header-identity {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.zg-requester {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  text-align: right;
+}
+
+.zg-requester-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.85;
+}
+
+.zg-requester-name {
+  font-weight: 600;
+}
+
+/* Compact menu toggle — shown below 768px only (ui-spec §4). */
+.zg-header-toggle {
+  display: none;
+  margin-left: auto;
+  background: transparent;
+  color: var(--zg-on-primary);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 4px;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+/* ---------- Buttons ---------- */
+
+.zg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 0.55rem 1.1rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.zg-btn-primary {
+  background: var(--zg-primary);
+  border-color: var(--zg-primary);
+  color: var(--zg-on-primary);
+}
+
+.zg-btn-primary:hover:not(:disabled) {
+  background: var(--zg-secondary);
+  border-color: var(--zg-secondary);
+}
+
+.zg-btn-outline-light {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.7);
+  color: var(--zg-on-primary);
+}
+
+.zg-btn-outline-light:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.zg-btn-secondary {
+  background: var(--zg-surface);
+  border-color: var(--zg-border);
+  color: var(--zg-text);
+}
+
+.zg-btn-secondary:hover:not(:disabled) {
+  border-color: var(--zg-secondary);
+  color: var(--zg-secondary);
+}
+
+.zg-btn:disabled {
+  background: #e5e7eb;
+  border-color: var(--zg-border);
+  color: var(--zg-text-muted);
+  cursor: not-allowed;
+}
+
+.zg-btn-outline-light:disabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ---------- Cards, forms, callouts ---------- */
+
+.zg-card {
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-border);
+  border-radius: 10px;
+  box-shadow: var(--zg-shadow);
+  padding: 1.75rem;
+}
+
+.zg-center-page {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.zg-center-card {
+  width: 100%;
+  max-width: 30rem;
+}
+
+.zg-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.zg-subtitle {
+  margin: 0 0 1.25rem;
+  color: var(--zg-text-muted);
+  font-size: 0.95rem;
+}
+
+.zg-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.zg-select {
+  display: block;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--zg-text);
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-border);
+  border-radius: 6px;
+}
+
+.zg-select:disabled {
+  background: #f3f4f6;
+  color: var(--zg-text-muted);
+  cursor: not-allowed;
+}
+
+.zg-callout {
+  display: flex;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.zg-callout-warning {
+  background: var(--zg-warning-bg);
+  border-color: var(--zg-warning);
+  border-left-width: 4px;
+  color: #7c4a03;
+}
+
+.zg-callout-error {
+  background: #fef2f2;
+  border-color: var(--zg-error);
+  border-left-width: 4px;
+  color: #991b1b;
+}
+
+.zg-muted {
+  color: var(--zg-text-muted);
+}
+
+.zg-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: var(--zg-text-muted);
+  padding: 0.5rem 0;
+}
+
+.zg-spinner {
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 2px solid var(--zg-border);
+  border-top-color: var(--zg-primary);
+  border-radius: 50%;
+  animation: zg-spin 0.7s linear infinite;
+}
+
+@keyframes zg-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zg-spinner {
+    animation-duration: 4s;
+  }
+}
+
+.zg-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+/* ---------- Responsive (ui-spec §4) ---------- */
+
+@media (max-width: 767.98px) {
+  .zg-header-toggle {
+    display: inline-flex;
+  }
+
+  .zg-header-menu {
+    display: none;
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    padding: 0 1rem 0.85rem;
+  }
+
+  .zg-header-menu.is-open {
+    display: flex;
+  }
+
+  .zg-header-menu .zg-nav {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .zg-header-menu .zg-header-identity {
+    margin-left: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.25);
+    padding-top: 0.65rem;
+  }
+
+  .zg-header-menu .zg-requester {
+    text-align: left;
+  }
+
+  .zg-actions {
+    flex-direction: column;
+  }
+
+  .zg-actions .zg-btn {
+    width: 100%;
+  }
+
+  .zg-card {
+    padding: 1.25rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .zg-header-menu {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+  }
+}
