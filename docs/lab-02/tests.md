@@ -13,7 +13,7 @@ Companion to [specification.md](specification.md). Acceptance criteria reference
 | UI Component | Vitest + React Testing Library | Rendering, form validation, guard/redirect behaviour, list and detail states. |
 | End-to-End | Playwright | Full user journeys across real screens: select requester → create ticket → view list → open detail → manage attachments. |
 
-_Environment notes (database used for API tests, fixtures, seeding strategy): TBD._
+Unit and component tests run without a live database: the API suite mocks `src/db.js`, and the seed suite drives `seed()` against an in-memory client that implements `upsert` only — so a seed that reached for `create` or `deleteMany` would fail the suite instead of silently duplicating rows. Integration against real PostgreSQL is verified manually with the migrate/seed commands in section 5.
 
 ---
 
@@ -35,9 +35,9 @@ _Environment notes (database used for API tests, fixtures, seeding strategy): TB
 | API-10 | API | AC-09, BR-08 | Soft-remove an attachment with a reason | `200`; `isRemoved`, reason and timestamp set | `server/tests/attachments.api.test.ts` | _TBD_ |
 | API-11 | API | AC-09, BR-09 | Download a removed attachment | Rejected; file not served | `server/tests/attachments.api.test.ts` | _TBD_ |
 | API-14 | API | AC-09 | Soft-remove without a reason | `400`; attachment unchanged | `server/tests/attachments.api.test.ts` | _TBD_ |
-| UNIT-01 | Unit | BR-01, AD-01 | Ticket number generator | Matches `TKT-YYYY-XXXXXX` and is unique | `server/tests/ticketNumber.test.ts` | _TBD_ |
-| UNIT-02 | Unit | AC-13, BR-12 | Seed script run twice | Second run succeeds; row counts unchanged; no duplicates | `server/tests/seed.test.ts` | _TBD_ |
-| UNIT-03 | Unit | FR-08 | Seed content | 4 categories, ≥6 related systems, ≥4 active and ≥1 inactive requester | `server/tests/seed.test.ts` | _TBD_ |
+| UNIT-01 | Unit | BR-01, AD-01 | Ticket number generator | Matches `TKT-YYYY-XXXXXX`, restarts per year, never repeats | `server/tests/ticketNumber.test.ts` | Pass |
+| UNIT-02 | Unit | AC-13, BR-12 | Seed run repeatedly | Later runs succeed; row counts unchanged; every write is an upsert on a unique key | `server/tests/seed.test.ts` | Pass |
+| UNIT-03 | Unit | FR-08 | Seed content | 4 categories, ≥6 related systems, ≥4 active and ≥1 inactive requester | `server/tests/seed.test.ts` | Pass |
 | UI-01 | UI | AC-02 | App opened with no requester selected | Redirect to the selector screen | `client/src/components/RequesterSelector.test.tsx` | _TBD_ |
 | UI-02 | UI | AC-14, BR-03 | Selector content | Only active users listed; the "not a real login" notice is shown | `client/src/components/RequesterSelector.test.tsx` | _TBD_ |
 | UI-03 | UI | AC-01 | Create Ticket form validation | Errors render under the offending fields; submit blocked | `client/src/components/CreateTicketForm.test.tsx` | _TBD_ |
@@ -111,11 +111,33 @@ npm run test:client
 npm run test:e2e
 ```
 
+### Migration and seed (Issue #2, run against a live PostgreSQL)
+
+```bash
+npm --prefix server run prisma:migrate
+```
+
+```bash
+npm --prefix server run prisma:seed
+```
+
+Verified on 2026-08-22 against PostgreSQL 16.15 (Docker, `docker compose up -d`). The seed was run **three** times in a row; every run succeeded and the row counts were identical each time:
+
+| Entity | Rows after run 1 | after run 2 | after run 3 |
+| --- | --- | --- | --- |
+| `Category` | 4 | 4 | 4 |
+| `RelatedSystem` | 7 | 7 | 7 |
+| `RequesterUser` (active) | 4 | 4 | 4 |
+| `RequesterUser` (inactive) | 1 | 1 | 1 |
+| `User` (Lab 1 admin) | 1 | 1 | 1 |
+
+Both migrations applied cleanly (`20260808160909_init`, `20260822000000_lab02_requester_ticketing`), and the resulting `Ticket` table carries all six planned indexes plus the three foreign keys with the intended `Restrict` / `SetNull` / `Cascade` behaviour. AC-13 met.
+
 ### Final run on `main`
 
 | Suite | Command | Files | Tests | Passed | Failed | Date |
 | --- | --- | --- | --- | --- | --- | --- |
-| Backend (unit + API) | `npm run test:server` | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
+| Backend (unit + API) | `npm run test:server` | 3 | 24 | 24 | 0 | 2026-08-22 |
 | Frontend (component) | `npm run test:client` | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
 | End-to-end | `npm run test:e2e` | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
 

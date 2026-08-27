@@ -71,7 +71,7 @@ Deliver the Requester-side Ticketing MVP of TokTickIT: a Development Requester s
 
 | ID | Requirement | Description | Priority |
 | --- | --- | --- | --- |
-| FR-01 | Create Ticket | A requester can submit a new ticket with title, description, category, related system, priority and optional attachments. The backend persists it and returns the generated ticket number. | Must |
+| FR-01 | Create Ticket | A requester can submit a new ticket with summary, description, category, related system, priority and optional attachments. The backend persists it and returns the generated ticket number. | Must |
 | FR-02 | Select Requester | The user picks a Development Requester from a dropdown of active users before using any other screen. The selection persists for the session and can be changed. | Must |
 | FR-03 | My Tickets List | The requester sees only their own tickets, with search, filter, sort and pagination. | Must |
 | FR-04 | Ticket Detail | The requester opens one of their tickets and sees all its fields read-only, plus its attachments. | Must |
@@ -125,7 +125,7 @@ PostgreSQL via Prisma. New and changed models:
 | id | String (uuid) | PK |
 | name | String | Displayed in the selector |
 | email | String | Unique |
-| department | String? | _TBD_ |
+| department | String? | Optional; shown next to the name in the selector |
 | isActive | Boolean | Only active users appear in the selector |
 | createdAt / updatedAt | DateTime | |
 
@@ -135,10 +135,10 @@ PostgreSQL via Prisma. New and changed models:
 | --- | --- | --- |
 | id | String (uuid) | PK |
 | ticketNumber | String | Unique, server-generated (BR-01) |
-| title | String | |
+| summary | String | Ticket Summary from the lab sheet |
 | description | String | |
-| status | Enum | `New` only this sprint (BR-02) |
-| priority | Enum | `Low` / `Medium` / `High` / _TBD_ |
+| status | Enum `TicketStatus` | `New` only this sprint (BR-02); default `New` |
+| priority | Enum `TicketPriority` | `Low` / `Medium` / `High` |
 | requesterId | String | FK → `RequesterUser.id` |
 | categoryId | String | FK → `Category.id` |
 | relatedSystemId | String? | FK → `RelatedSystem.id` |
@@ -153,7 +153,7 @@ PostgreSQL via Prisma. New and changed models:
 | fileName | String | Original file name |
 | mimeType | String | Validated against BR-05 |
 | sizeBytes | Int | Validated against BR-06 |
-| storagePath | String | _TBD — storage location decision_ |
+| storagePath | String | Path of the stored file; _storage location decision TBD_ |
 | isRemoved | Boolean | Soft-removal flag (BR-08) |
 | removedReason | String? | Required when `isRemoved` is true |
 | removedAt | DateTime? | |
@@ -161,7 +161,15 @@ PostgreSQL via Prisma. New and changed models:
 
 ### `Category`
 
-Existing model, reused. _Field changes: TBD._
+Existing Lab 1 model, extended.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| id | String (uuid) | PK |
+| name | String | Unique |
+| description | String? | Shown as helper text in the category dropdown |
+| isActive | Boolean | Default `true`; the API returns active categories only |
+| createdAt / updatedAt | DateTime | |
 
 ### `RelatedSystem`
 
@@ -169,27 +177,31 @@ Existing model, reused. _Field changes: TBD._
 | --- | --- | --- |
 | id | String (uuid) | PK |
 | name | String | Unique |
-| isActive | Boolean | _TBD_ |
+| isActive | Boolean | Default `true`; the API returns active systems only |
+| createdAt / updatedAt | DateTime | |
 
 ### Seed data (idempotent)
 
 | Entity | Minimum required | Notes |
 | --- | --- | --- |
-| `Category` | 4 categories | Reuses the Lab 1 seed set unless changed; _final list TBD_ |
-| `RelatedSystem` | ≥ 6 systems | _list TBD_ |
-| `RequesterUser` (active) | ≥ 4 users | Appear in the selector |
-| `RequesterUser` (inactive) | ≥ 1 user | Must **not** appear in the selector (BR-11) |
+| `Category` | 4 categories | Account and Access, Hardware, Software, Network |
+| `RelatedSystem` | 7 systems | Email, Campus Wi-Fi, VPN, LEB2 App, Grade Submission App, Printer, Corporate Laptop |
+| `RequesterUser` (active) | 4 users | Jennifer Anderson, Sarah Johnson, David Lee, Michael Brown — appear in the selector |
+| `RequesterUser` (inactive) | 1 user | Alex Smith (`isActive = false`) — must **not** appear in the selector (BR-11) |
 
-The seed uses upsert-by-unique-key so it can be re-run safely (BR-12).
+The seed uses upsert-by-unique-key so it can be re-run safely (BR-12). Implemented in `server/src/seed.ts`, with the data itself in `server/src/seedData.ts`.
 
 ### Indexes
 
 | Index | Purpose |
 | --- | --- |
 | `Ticket.ticketNumber` (unique) | Enforces BR-01 |
-| `Ticket.requesterId` | My Tickets listing and ownership checks |
-| `Ticket.createdAt` | Default sort order |
-| `Attachment.ticketId` | Attachment listing |
+| `Ticket.(requesterId, createdAt)` | My Tickets listing — filters by owner and sorts by date in one index |
+| `Ticket.categoryId` / `Ticket.relatedSystemId` | Filtering, and FK lookups |
+| `Ticket.status` / `Ticket.createdAt` | Filtering and default sort |
+| `Attachment.(ticketId, isRemoved)` | Splitting active from removed attachments on the detail page |
+| `RequesterUser.isActive`, `Category.isActive`, `RelatedSystem.isActive` | Selector and dropdown queries return active rows only |
+| `RequesterUser.email` (unique), `Category.name` (unique), `RelatedSystem.name` (unique) | Natural keys the idempotent seed upserts on (BR-12) |
 
 ---
 
@@ -283,6 +295,11 @@ The selected requester is carried by an `X-Requester-Id` request header on every
 | AD-04 | Default pagination for My Tickets is set to `10` tickets per page, with selectable options of 5, 10, and 25 per page. | Provides optimal balance between initial load performance and usable vertical scrolling across mobile and desktop. |
 | AD-05 | Default sort order for My Tickets is `createdAt` descending (newest tickets first). | Ensures users immediately see their most recently created support tickets at the top of the list. |
 | AD-06 | Soft removal retains the database record with `isRemoved = true`, `removedAt = NOW()`, and a non-empty `removedReason`, permanently revoking file download/streaming routes. | Complies with audit trail requirements while fulfilling BR-08 and BR-09. |
+| AD-07 | `Ticket` carries a composite index on `(requesterId, createdAt)` and `Attachment` a composite index on `(ticketId, isRemoved)`, in addition to single-column indexes on `Ticket.categoryId`, `Ticket.relatedSystemId`, `Ticket.status`, and `Ticket.createdAt`. | My Tickets always filters by owner and sorts by date, so one composite index serves both halves of that query; the attachment index separates active from removed files without a table scan. |
+| AD-08 | Foreign keys use differentiated delete behaviour: `Ticket.requesterId` and `Ticket.categoryId` are `RESTRICT`, `Ticket.relatedSystemId` is nullable with `SET NULL`, and `Attachment.ticketId` is `CASCADE`. | A ticket must never lose its owner or category, a related system is optional because the requester may not know which system failed, and attachments have no meaning once their ticket is gone. |
+| AD-09 | Every write in the seed script is an `upsert` keyed on a unique column (`Category.name`, `RelatedSystem.name`, `RequesterUser.email`); the seed contains no `deleteMany` and no `create`. | Makes the seed idempotent per AC-13 — repeated runs converge on the same rows instead of duplicating data or destroying records other developers depend on. |
+| AD-10 | Reference data is retired with an `isActive` flag (indexed on `Category`, `RelatedSystem`, and `RequesterUser`) rather than by deleting rows, and the seed ships four active requesters plus one inactive requester. | Existing tickets keep pointing at valid rows after retirement, and the inactive requester makes the BR-11 rule "inactive requesters must not appear in the selector" testable from seed data alone. |
+| AD-11 | Local development runs PostgreSQL 16 from the repository `docker-compose.yml`, published on host port **5433** with a healthcheck and a named volume. | Gives every developer a reproducible database matching `server/.env.example`, while avoiding a port clash with a PostgreSQL already installed on the default 5432. |
 
 ---
 
