@@ -226,10 +226,15 @@ Create one validated ticket for the selected requester (FR-01, AC-01).
 | `summary` | Required. Trimmed. 5–150 characters after trimming. |
 | `description` | Required. Trimmed. 10–5000 characters after trimming. |
 | `categoryId` | Required. Must reference an existing active category. |
-| `relatedSystemId` | Optional, nullable. When present, must reference an existing active related system. |
+| `relatedSystemId` | Required. Must reference an existing active related system. |
 | `priority` | Required. One of `Low`, `Medium`, `High`. |
 
 Unknown body fields are ignored. `status` and `ticketNumber` are rejected if supplied — they are server-owned (BR-01, BR-02).
+
+**`relatedSystemId` is required on create.** An earlier draft of this table made it optional. Issue #4 marks the field
+with a red asterisk alongside the other four, and a ticket that names no system is materially harder to route, so the
+create contract requires it. The column stays nullable in the schema — that is a later-sprint concern (a system can be
+retired and the foreign key is `SetNull`), not a licence to omit it here.
 
 **Success** — `201`, body is the created `TicketDetail` with `attachments: []`.
 

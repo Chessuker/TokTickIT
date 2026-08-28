@@ -396,3 +396,232 @@ body {
     flex: 1;
   }
 }
+
+/* ---------- Form controls (ui-spec §2) ---------- */
+
+.zg-field {
+  margin-bottom: 1.25rem;
+}
+
+.zg-required {
+  color: var(--zg-error);
+  margin-left: 0.15rem;
+}
+
+.zg-input,
+.zg-textarea {
+  display: block;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--zg-text);
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-border);
+  border-radius: 6px;
+}
+
+.zg-textarea {
+  min-height: 8rem;
+  resize: vertical;
+}
+
+.zg-input:disabled,
+.zg-textarea:disabled {
+  background: #f3f4f6;
+  color: var(--zg-text-muted);
+  cursor: not-allowed;
+}
+
+/* V-08: the field border turns error-colored and the message sits under it. */
+.zg-input.is-invalid,
+.zg-textarea.is-invalid,
+.zg-select.is-invalid {
+  border-color: var(--zg-error);
+}
+
+.zg-field-error {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--zg-error);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.zg-hint {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--zg-text-muted);
+  font-size: 0.82rem;
+}
+
+/* ---------- Radio group ---------- */
+
+.zg-radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.zg-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--zg-border);
+  border-radius: 999px;
+  background: var(--zg-surface);
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+
+.zg-radio:has(input:checked) {
+  border-color: var(--zg-primary);
+  background: var(--zg-pale);
+  font-weight: 600;
+}
+
+.zg-radio input {
+  accent-color: var(--zg-primary);
+  margin: 0;
+}
+
+.zg-fieldset-legend {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0;
+}
+
+/* ---------- Attachment dropzone (ui-spec §3.2) ---------- */
+
+.zg-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  border: 2px dashed var(--zg-border);
+  border-radius: 8px;
+  background: var(--zg-bg);
+  color: var(--zg-text-muted);
+}
+
+.zg-dropzone.is-dragging {
+  border-color: var(--zg-primary);
+  background: var(--zg-pale);
+}
+
+.zg-file-list {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.zg-file-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--zg-border);
+  border-radius: 6px;
+  background: var(--zg-surface);
+  font-size: 0.9rem;
+}
+
+.zg-file-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.zg-file-size {
+  color: var(--zg-text-muted);
+  white-space: nowrap;
+}
+
+.zg-file-remove {
+  margin-left: auto;
+  background: transparent;
+  border: 0;
+  color: var(--zg-error);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+}
+
+.zg-rejected-list {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+}
+
+/* ---------- Success callout and badges ---------- */
+
+.zg-callout-success {
+  background: var(--zg-pale);
+  border-color: var(--zg-primary);
+  border-left-width: 4px;
+  color: #14532d;
+}
+
+.zg-ticket-number {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.zg-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid var(--zg-border);
+  background: var(--zg-pale);
+  color: #14532d;
+}
+
+.zg-form-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--zg-border);
+}
+
+.zg-spinner-sm {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-width: 2px;
+  border-color: rgba(255, 255, 255, 0.5);
+  border-top-color: #ffffff;
+}
+
+.zg-btn:disabled .zg-spinner-sm {
+  border-color: var(--zg-border);
+  border-top-color: var(--zg-text-muted);
+}
+
+@media (max-width: 767.98px) {
+  .zg-form-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .zg-form-actions .zg-btn {
+    width: 100%;
+  }
+}
