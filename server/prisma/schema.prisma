@@ -15,9 +15,104 @@ model User {
   updatedAt DateTime @updatedAt
 }
 
+/// Temporary Lab 2 requester directory. This is a testing mechanism, not
+/// authentication: it carries no password, session, or role. Lab 3 replaces the
+/// selector with real auth and can extend this model with credential fields.
+model RequesterUser {
+  id         String   @id @default(uuid())
+  name       String
+  email      String   @unique
+  department String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  tickets Ticket[]
+
+  @@index([isActive])
+}
+
 model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tickets Ticket[]
+
+  @@index([isActive])
+}
+
+model RelatedSystem {
   id        String   @id @default(uuid())
   name      String   @unique
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  tickets Ticket[]
+
+  @@index([isActive])
+}
+
+/// Only `New` is reachable in Lab 2; the ticket status lifecycle is out of scope
+/// for this sprint and the enum is extended in a later one.
+enum TicketStatus {
+  New
+}
+
+enum TicketPriority {
+  Low
+  Medium
+  High
+}
+
+model Ticket {
+  id           String         @id @default(uuid())
+  ticketNumber String         @unique
+  summary      String
+  description  String
+  status       TicketStatus   @default(New)
+  priority     TicketPriority
+
+  requesterId     String
+  categoryId      String
+  relatedSystemId String?
+
+  requester     RequesterUser  @relation(fields: [requesterId], references: [id])
+  category      Category       @relation(fields: [categoryId], references: [id])
+  relatedSystem RelatedSystem? @relation(fields: [relatedSystemId], references: [id])
+
+  attachments Attachment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([requesterId, createdAt])
+  @@index([categoryId])
+  @@index([relatedSystemId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+/// Attachments are never hard-deleted. `isRemoved` marks a soft removal and
+/// `removedReason` / `removedAt` record why and when, so removed files stay
+/// visible as metadata while becoming undownloadable.
+model Attachment {
+  id            String    @id @default(uuid())
+  ticketId      String
+  fileName      String
+  mimeType      String
+  sizeBytes     Int
+  storagePath   String
+  isRemoved     Boolean   @default(false)
+  removedReason String?
+  removedAt     DateTime?
+  uploadedAt    DateTime  @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, isRemoved])
 }

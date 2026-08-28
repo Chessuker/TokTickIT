@@ -1,7 +1,7 @@
 {
-  "name": "toktikit-server",
+  "name": "toktickit-server",
   "version": "1.0.0",
-  "description": "TokTikIT Backend API",
+  "description": "TokTickIT Backend API",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {

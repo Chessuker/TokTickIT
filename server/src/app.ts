@@ -52,6 +52,30 @@ app.get('/api/categories', async (_req, res) => {
   }
 });
 
+// Development Requester routes (Issue #3, FR-02, BR-11, AC-14).
+//
+// This endpoint backs the Development Requester selector, which is a testing
+// mechanism and not authentication (BR-03). Only active requesters are ever
+// returned, and `isActive` itself is never exposed: an inactive requester must
+// be indistinguishable from one that does not exist.
+app.get('/api/requesters', async (_req, res) => {
+  try {
+    const requesters = await prisma.requesterUser.findMany({
+      where: { isActive: true },
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, email: true, department: true }
+    });
+    res.json({ data: requesters });
+  } catch (error) {
+    res.status(500).json({
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Something went wrong. Please try again.'
+      }
+    });
+  }
+});
+
 app.post('/api/users', async (req, res) => {
   try {
     const { email, name } = req.body;
