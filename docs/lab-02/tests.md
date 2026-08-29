@@ -21,13 +21,13 @@ Unit and component tests run without a live database: the API suite mocks `src/d
 
 | Test ID | Type | Requirement / AC | What It Tests | Expected Result | Automated Test File Path | Final Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| API-01 | API | AC-01 | Create a ticket with valid data | `201 Created`; row persisted; ticket number returned | `server/tests/tickets.api.test.ts` | _TBD_ |
-| API-02 | API | AC-01, BR-02 | New ticket status | Status is `New` | `server/tests/tickets.api.test.ts` | _TBD_ |
-| API-03 | API | AC-01 | Create with missing required fields | `400` with field errors | `server/tests/tickets.api.test.ts` | _TBD_ |
+| API-01 | API | AC-01 | Create a ticket with valid data | `201 Created`; row persisted; ticket number returned | `server/tests/tickets.api.test.ts` | Pass |
+| API-02 | API | AC-01, BR-02 | New ticket status | Status is `New` | `server/tests/tickets.api.test.ts` | Pass |
+| API-03 | API | AC-01 | Create with missing required fields | `400` with field errors | `server/tests/tickets.api.test.ts` | Pass |
 | API-04 | API | AC-04 | List tickets for a requester | Only that requester's tickets returned | `server/tests/tickets.api.test.ts` | _TBD_ |
 | API-05 | API | AC-03, BR-04 | Read another requester's ticket | `403 Forbidden` | `server/tests/tickets.api.test.ts` | _TBD_ |
 | API-06 | API | AC-10 | `search`, `category`, `status`, `sort`, `page`, `pageSize` | Correct subset, order and page metadata | `server/tests/tickets.api.test.ts` | _TBD_ |
-| API-12 | API | AC-14, BR-11 | `GET /api/requesters` | Active requesters only; inactive one absent | `server/tests/requesters.api.test.ts` | _TBD_ |
+| API-12 | API | AC-14, BR-11 | `GET /api/requesters` | Active requesters only; inactive one absent | `server/tests/requesters.api.test.ts` | Pass |
 | API-13 | API | AC-15 | Filter that matches nothing | `200` with an empty page and correct total | `server/tests/tickets.api.test.ts` | _TBD_ |
 | API-07 | API | AC-06, BR-06 | Upload a file larger than 5 MB | `413 Payload Too Large` | `server/tests/attachments.api.test.ts` | _TBD_ |
 | API-08 | API | AC-07, BR-05 | Upload a disallowed file type | `415 Unsupported Media Type` | `server/tests/attachments.api.test.ts` | _TBD_ |
@@ -38,14 +38,14 @@ Unit and component tests run without a live database: the API suite mocks `src/d
 | UNIT-01 | Unit | BR-01, AD-01 | Ticket number generator | Matches `TKT-YYYY-XXXXXX`, restarts per year, never repeats | `server/tests/ticketNumber.test.ts` | Pass |
 | UNIT-02 | Unit | AC-13, BR-12 | Seed run repeatedly | Later runs succeed; row counts unchanged; every write is an upsert on a unique key | `server/tests/seed.test.ts` | Pass |
 | UNIT-03 | Unit | FR-08 | Seed content | 4 categories, ≥6 related systems, ≥4 active and ≥1 inactive requester | `server/tests/seed.test.ts` | Pass |
-| UI-01 | UI | AC-02 | App opened with no requester selected | Redirect to the selector screen | `client/src/components/RequesterSelector.test.tsx` | _TBD_ |
-| UI-02 | UI | AC-14, BR-03 | Selector content | Only active users listed; the "not a real login" notice is shown | `client/src/components/RequesterSelector.test.tsx` | _TBD_ |
-| UI-03 | UI | AC-01 | Create Ticket form validation | Errors render under the offending fields; submit blocked | `client/src/components/CreateTicketForm.test.tsx` | _TBD_ |
+| UI-01 | UI | AC-02 | App opened with no requester selected | Redirect to the selector screen | `client/src/components/RequesterSelector.test.tsx` | Pass |
+| UI-02 | UI | AC-14, BR-03 | Selector content | Only active users listed; the "not a real login" notice is shown | `client/src/components/RequesterSelector.test.tsx` | Pass |
+| UI-03 | UI | AC-01 | Create Ticket form validation | Errors render under the offending fields; submit blocked | `client/src/components/CreateTicketForm.test.tsx` | Pass |
 | UI-04 | UI | AC-04, AC-10 | My Tickets list | Rows render; search and filter update the list | `client/src/components/MyTickets.test.tsx` | _TBD_ |
 | UI-05 | UI | AC-05 | Ticket detail is read-only | No editable inputs rendered | `client/src/components/TicketDetail.test.tsx` | _TBD_ |
 | UI-06 | UI | AC-09 | Removal modal | Confirm disabled until a reason is entered | `client/src/components/TicketDetail.test.tsx` | _TBD_ |
-| UI-07 | UI | AC-02, FR-06, BR-13 | Change Requester | Switching requester re-fetches and shows only the new requester's tickets | `client/src/components/AppShell.test.tsx` | _TBD_ |
-| UI-08 | UI | AC-12, FR-07 | Create form on backend failure | Error callout shown; entered values still present in the form | `client/src/components/CreateTicketForm.test.tsx` | _TBD_ |
+| UI-07 | UI | AC-02, FR-06, BR-13 | Change Requester | Switching requester re-fetches and shows only the new requester's tickets | `client/src/components/AppShell.test.tsx` | Pass |
+| UI-08 | UI | AC-12, FR-07 | Create form on backend failure | Error callout shown; entered values still present in the form | `client/src/components/CreateTicketForm.test.tsx` | Pass |
 | UI-09 | UI | AC-15 | Empty vs. no-results state | Correct distinct state rendered in each case | `client/src/components/MyTickets.test.tsx` | _TBD_ |
 | E2E-01 | E2E | AC-01, AC-05 | Full create flow | Ticket number shown, detail page opens with the same data | `e2e/create-ticket.spec.ts` | _TBD_ |
 | E2E-02 | E2E | AC-09 | Attachment lifecycle | Upload, download, soft-remove with reason; removed file no longer downloadable | `e2e/attachments.spec.ts` | _TBD_ |
@@ -95,6 +95,9 @@ Unit and component tests run without a live database: the API suite mocks `src/d
 
 Each row is checked against the Visual Inspection Checklist in [ui-spec.md](ui-spec.md).
 
+The six Create Ticket state screenshots required for Answer Part 6 (Issue #4) are collected in
+[answer-part6-screenshots.md](answer-part6-screenshots.md), captured against the running stack and a seeded database.
+
 ---
 
 ## 5. Test Commands and Final Results
@@ -133,12 +136,25 @@ Verified on 2026-08-22 against PostgreSQL 16.15 (Docker, `docker compose up -d`)
 
 Both migrations applied cleanly (`20260808160909_init`, `20260822000000_lab02_requester_ticketing`), and the resulting `Ticket` table carries all six planned indexes plus the three foreign keys with the intended `Restrict` / `SetNull` / `Cascade` behaviour. AC-13 met.
 
+### Issue #3 verification (Development Requester context)
+
+`GET /api/requesters` is covered by API-12 against a mocked Prisma client, so it
+runs without a database. The three Issue #3 screens were additionally exercised
+by hand in the browser at 1280x720 and 375x812: the guard redirect, the amber
+"not a real login" callout, the active-only dropdown, the disabled Continue
+button, the loading and error/retry states, the header requester name, the
+mobile compact menu, and a Jennifer Anderson to Sarah Johnson switch that
+replaced the visible requester-scoped content. Docker was unavailable that day,
+so the browser pass ran against a stub of `GET /api/requesters` rather than
+PostgreSQL; the endpoint itself is only proven by API-12 until the next live
+migrate/seed run.
+
 ### Final run on `main`
 
 | Suite | Command | Files | Tests | Passed | Failed | Date |
 | --- | --- | --- | --- | --- | --- | --- |
-| Backend (unit + API) | `npm run test:server` | 3 | 24 | 24 | 0 | 2026-08-22 |
-| Frontend (component) | `npm run test:client` | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
+| Backend (unit + API) | `npm run test:server` | 5 | 58 | 58 | 0 | 2026-08-28 |
+| Frontend (component) | `npm run test:client` | 4 | 41 | 41 | 0 | 2026-08-28 |
 | End-to-end | `npm run test:e2e` | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
 
 _Raw output / evidence: TBD._

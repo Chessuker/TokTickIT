@@ -76,7 +76,7 @@ Companion to [specification.md](specification.md). This document defines the vis
 | Element | Specification |
 | --- | --- |
 | Field order | Summary → Description → Category → Related System → Priority → Attachments |
-| Required fields | _TBD — mark which fields are required_ |
+| Required fields | Summary/Title, Description, Category, Related System and Requested Priority — each carries a red `*` after its label. Attachments are optional. |
 | Dropdowns | Category and Related System populated from the API; placeholder option shown until chosen |
 | Upload area | Dropzone with an explicit "Browse files" button; helper text lists allowed types (JPG, PNG, WEBP, PDF), size limit (5 MB) and file cap (5) |
 | File preview list | One row per staged file: name, size, type icon, remove control |

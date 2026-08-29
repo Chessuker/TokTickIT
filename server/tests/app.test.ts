@@ -82,24 +82,27 @@ describe('Express API Endpoints', () => {
     expect(res.body.error).toBe('Email is required');
   });
 
-  it('GET /api/categories returns categories ordered by name', async () => {
+  it('GET /api/categories returns active categories ordered by name under a data key', async () => {
     const res = await request(app).get('/api/categories');
     expect(res.status).toBe(200);
     expect(prisma.category.findMany).toHaveBeenCalledWith({
+      where: { isActive: true },
       orderBy: { name: 'asc' },
-      select: { id: true, name: true }
+      select: { id: true, name: true, description: true }
     });
-    expect(res.body).toEqual([
+    expect(res.body.data).toEqual([
       { id: '1', name: 'Hardware' },
       { id: '2', name: 'Software' }
     ]);
   });
 
-  it('GET /api/categories returns 500 when the database call fails', async () => {
+  it('GET /api/categories returns a safe 500 envelope when the database call fails', async () => {
     vi.mocked(prisma.category.findMany).mockRejectedValueOnce(new Error('connection refused'));
 
     const res = await request(app).get('/api/categories');
     expect(res.status).toBe(500);
-    expect(res.body.error).toBe('Failed to fetch categories');
+    expect(res.body.error.code).toBe('INTERNAL_ERROR');
+    expect(res.body.error.message).toBe('Something went wrong. Please try again.');
+    expect(JSON.stringify(res.body)).not.toContain('connection refused');
   });
 });

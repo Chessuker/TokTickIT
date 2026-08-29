@@ -22,10 +22,12 @@ describe('CategoryList', () => {
   it('renders categories returned by the API', async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve([
-        { id: '1', name: 'Hardware' },
-        { id: '2', name: 'Software' }
-      ])
+      json: () => Promise.resolve({
+        data: [
+          { id: '1', name: 'Hardware' },
+          { id: '2', name: 'Software' }
+        ]
+      })
     } as Response)
 
     render(<CategoryList />)
