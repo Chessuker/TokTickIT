@@ -1,27 +1,12 @@
-import { useRequester } from '../context/requester'
+import MyTicketsList from '../components/MyTickets'
 
 /**
- * Placeholder for the My Tickets list (Issue #5). It exists now so Issue #3
- * has a real destination after the requester is selected; the table, search,
- * filters and pagination described in ui-spec.md §3.3 land with Issue #5.
+ * My Tickets screen (ui-spec.md §3.3, Issue #5). The page is a thin route
+ * wrapper; the list component owns every piece of query state, matching how the
+ * Create Ticket screen wraps its form.
  */
 function MyTickets() {
-  const { requester } = useRequester()
-
-  return (
-    <section>
-      <h1 className="zg-title">My Tickets</h1>
-      <p className="zg-subtitle">
-        Showing tickets for {requester?.name}.
-      </p>
-      <div className="zg-card">
-        <p className="zg-muted mb-0">
-          The ticket list arrives with Issue #5. Everything on this screen is scoped to the
-          selected requester and is discarded when the requester changes.
-        </p>
-      </div>
-    </section>
-  )
+  return <MyTicketsList />
 }
 
 export default MyTickets

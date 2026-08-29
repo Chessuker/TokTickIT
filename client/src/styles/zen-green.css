@@ -625,3 +625,404 @@ body {
     width: 100%;
   }
 }
+
+/* ---------- My Tickets list (ui-spec §3.3, Issue #5) ---------- */
+
+.zg-page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+/* Filter bar — search, Category, Status, Sort, Clear Filters. */
+.zg-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-border);
+  border-radius: 10px;
+  box-shadow: var(--zg-shadow);
+}
+
+.zg-filter {
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+
+.zg-filter-search {
+  flex: 2 1 18rem;
+}
+
+.zg-filter-action {
+  flex: 0 0 auto;
+}
+
+.zg-result-count {
+  margin: 0 0 0.65rem;
+  color: var(--zg-text-muted);
+  font-size: 0.88rem;
+}
+
+/* ---------- Desktop table (>= 768px) ---------- */
+
+/*
+ * V-03: the table scrolls inside its own container so a wide row can never
+ * push the page body sideways.
+ */
+.zg-table-wrap {
+  overflow-x: auto;
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-border);
+  border-radius: 10px;
+  box-shadow: var(--zg-shadow);
+}
+
+/*
+ * Fixed layout with the widths declared in the component's <colgroup>. Under
+ * auto layout the widest cell wins and the last columns fall off the page; the
+ * table wrapper still scrolls, so nothing is lost below 56rem either.
+ */
+.zg-table {
+  width: 100%;
+  min-width: 56rem;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.zg-table th,
+.zg-table td {
+  padding: 0.65rem 0.6rem;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--zg-border);
+  /* Fixed columns clip rather than push, so content has to be able to wrap. */
+  overflow-wrap: break-word;
+}
+
+/*
+ * Values that are single atoms — a ticket number, a badge, a date, a button —
+ * are never worth breaking across lines; their columns are sized to hold them.
+ * Only Summary and Category wrap.
+ */
+.zg-table .zg-cell-tight {
+  white-space: nowrap;
+}
+
+/*
+ * Headers wrap; cells do not. Ten columns only fit the 1100px container if
+ * "Requested Priority" is allowed two lines — forcing it onto one would push
+ * the last columns out of view and make every desktop read a horizontal scroll.
+ */
+.zg-table thead th {
+  background: var(--zg-pale);
+  color: #14532d;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: normal;
+  vertical-align: bottom;
+  /* Headers wrap between words but are never broken mid-word; the column
+     budget above is sized so each label's longest word fits. */
+  overflow-wrap: normal;
+}
+
+.zg-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.zg-table tbody tr:hover {
+  background: var(--zg-pale);
+}
+
+.zg-cell-summary {
+  font-weight: 500;
+}
+
+/*
+ * The ticket number is the hero of the success callout, where 1.15rem is right.
+ * In a ten-column row it is one identifier among many, and that size alone
+ * costs enough width to push the last columns off screen.
+ */
+.zg-table .zg-ticket-number {
+  font-size: 0.82rem;
+}
+
+.zg-cell-date {
+  color: var(--zg-text-muted);
+}
+
+.zg-btn-sm {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.83rem;
+}
+
+.zg-not-assigned {
+  color: var(--zg-text-muted);
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+/* ---------- Mobile card list (< 768px) ---------- */
+
+.zg-ticket-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.zg-ticket-card {
+  display: block;
+  padding: 0.9rem 1rem;
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-border);
+  border-radius: 10px;
+  box-shadow: var(--zg-shadow);
+  color: var(--zg-text);
+  text-decoration: none;
+}
+
+.zg-ticket-card:hover {
+  border-color: var(--zg-secondary);
+  background: var(--zg-pale);
+  color: var(--zg-text);
+}
+
+.zg-ticket-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.zg-ticket-card-summary {
+  margin: 0.45rem 0;
+  font-weight: 600;
+  /* Long summaries wrap instead of widening the card (V-03, V-04). */
+  overflow-wrap: anywhere;
+}
+
+.zg-ticket-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+
+.zg-ticket-card-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 0.75rem;
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.zg-ticket-card-meta dt {
+  color: var(--zg-text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.7rem;
+}
+
+.zg-ticket-card-meta dd {
+  margin: 0.1rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.zg-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--zg-border);
+  background: var(--zg-bg);
+  color: var(--zg-text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+/* ---------- Badges (ui-spec §2) ---------- */
+
+.zg-badge-status-new {
+  background: var(--zg-pale);
+  border-color: var(--zg-primary);
+  color: #14532d;
+}
+
+.zg-badge-priority-low {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1e40af;
+}
+
+.zg-badge-priority-medium {
+  background: var(--zg-warning-bg);
+  border-color: var(--zg-warning);
+  color: #92400e;
+}
+
+.zg-badge-priority-high {
+  background: #fef2f2;
+  border-color: var(--zg-error);
+  color: #991b1b;
+}
+
+/* ---------- Empty vs. no-results (AC-15) ---------- */
+
+/*
+ * The two zero-result states are deliberately different objects on the page:
+ * the empty state is a full white card with a primary call to action (there is
+ * nothing to go back to), while the no-results state is a dashed, tinted panel
+ * with a secondary "Clear Filters" action — the visual language of a filter
+ * that can be undone rather than of an account with no data.
+ */
+.zg-state {
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+}
+
+.zg-state-icon {
+  display: block;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.zg-state-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.zg-state-text {
+  margin: 0 auto 1.25rem;
+  max-width: 32rem;
+  color: var(--zg-text-muted);
+  font-size: 0.92rem;
+}
+
+.zg-state-no-results {
+  background: var(--zg-bg);
+  border: 2px dashed var(--zg-border);
+  border-radius: 10px;
+  box-shadow: none;
+  padding: 2rem 1.5rem;
+}
+
+/* ---------- Pagination ---------- */
+
+.zg-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.zg-page-numbers {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+}
+
+.zg-page-number {
+  min-width: 2.25rem;
+  padding: 0.35rem 0.6rem;
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-border);
+  border-radius: 6px;
+  color: var(--zg-text);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.zg-page-number:hover {
+  border-color: var(--zg-secondary);
+  color: var(--zg-secondary);
+}
+
+.zg-page-number.is-current {
+  background: var(--zg-primary);
+  border-color: var(--zg-primary);
+  color: var(--zg-on-primary);
+}
+
+.zg-page-status {
+  color: var(--zg-text-muted);
+  font-size: 0.85rem;
+}
+
+.zg-page-size {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+.zg-page-size .zg-label {
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
+.zg-page-size .zg-select {
+  width: auto;
+}
+
+.zg-link-button {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+@media (max-width: 767.98px) {
+  .zg-page-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .zg-page-head .zg-btn {
+    width: 100%;
+  }
+
+  /* Stacked filters, full-width controls (ui-spec §4). */
+  .zg-filter,
+  .zg-filter-search,
+  .zg-filter-action {
+    flex: 1 1 100%;
+  }
+
+  .zg-filter-action .zg-btn {
+    width: 100%;
+  }
+
+  .zg-pagination {
+    justify-content: center;
+  }
+
+  .zg-page-size {
+    margin-left: 0;
+    width: 100%;
+    justify-content: center;
+  }
+}

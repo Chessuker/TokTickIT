@@ -43,8 +43,13 @@ Companion to [specification.md](specification.md). This document defines the vis
 
 | Badge | Value | Style |
 | --- | --- | --- |
-| Status | `New` | _TBD_ |
-| Priority | `Low` / `Medium` / `High` | _TBD_ |
+| Status | `New` | Pill, `--zg-pale` fill, `--zg-primary` border, `#14532D` text |
+| Priority | `Low` | Pill, `#EFF6FF` fill, `#93C5FD` border, `#1E40AF` text |
+| Priority | `Medium` | Pill, `--zg-warning-bg` fill, `--zg-warning` border, `#92400E` text |
+| Priority | `High` | Pill, `#FEF2F2` fill, `--zg-error` border, `#991B1B` text |
+
+Priority is never encoded by colour alone — the level is written in the badge —
+so the ordering survives a monochrome print and a red/green colour deficiency.
 
 ---
 
@@ -88,12 +93,13 @@ Companion to [specification.md](specification.md). This document defines the vis
 
 | Element | Specification |
 | --- | --- |
-| Desktop (≥ 992 px) | Table: Ticket Number, Summary, Category, Status, Priority, Created At, action to open detail |
-| Mobile (< 768 px) | Card list; each card shows Ticket Number, Summary, badges and Created At, and is tappable |
-| Search bar | Free-text search across _TBD (summary / ticket number / description)_ — maps to the `search` query parameter |
-| Filters | Category and Status — map to the `category` and `status` query parameters |
-| Sort | `sort` parameter; Created At descending by default, plus _TBD_ |
-| Pagination | Page controls with current page, total pages, and page size; `page` / `pageSize` parameters; default page size _TBD_ |
+| Desktop (≥ 768 px) | Table: Ticket No., Created Date, Summary, Category, Requested Priority, IT Priority, Current Status, Ticket Owner, Last Updated, and a Detail action. Fixed column layout so all ten columns fit the container; the table scrolls inside its own wrapper below 56 rem |
+| IT Priority / Ticket Owner | Rendered as an italic muted _Unassigned_ placeholder. Both are IT-triage fields with no column in the Lab 2 schema; an explicit placeholder keeps "not yet assigned" from reading as missing data |
+| Mobile (< 768 px) | Card list; each card shows Ticket No., Status badge, Summary, Priority and Category, and the four dates/owner fields as a two-column definition list. The whole card is the tap target |
+| Search bar | Free-text, case-insensitive, matched against `summary`, `description` and `ticketNumber` — maps to the `search` query parameter. Debounced 300 ms so typing does not fire a request per keystroke |
+| Filters | Category and Status — map to the `category` and `status` query parameters. A "Clear Filters" button resets search, category and status together, and is disabled when none is active |
+| Sort | `sort` parameter; Created At descending by default, plus Created At ascending, Ticket No. either way, and Priority either way (High-first for descending) |
+| Pagination | Previous / Next, a window of at most five numbered page buttons, "Page _n_ of _m_", and a page-size selector of 10 / 20 / 50; `page` / `pageSize` parameters, default page size 10. Any change to search, filter, sort or page size returns to page 1 |
 | Empty state | Requester has no tickets at all: message plus a call to action to create the first ticket |
 | No-results state | Search/filter matched nothing: message offering to clear the filters — visually distinct from the empty state (AC-15) |
 | Selected row | Background `--zg-pale` |

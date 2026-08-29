@@ -445,6 +445,6 @@ Planned tests for this contract are listed in [tests.md](tests.md).
 | ID | Decision | Status |
 | --- | --- | --- |
 | API-D-01 | Attachment storage location — local disk under `server/uploads/` vs. object storage | _TBD_ |
-| API-D-02 | Whether `search` also matches the category or related-system name | _TBD_ |
+| API-D-02 | Whether `search` also matches the category or related-system name | **Resolved (Issue #5): no.** `search` covers `summary`, `description` and `ticketNumber` only. Category and Related System already have their own filter, and folding them into the free-text match would make a search for "network" return every Network ticket regardless of what it says |
 | API-D-03 | Rate limiting on upload | Out of scope for Lab 2 |
 | API-D-04 | Response caching headers for reference data | _TBD_ |
