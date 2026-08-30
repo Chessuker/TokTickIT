@@ -24,11 +24,11 @@ Unit and component tests run without a live database: the API suite mocks `src/d
 | API-01 | API | AC-01 | Create a ticket with valid data | `201 Created`; row persisted; ticket number returned | `server/tests/tickets.api.test.ts` | Pass |
 | API-02 | API | AC-01, BR-02 | New ticket status | Status is `New` | `server/tests/tickets.api.test.ts` | Pass |
 | API-03 | API | AC-01 | Create with missing required fields | `400` with field errors | `server/tests/tickets.api.test.ts` | Pass |
-| API-04 | API | AC-04 | List tickets for a requester | Only that requester's tickets returned | `server/tests/tickets.api.test.ts` | _TBD_ |
+| API-04 | API | AC-04 | List tickets for a requester | Only that requester's tickets returned | `server/tests/tickets.api.test.ts` | Pass |
 | API-05 | API | AC-03, BR-04 | Read another requester's ticket | `403 Forbidden` | `server/tests/tickets.api.test.ts` | _TBD_ |
-| API-06 | API | AC-10 | `search`, `category`, `status`, `sort`, `page`, `pageSize` | Correct subset, order and page metadata | `server/tests/tickets.api.test.ts` | _TBD_ |
+| API-06 | API | AC-10 | `search`, `category`, `status`, `sort`, `page`, `pageSize` | Correct subset, order and page metadata | `server/tests/tickets.api.test.ts` | Pass |
 | API-12 | API | AC-14, BR-11 | `GET /api/requesters` | Active requesters only; inactive one absent | `server/tests/requesters.api.test.ts` | Pass |
-| API-13 | API | AC-15 | Filter that matches nothing | `200` with an empty page and correct total | `server/tests/tickets.api.test.ts` | _TBD_ |
+| API-13 | API | AC-15 | Filter that matches nothing | `200` with an empty page and correct total | `server/tests/tickets.api.test.ts` | Pass |
 | API-07 | API | AC-06, BR-06 | Upload a file larger than 5 MB | `413 Payload Too Large` | `server/tests/attachments.api.test.ts` | _TBD_ |
 | API-08 | API | AC-07, BR-05 | Upload a disallowed file type | `415 Unsupported Media Type` | `server/tests/attachments.api.test.ts` | _TBD_ |
 | API-09 | API | AC-08, BR-07 | Upload a 6th active attachment | Rejected with the limit error | `server/tests/attachments.api.test.ts` | _TBD_ |
@@ -41,12 +41,12 @@ Unit and component tests run without a live database: the API suite mocks `src/d
 | UI-01 | UI | AC-02 | App opened with no requester selected | Redirect to the selector screen | `client/src/components/RequesterSelector.test.tsx` | Pass |
 | UI-02 | UI | AC-14, BR-03 | Selector content | Only active users listed; the "not a real login" notice is shown | `client/src/components/RequesterSelector.test.tsx` | Pass |
 | UI-03 | UI | AC-01 | Create Ticket form validation | Errors render under the offending fields; submit blocked | `client/src/components/CreateTicketForm.test.tsx` | Pass |
-| UI-04 | UI | AC-04, AC-10 | My Tickets list | Rows render; search and filter update the list | `client/src/components/MyTickets.test.tsx` | _TBD_ |
+| UI-04 | UI | AC-04, AC-10 | My Tickets list | Rows render; search and filter update the list | `client/src/components/MyTickets.test.tsx` | Pass |
 | UI-05 | UI | AC-05 | Ticket detail is read-only | No editable inputs rendered | `client/src/components/TicketDetail.test.tsx` | _TBD_ |
 | UI-06 | UI | AC-09 | Removal modal | Confirm disabled until a reason is entered | `client/src/components/TicketDetail.test.tsx` | _TBD_ |
 | UI-07 | UI | AC-02, FR-06, BR-13 | Change Requester | Switching requester re-fetches and shows only the new requester's tickets | `client/src/components/AppShell.test.tsx` | Pass |
 | UI-08 | UI | AC-12, FR-07 | Create form on backend failure | Error callout shown; entered values still present in the form | `client/src/components/CreateTicketForm.test.tsx` | Pass |
-| UI-09 | UI | AC-15 | Empty vs. no-results state | Correct distinct state rendered in each case | `client/src/components/MyTickets.test.tsx` | _TBD_ |
+| UI-09 | UI | AC-15 | Empty vs. no-results state | Correct distinct state rendered in each case | `client/src/components/MyTickets.test.tsx` | Pass |
 | E2E-01 | E2E | AC-01, AC-05 | Full create flow | Ticket number shown, detail page opens with the same data | `e2e/create-ticket.spec.ts` | _TBD_ |
 | E2E-02 | E2E | AC-09 | Attachment lifecycle | Upload, download, soft-remove with reason; removed file no longer downloadable | `e2e/attachments.spec.ts` | _TBD_ |
 | E2E-03 | E2E | AC-03 | Ownership guard | Opening another requester's ticket shows access denied | `e2e/ownership.spec.ts` | _TBD_ |
@@ -85,13 +85,13 @@ Unit and component tests run without a live database: the API suite mocks `src/d
 | R-03 | Create Ticket | Desktop | _TBD_ | `docs/lab-02/screenshots/create-desktop.png` |
 | R-04 | Create Ticket | Tablet 768–991 px | _TBD_ | `docs/lab-02/screenshots/create-tablet.png` |
 | R-05 | Create Ticket | Mobile | _TBD_ | `docs/lab-02/screenshots/create-mobile.png` |
-| R-06 | My Tickets (table) | Desktop | _TBD_ | `docs/lab-02/screenshots/list-desktop.png` |
-| R-07 | My Tickets (cards) | Mobile | _TBD_ | `docs/lab-02/screenshots/list-mobile.png` |
+| R-06 | My Tickets (table) | Desktop | Pass | `docs/lab-02/screenshots/list-desktop.png` |
+| R-07 | My Tickets (cards) | Mobile | Pass | `docs/lab-02/screenshots/list-mobile.png` |
 | R-08 | Ticket Detail | Desktop | _TBD_ | `docs/lab-02/screenshots/detail-desktop.png` |
 | R-09 | Ticket Detail | Mobile | _TBD_ | `docs/lab-02/screenshots/detail-mobile.png` |
 | R-10 | Removal modal | Mobile | _TBD_ | `docs/lab-02/screenshots/remove-modal-mobile.png` |
 | R-11 | Header / Change Requester | Mobile | _TBD_ | `docs/lab-02/screenshots/header-mobile.png` |
-| R-12 | My Tickets no-results state | Desktop | _TBD_ | `docs/lab-02/screenshots/list-no-results.png` |
+| R-12 | My Tickets no-results state | Desktop | Pass | `docs/lab-02/screenshots/list-no-results.png` |
 
 Each row is checked against the Visual Inspection Checklist in [ui-spec.md](ui-spec.md).
 
@@ -149,12 +149,42 @@ so the browser pass ran against a stub of `GET /api/requesters` rather than
 PostgreSQL; the endpoint itself is only proven by API-12 until the next live
 migrate/seed run.
 
+### Issue #5 verification (My Tickets list)
+
+`GET /api/tickets` is covered by API-04, API-06 and API-13 against a mocked
+Prisma client, so the suite still runs without a database. The endpoint and the
+screen were then exercised against the **live stack** on 2026-08-29 — PostgreSQL
+16 in Docker, `prisma migrate deploy` + `prisma:seed`, the Express API on :5000
+and Vite on :5173 — with 14 tickets created for Jennifer Anderson and 3 for
+Sarah Johnson through the real `POST /api/tickets`, and Michael Brown left with
+none so the empty state had a genuine subject.
+
+Confirmed live: ownership isolation (Jennifer's 14 vs. Sarah's 3, and a
+`requesterId` in the query string ignored), case-insensitive search on ticket
+number and summary, Category and Status filters, `priority:desc` ordering High →
+Medium → Low, page metadata across both pages, `200` with `totalItems: 0` for a
+filter matching nothing, and `400 VALIDATION_FAILED` naming `pageSize` for an
+out-of-range page size.
+
+Responsive check (V-03), measured rather than eyeballed — `document.body.scrollWidth`
+against the viewport width on the loaded list:
+
+| Viewport | Layout rendered | Body scroll width | Horizontal overflow |
+| --- | --- | --- | --- |
+| 375 px | Card list | 375 px | 0 |
+| 820 px | Table (scrolls in its own container) | 820 px | 0 |
+| 1280 px | Table, all ten columns visible | 1280 px | 0 |
+
+The Answer Part 7 screenshots are collected in
+[answer-part7-screenshots.md](answer-part7-screenshots.md) and were captured by
+`docs/lab-02/screenshots/capture-issue5.mjs` against that same live stack.
+
 ### Final run on `main`
 
 | Suite | Command | Files | Tests | Passed | Failed | Date |
 | --- | --- | --- | --- | --- | --- | --- |
-| Backend (unit + API) | `npm run test:server` | 5 | 58 | 58 | 0 | 2026-08-28 |
-| Frontend (component) | `npm run test:client` | 4 | 41 | 41 | 0 | 2026-08-28 |
+| Backend (unit + API) | `npm run test:server` | 5 | 87 | 87 | 0 | 2026-08-29 |
+| Frontend (component) | `npm run test:client` | 5 | 61 | 61 | 0 | 2026-08-29 |
 | End-to-end | `npm run test:e2e` | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
 
 _Raw output / evidence: TBD._

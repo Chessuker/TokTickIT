@@ -5,7 +5,7 @@ vi.mock('../src/db.js', () => ({
     requesterUser: { findFirst: vi.fn() },
     category: { findFirst: vi.fn() },
     relatedSystem: { findFirst: vi.fn(), findMany: vi.fn() },
-    ticket: { findFirst: vi.fn(), create: vi.fn() },
+    ticket: { findFirst: vi.fn(), findMany: vi.fn(), count: vi.fn(), create: vi.fn() },
     $transaction: vi.fn()
   }
 }));
@@ -319,5 +319,276 @@ describe('GET /api/related-systems (api-spec §3.3)', () => {
       orderBy: { name: 'asc' },
       select: { id: true, name: true }
     });
+  });
+});
+
+/**
+ * API-04 / API-06 / API-13 — GET /api/tickets (AC-04, AC-10, AC-15, BR-04).
+ *
+ * These assert the *contract*, not Prisma: the mock returns whatever it is told
+ * to, so what is checked is the `where` / `orderBy` / `skip` / `take` the route
+ * builds from the query string, and the envelope it builds from the result.
+ *
+ * The ownership assertions matter most. A `where` that had lost its
+ * `requesterId` would still return rows here — the mock does not care — so
+ * every list test inspects the clause the route actually sent rather than
+ * trusting the response body alone.
+ */
+
+function ticketRow(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'aaaaaaaa-1111-4222-8333-444455556666',
+    ticketNumber: 'TKT-2026-000001',
+    summary: 'Laptop battery drains quickly',
+    status: 'New',
+    priority: 'Medium',
+    createdAt: new Date('2026-08-23T04:15:00.000Z'),
+    updatedAt: new Date('2026-08-23T04:15:00.000Z'),
+    category: { id: CATEGORY_ID, name: 'Hardware' },
+    relatedSystem: { id: RELATED_SYSTEM_ID, name: 'Corporate Laptop' },
+    attachments: [],
+    ...overrides
+  };
+}
+
+function listTickets(queryString = '', requesterId: string | null = REQUESTER_ID) {
+  const pending = request(app).get('/api/tickets' + queryString);
+  return requesterId === null ? pending : pending.set('X-Requester-Id', requesterId);
+}
+
+/** The arguments the route handed to `findMany` on its most recent call. */
+function lastFindManyArgs(): Record<string, any> {
+  const calls = vi.mocked(prisma.ticket.findMany).mock.calls;
+  return calls[calls.length - 1][0] as Record<string, any>;
+}
+
+function givenTickets(rows: unknown[], totalItems = rows.length) {
+  vi.mocked(prisma.ticket.findMany).mockResolvedValue(rows as never);
+  vi.mocked(prisma.ticket.count).mockResolvedValue(totalItems as never);
+}
+
+describe('GET /api/tickets — ownership scoping (API-04, AC-04, BR-04)', () => {
+  it('returns the requester tickets under a data key with pagination metadata', async () => {
+    givenTickets([ticketRow()]);
+
+    const res = await listTickets();
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].ticketNumber).toBe('TKT-2026-000001');
+    expect(res.body.pagination).toEqual({
+      page: 1,
+      pageSize: 10,
+      totalItems: 1,
+      totalPages: 1,
+      hasNextPage: false,
+      hasPreviousPage: false
+    });
+  });
+
+  it('scopes both the page and the count to the requester from X-Requester-Id', async () => {
+    givenTickets([]);
+
+    await listTickets();
+
+    expect(lastFindManyArgs().where).toMatchObject({ requesterId: REQUESTER_ID });
+    expect(vi.mocked(prisma.ticket.count).mock.calls[0][0].where).toMatchObject({
+      requesterId: REQUESTER_ID
+    });
+  });
+
+  it('ignores a requesterId supplied in the query string', async () => {
+    givenTickets([]);
+
+    await listTickets('?requesterId=' + OTHER_REQUESTER_ID);
+
+    expect(lastFindManyArgs().where.requesterId).toBe(REQUESTER_ID);
+    expect(JSON.stringify(lastFindManyArgs().where)).not.toContain(OTHER_REQUESTER_ID);
+  });
+
+  it('counts only active attachments on each list item', async () => {
+    givenTickets([ticketRow({ attachments: [{ id: 'x' }, { id: 'y' }] })]);
+
+    const res = await listTickets();
+
+    expect(res.body.data[0].attachmentCount).toBe(2);
+    expect(res.body.data[0]).not.toHaveProperty('attachments');
+  });
+
+  it('returns 400 REQUESTER_REQUIRED without the header', async () => {
+    const res = await listTickets('', null);
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('REQUESTER_REQUIRED');
+    expect(prisma.ticket.findMany).not.toHaveBeenCalled();
+  });
+
+  it('returns 403 FORBIDDEN when the header names an unknown or inactive requester', async () => {
+    vi.mocked(prisma.requesterUser.findFirst).mockResolvedValueOnce(null);
+
+    const res = await listTickets('', OTHER_REQUESTER_ID);
+
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('FORBIDDEN');
+    expect(prisma.ticket.findMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('GET /api/tickets — search, filter, sort, pagination (API-06, AC-10)', () => {
+  beforeEach(() => {
+    givenTickets([ticketRow()], 34);
+  });
+
+  it('defaults to newest first, page 1, page size 10, tie-broken by id', async () => {
+    await listTickets();
+
+    const args = lastFindManyArgs();
+    expect(args.orderBy).toEqual([{ createdAt: 'desc' }, { id: 'asc' }]);
+    expect(args.skip).toBe(0);
+    expect(args.take).toBe(10);
+  });
+
+  it('matches search case-insensitively against ticket number, summary and description', async () => {
+    await listTickets('?search=BATTERY');
+
+    expect(lastFindManyArgs().where.OR).toEqual([
+      { ticketNumber: { contains: 'BATTERY', mode: 'insensitive' } },
+      { summary: { contains: 'BATTERY', mode: 'insensitive' } },
+      { description: { contains: 'BATTERY', mode: 'insensitive' } }
+    ]);
+  });
+
+  it('trims the search term and ignores one that is only whitespace', async () => {
+    await listTickets('?search=%20%20printer%20%20');
+    expect(lastFindManyArgs().where.OR[1]).toEqual({
+      summary: { contains: 'printer', mode: 'insensitive' }
+    });
+
+    await listTickets('?search=%20%20%20');
+    expect(lastFindManyArgs().where).not.toHaveProperty('OR');
+  });
+
+  it('filters by category and status alongside the ownership clause', async () => {
+    await listTickets('?category=' + CATEGORY_ID + '&status=New');
+
+    expect(lastFindManyArgs().where).toEqual({
+      requesterId: REQUESTER_ID,
+      categoryId: CATEGORY_ID,
+      status: 'New'
+    });
+  });
+
+  it.each([
+    ['createdAt:asc', [{ createdAt: 'asc' }, { id: 'asc' }]],
+    ['ticketNumber:asc', [{ ticketNumber: 'asc' }, { id: 'asc' }]],
+    ['ticketNumber:desc', [{ ticketNumber: 'desc' }, { id: 'asc' }]],
+    ['priority:desc', [{ priority: 'desc' }, { id: 'asc' }]],
+    ['priority:asc', [{ priority: 'asc' }, { id: 'asc' }]]
+  ])('translates sort=%s into the matching orderBy', async (sort, expected) => {
+    await listTickets('?sort=' + sort);
+
+    expect(lastFindManyArgs().orderBy).toEqual(expected);
+  });
+
+  it('pages with skip/take and reports the page metadata', async () => {
+    const res = await listTickets('?page=3&pageSize=10');
+
+    const args = lastFindManyArgs();
+    expect(args.skip).toBe(20);
+    expect(args.take).toBe(10);
+    expect(res.body.pagination).toEqual({
+      page: 3,
+      pageSize: 10,
+      totalItems: 34,
+      totalPages: 4,
+      hasNextPage: true,
+      hasPreviousPage: true
+    });
+  });
+
+  it('marks the last page as having no next page', async () => {
+    const res = await listTickets('?page=4&pageSize=10');
+
+    expect(res.body.pagination.hasNextPage).toBe(false);
+    expect(res.body.pagination.hasPreviousPage).toBe(true);
+  });
+
+  it('honours a larger page size', async () => {
+    const res = await listTickets('?pageSize=50');
+
+    expect(lastFindManyArgs().take).toBe(50);
+    expect(res.body.pagination).toMatchObject({ pageSize: 50, totalPages: 1 });
+  });
+
+  it('answers 200 with an empty page beyond the last one, not 404', async () => {
+    givenTickets([], 34);
+
+    const res = await listTickets('?page=99');
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual([]);
+    expect(res.body.pagination.totalItems).toBe(34);
+  });
+
+  it.each([
+    ['category=not-a-uuid', 'category'],
+    ['status=Closed', 'status'],
+    ['sort=summary:asc', 'sort'],
+    ['page=0', 'page'],
+    ['page=abc', 'page'],
+    ['pageSize=25', 'pageSize']
+  ])('rejects %s with a 400 naming the parameter', async (query, field) => {
+    const res = await listTickets('?' + query);
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_FAILED');
+    expect(res.body.error.fields).toHaveProperty(field);
+    expect(prisma.ticket.findMany).not.toHaveBeenCalled();
+  });
+
+  it('rejects a search term longer than 150 characters', async () => {
+    const res = await listTickets('?search=' + 'a'.repeat(151));
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.fields).toHaveProperty('search');
+  });
+
+  it('returns a safe 500 envelope when the query fails', async () => {
+    vi.mocked(prisma.ticket.findMany).mockRejectedValueOnce(
+      new Error('relation "Ticket" does not exist')
+    );
+
+    const res = await listTickets();
+
+    expect(res.status).toBe(500);
+    expect(res.body.error.code).toBe('INTERNAL_ERROR');
+    expect(JSON.stringify(res.body)).not.toContain('relation "Ticket" does not exist');
+  });
+});
+
+describe('GET /api/tickets — filter that matches nothing (API-13, AC-15)', () => {
+  it('returns 200 with an empty array and totalItems 0', async () => {
+    givenTickets([], 0);
+
+    const res = await listTickets('?search=nothing-matches-this');
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual([]);
+    expect(res.body.pagination).toEqual({
+      page: 1,
+      pageSize: 10,
+      totalItems: 0,
+      totalPages: 0,
+      hasNextPage: false,
+      hasPreviousPage: false
+    });
+  });
+
+  it('keeps the ownership clause on a filter that matches nothing', async () => {
+    givenTickets([], 0);
+
+    await listTickets('?category=' + CATEGORY_ID + '&status=New&search=zzz');
+
+    expect(lastFindManyArgs().where.requesterId).toBe(REQUESTER_ID);
   });
 });
