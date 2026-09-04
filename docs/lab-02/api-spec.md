@@ -329,7 +329,7 @@ Upload one attachment to an owned ticket (FR-05).
 | Ticket has < 5 **active** attachments | `400 ATTACHMENT_LIMIT_REACHED` (AC-08) |
 
 - The type check uses the sniffed content type, not the client-supplied extension — a `.pdf` rename of an executable is rejected.
-- The size limit is enforced by the upload middleware so an oversized body is refused while streaming, not after being buffered.
+- The order above is the whole point of the table: a file that is both oversized **and** of a disallowed type answers `415`, not `413`. That rules out enforcing the size cap in the upload middleware, which would abort the request before anything could look at the content. The multipart reader instead retains only the first `5 MB + 1` bytes and counts the rest, so memory stays bounded while both checks still have what they need.
 - Soft-removed attachments do **not** count toward the limit of five.
 - The original `fileName` is stored for display but never used as a path. Files are written under a generated uuid name, so `../` and reserved Windows names cannot escape the storage directory.
 

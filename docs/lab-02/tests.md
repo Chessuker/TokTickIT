@@ -202,6 +202,29 @@ the real screens through Playwright and passed 6/6:
 | E2E-03 attachment ownership | Requester B gets `403` from both `GET /api/tickets/:id` and `GET /api/attachments/:id/download`, with no `Content-Disposition` |
 | E2E-03 round trip | Switching back to the owner restores access to the same URL |
 
+Peer review on the Issue #6 PR caught a real ordering bug: a file that was both
+oversized **and** of a disallowed type answered `413` instead of the more
+specific `415`. The check order in the route was right, but `multer`'s
+`limits.fileSize` aborted the request before the route could look at the content
+at all. The fix replaces that limit with a storage engine that retains the first
+`5 MB + 1` bytes and counts the rest, so the type check always has the signature
+and the size check always has the true byte count, with memory still bounded.
+Six regression tests now pin the order, and the combinations were re-checked
+over real HTTP against the running API:
+
+| Request | Response |
+| --- | --- |
+| 6 MB `.txt`, no signature | `415 UNSUPPORTED_MEDIA_TYPE` |
+| 6 MB valid PNG | `413 FILE_TOO_LARGE` |
+| 50 MB valid PNG | `413 FILE_TOO_LARGE` |
+| Small `.txt` | `415 UNSUPPORTED_MEDIA_TYPE` |
+| 6 MB PNG into another requester's ticket | `403 FORBIDDEN` |
+| Small valid PNG | `201 Created` |
+
+The refused upload also drains the request body before answering. Without that
+the socket is reset while the client is still sending, and a large refused file
+surfaces as a network error rather than as the `403` or `404` it should be.
+
 Confirmed live in addition: the type check reads the file's leading bytes rather
 than its name or `Content-Type`, so an executable renamed to `.pdf` is refused
 with `415`; stored files are written under a generated uuid name, so a file
@@ -224,7 +247,7 @@ The Answer Part 8 screenshots are collected in
 
 | Suite | Command | Files | Tests | Passed | Failed | Date |
 | --- | --- | --- | --- | --- | --- | --- |
-| Backend (unit + API) | `npm run test:server` | 6 | 124 | 124 | 0 | 2026-09-04 |
+| Backend (unit + API) | `npm run test:server` | 6 | 130 | 130 | 0 | 2026-09-04 |
 | Frontend (component) | `npm run test:client` | 6 | 80 | 80 | 0 | 2026-09-04 |
 | End-to-end | `npm run test:e2e` | 2 | 6 | 6 | 0 | 2026-09-04 |
 

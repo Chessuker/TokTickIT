@@ -486,3 +486,70 @@ describe('GET /api/attachments/:id — metadata (BR-10)', () => {
     expect(res.body.storagePath).toBeUndefined();
   });
 });
+
+/**
+ * The check order of api-spec.md §3.7, exercised where it actually matters:
+ * requests that break more than one rule at once. Reported in peer review on
+ * Issue #6, where an oversized file of a disallowed type answered `413` because
+ * the upload middleware aborted the stream before anything could look at the
+ * content.
+ */
+describe('POST /api/tickets/:id/attachments — check order (AC-06, AC-07)', () => {
+  const oversized = (head: Buffer) =>
+    Buffer.concat([head, Buffer.alloc(MAX_FILE_BYTES, 0x41)]);
+
+  it('answers 415, not 413, for a file that is both oversized and the wrong type', async () => {
+    const res = await upload(oversized(Buffer.from('plain text, no signature')), 'huge.txt', 'text/plain');
+
+    expect(res.status).toBe(415);
+    expect(res.body.error.code).toBe('UNSUPPORTED_MEDIA_TYPE');
+  });
+
+  it('answers 415 for an oversized executable renamed to .pdf', async () => {
+    const executable = Buffer.from([0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00]);
+
+    const res = await upload(oversized(executable), 'invoice.pdf', 'application/pdf');
+
+    expect(res.status).toBe(415);
+    expect(res.body.error.code).toBe('UNSUPPORTED_MEDIA_TYPE');
+  });
+
+  it('still answers 413 when the only broken rule is the size', async () => {
+    const res = await upload(oversized(PNG_BYTES), 'huge.png', 'image/png');
+
+    expect(res.status).toBe(413);
+    expect(res.body.error.code).toBe('FILE_TOO_LARGE');
+  });
+
+  it('reports the real size of a body far past the limit without buffering it', async () => {
+    // Ten times the limit. The storage engine retains only MAX_FILE_BYTES + 1
+    // bytes, so the assertion below proves `size` is counted, not measured off
+    // the buffer.
+    const enormous = Buffer.concat([PNG_BYTES, Buffer.alloc(MAX_FILE_BYTES * 10, 0x41)]);
+
+    const res = await upload(enormous, 'enormous.png', 'image/png');
+
+    expect(res.status).toBe(413);
+    expect(prisma.attachment.create).not.toHaveBeenCalled();
+  });
+
+  it('checks ownership before it accepts any of the body', async () => {
+    vi.mocked(prisma.ticket.findFirst).mockResolvedValue(
+      ticketRow({ requesterId: OTHER_REQUESTER_ID })
+    );
+
+    const res = await upload(oversized(PNG_BYTES), 'huge.png', 'image/png');
+
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('FORBIDDEN');
+  });
+
+  it('checks the type before the attachment limit', async () => {
+    vi.mocked(prisma.attachment.count).mockResolvedValue(5);
+
+    const res = await upload(Buffer.from('just some notes'), 'notes.txt', 'text/plain');
+
+    expect(res.status).toBe(415);
+    expect(res.body.error.code).toBe('UNSUPPORTED_MEDIA_TYPE');
+  });
+});

@@ -325,33 +325,79 @@ const TICKET_DETAIL_ATTACHMENTS = {
   select: ATTACHMENT_SELECT
 };
 
+/** A refusal a route has decided on but has not answered yet. */
+interface Refusal {
+  status: number;
+  code: 'NOT_FOUND' | 'FORBIDDEN';
+  message: string;
+}
+
 /**
- * Loads one ticket and answers the ownership question in a single place
- * (BR-04). Every route below funnels through the same decision, so a new one
- * cannot accidentally skip it.
+ * Answers the ownership question for one ticket in a single place (BR-04), and
+ * hands the verdict back rather than writing it. Every route below funnels
+ * through this, so a new one cannot accidentally skip the check.
  *
- * Returns `null` after answering the response; a non-null ticket means the
- * caller owns it and the route may continue.
+ * The refusal is returned instead of sent because the upload route has to drain
+ * the request body before it can answer at all; every other caller just passes
+ * it straight to `loadOwnedTicket`.
  */
-async function loadOwnedTicket(res: Response, ticketId: string) {
+async function findTicketForRequester(res: Response, ticketId: string) {
   const ticket = await prisma.ticket.findFirst({
     where: { id: ticketId },
     select: { ...TICKET_DETAIL_SELECT, requesterId: true, attachments: TICKET_DETAIL_ATTACHMENTS }
   });
 
   if (!ticket) {
-    sendError(res, 404, 'NOT_FOUND', 'Ticket not found.');
-    return null;
+    return { refusal: { status: 404, code: 'NOT_FOUND', message: 'Ticket not found.' } as Refusal };
   }
 
   if (ticket.requesterId !== getRequester(res).id) {
     // 403 rather than 404: the ticket exists, and the refusal is about
     // ownership. api-spec.md §3.6 fixes this choice.
-    sendError(res, 403, 'FORBIDDEN', 'This ticket belongs to another requester.');
+    return {
+      refusal: {
+        status: 403,
+        code: 'FORBIDDEN',
+        message: 'This ticket belongs to another requester.'
+      } as Refusal
+    };
+  }
+
+  return { ticket };
+}
+
+/**
+ * The read-side wrapper: resolves the ticket and answers the refusal itself.
+ * Returns `null` once the response has been written.
+ */
+async function loadOwnedTicket(res: Response, ticketId: string) {
+  const { ticket, refusal } = await findTicketForRequester(res, ticketId);
+
+  if (refusal) {
+    sendError(res, refusal.status, refusal.code, refusal.message);
     return null;
   }
 
-  return ticket;
+  return ticket ?? null;
+}
+
+/**
+ * Waits for a request body nobody is going to read.
+ *
+ * Answering an upload before its body has arrived resets the socket, and the
+ * client sees a network error rather than the refusal. Discarding the bytes
+ * first costs bandwidth but nothing else: they are dropped as they arrive, not
+ * buffered, and no file is ever written for a request that was refused.
+ */
+function drainRequest(req: express.Request): Promise<void> {
+  if (req.complete) return Promise.resolve();
+
+  return new Promise((resolve) => {
+    req.resume();
+    req.once('end', resolve);
+    req.once('error', () => resolve());
+    req.once('close', () => resolve());
+  });
 }
 
 /** Strips the internal `requesterId` and adds the contract's derived fields. */
@@ -416,15 +462,24 @@ app.get('/api/tickets/:id', requireRequester, async (req, res) => {
 // several rules at once is told about the most specific one.
 app.post('/api/tickets/:id/attachments', requireRequester, async (req, res) => {
   try {
-    const ticket = await loadOwnedTicket(res, String(req.params.id));
-    if (!ticket) return;
+    const { ticket, refusal } = await findTicketForRequester(res, String(req.params.id));
 
-    const outcome = await receiveUpload(req, res);
+    if (!ticket) {
+      // The bytes are still arriving into a request nobody will read. They are
+      // discarded before the refusal is written, so the client receives the
+      // 404/403 instead of a reset connection.
+      const { status, code, message } = refusal ?? {
+        status: 404,
+        code: 'NOT_FOUND' as const,
+        message: 'Ticket not found.'
+      };
 
-    if (outcome.status === 'too_large') {
-      sendError(res, 413, 'FILE_TOO_LARGE', FILE_TOO_LARGE_MESSAGE);
+      await drainRequest(req);
+      sendError(res, status, code, message);
       return;
     }
+
+    const outcome = await receiveUpload(req, res);
 
     if (outcome.status === 'invalid') {
       sendValidationFailed(res, { file: outcome.message });
@@ -455,8 +510,10 @@ app.post('/api/tickets/:id/attachments', requireRequester, async (req, res) => {
       return;
     }
 
-    // Multer aborts an oversized stream before this point; the repeat check
-    // covers the case where the limit is ever relaxed in configuration.
+    // Size is checked *after* the type, so a file that breaks both rules is
+    // answered with the more specific `415` (api-spec.md §3.7). `file.size` is
+    // the real byte count even though the buffer is truncated, so a 50 MB
+    // upload is still reported at 50 MB.
     if (file.size > MAX_FILE_BYTES) {
       sendError(res, 413, 'FILE_TOO_LARGE', FILE_TOO_LARGE_MESSAGE);
       return;
