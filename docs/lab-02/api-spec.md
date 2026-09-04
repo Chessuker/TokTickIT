@@ -329,7 +329,7 @@ Upload one attachment to an owned ticket (FR-05).
 | Ticket has < 5 **active** attachments | `400 ATTACHMENT_LIMIT_REACHED` (AC-08) |
 
 - The type check uses the sniffed content type, not the client-supplied extension — a `.pdf` rename of an executable is rejected.
-- The size limit is enforced by the upload middleware so an oversized body is refused while streaming, not after being buffered.
+- The order above is the whole point of the table: a file that is both oversized **and** of a disallowed type answers `415`, not `413`. That rules out enforcing the size cap in the upload middleware, which would abort the request before anything could look at the content. The multipart reader instead retains only the first `5 MB + 1` bytes and counts the rest, so memory stays bounded while both checks still have what they need.
 - Soft-removed attachments do **not** count toward the limit of five.
 - The original `fileName` is stored for display but never used as a path. Files are written under a generated uuid name, so `../` and reserved Windows names cannot escape the storage directory.
 
@@ -444,7 +444,7 @@ Planned tests for this contract are listed in [tests.md](tests.md).
 
 | ID | Decision | Status |
 | --- | --- | --- |
-| API-D-01 | Attachment storage location — local disk under `server/uploads/` vs. object storage | _TBD_ |
+| API-D-01 | Attachment storage location — local disk under `server/uploads/` vs. object storage | **Resolved (Issue #6): local disk.** Files are written under `server/uploads/` (override with `UPLOAD_DIR`) with a generated uuid name; the row stores that name, never a path, so the original file name can never reach the file system. Object storage is a Lab 3 concern and only changes the two helpers that read and write the bytes |
 | API-D-02 | Whether `search` also matches the category or related-system name | **Resolved (Issue #5): no.** `search` covers `summary`, `description` and `ticketNumber` only. Category and Related System already have their own filter, and folding them into the free-text match would make a search for "network" return every Network ticket regardless of what it says |
 | API-D-03 | Rate limiting on upload | Out of scope for Lab 2 |
 | API-D-04 | Response caching headers for reference data | _TBD_ |

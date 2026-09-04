@@ -110,6 +110,18 @@ function CreateTicketForm() {
   const [dragging, setDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  /**
+   * What became of the staged files after the ticket was created. Attachments
+   * are uploaded one request at a time *after* the ticket exists (api-spec.md
+   * §3.7), so a rejected file can never cost the requester the ticket — the
+   * compensation is "keep the ticket, report the files".
+   */
+  const [attachmentReport, setAttachmentReport] = useState<{
+    uploaded: number
+    failed: RejectedFile[]
+  } | null>(null)
+  const [uploadingFiles, setUploadingFiles] = useState(false)
+
   const loadOptions = useCallback(async () => {
     setLoadingOptions(true)
     setOptionsError(null)
@@ -164,6 +176,46 @@ function CreateTicketForm() {
     setFiles((current) => current.filter((_, i) => i !== index))
   }
 
+  /**
+   * Attaches the staged files to a ticket that already exists. Each file is its
+   * own request, so one rejection names itself instead of taking the rest with
+   * it, and the ticket stands either way (FR-07).
+   */
+  const uploadStagedFiles = async (ticketId: string) => {
+    if (files.length === 0) return
+
+    setUploadingFiles(true)
+
+    const failed: RejectedFile[] = []
+    let uploaded = 0
+
+    for (const file of files) {
+      const form = new FormData()
+      form.append('file', file)
+
+      try {
+        const res = await fetch(`${API_URL}/api/tickets/${ticketId}/attachments`, {
+          method: 'POST',
+          headers: { 'X-Requester-Id': requester?.id ?? '' },
+          body: form,
+        })
+
+        if (res.status === 201) {
+          uploaded += 1
+          continue
+        }
+
+        const body = await res.json().catch(() => null)
+        failed.push({ name: file.name, reason: body?.error?.message ?? 'The file could not be attached.' })
+      } catch {
+        failed.push({ name: file.name, reason: 'Could not reach the server.' })
+      }
+    }
+
+    setUploadingFiles(false)
+    setAttachmentReport({ uploaded, failed })
+  }
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
 
@@ -199,6 +251,7 @@ function CreateTicketForm() {
       if (res.status === 201) {
         const ticket = await res.json()
         setCreated(ticket)
+        await uploadStagedFiles(ticket.id)
         return
       }
 
@@ -230,6 +283,7 @@ function CreateTicketForm() {
     setFormError(null)
     setFiles([])
     setRejectedFiles([])
+    setAttachmentReport(null)
   }
 
   const errorProps = (field: string) =>
@@ -255,12 +309,34 @@ function CreateTicketForm() {
           </div>
         </div>
 
-        {files.length > 0 && (
+        {uploadingFiles && (
+          <p className="zg-hint mt-3" role="status">
+            <span className="zg-spinner-sm" aria-hidden="true" /> Attaching {files.length} file
+            {files.length === 1 ? '' : 's'}...
+          </p>
+        )}
+
+        {attachmentReport && attachmentReport.uploaded > 0 && (
+          <p className="zg-hint mt-3" role="status">
+            {attachmentReport.uploaded} file{attachmentReport.uploaded === 1 ? '' : 's'} attached to
+            this ticket.
+          </p>
+        )}
+
+        {attachmentReport && attachmentReport.failed.length > 0 && (
           <div className="zg-callout zg-callout-warning mt-3" role="status">
             <span aria-hidden="true">⚠️</span>
             <div>
-              {files.length} selected file{files.length === 1 ? '' : 's'} could not be attached yet — attachment
-              upload arrives with the attachment lifecycle. The ticket itself is saved.
+              The ticket is saved, but {attachmentReport.failed.length} file
+              {attachmentReport.failed.length === 1 ? '' : 's'} could not be attached. Open the
+              ticket to try again.
+              <ul className="zg-rejected-list">
+                {attachmentReport.failed.map((file) => (
+                  <li key={file.name} className="zg-field-error">
+                    {file.name}: {file.reason}
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         )}
