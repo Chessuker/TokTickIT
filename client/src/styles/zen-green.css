@@ -1026,3 +1026,190 @@ body {
     justify-content: center;
   }
 }
+
+/* ---------- Ticket Detail (ui-spec §3.4) ---------- */
+
+.zg-breadcrumb {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+  color: var(--zg-text-muted);
+}
+
+.zg-breadcrumb a {
+  color: var(--zg-secondary);
+  font-weight: 600;
+}
+
+.zg-detail-headline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.zg-section-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--zg-text);
+}
+
+.zg-subsection-title {
+  margin: 1.25rem 0 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--zg-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/*
+ * Read-only fields (AC-05). Deliberately a definition list and not a disabled
+ * form: a greyed-out input still reads as "editable, but not right now", which
+ * is the wrong promise on a screen where nothing is ever editable.
+ */
+.zg-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem 1.5rem;
+  margin: 1rem 0 0;
+}
+
+.zg-detail-item-wide {
+  grid-column: 1 / -1;
+}
+
+.zg-detail-label {
+  margin: 0 0 0.2rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--zg-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.zg-detail-value {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--zg-text);
+  overflow-wrap: anywhere;
+}
+
+.zg-detail-description {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.55;
+}
+
+/* ---------- Attachment rows on the detail screen ---------- */
+
+.zg-file-row {
+  flex-wrap: wrap;
+}
+
+.zg-file-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.zg-file-actions .zg-file-remove {
+  margin-left: 0;
+}
+
+/*
+ * A removed attachment is muted rather than hidden (BR-10, V-10): the row is
+ * still there, still names the file, and carries the reason and the timestamp —
+ * what it loses is the Download button and any visual claim on attention.
+ */
+.zg-file-row-removed {
+  background: var(--zg-bg);
+  border-style: dashed;
+  color: var(--zg-text-muted);
+}
+
+.zg-file-row-removed .zg-file-name {
+  font-weight: 600;
+  text-decoration: line-through;
+}
+
+.zg-badge-removed {
+  background: #f3f4f6;
+  border-color: var(--zg-text-muted);
+  color: #374151;
+}
+
+.zg-file-removed-meta {
+  flex: 1 1 100%;
+  font-size: 0.82rem;
+  color: var(--zg-text-muted);
+}
+
+.zg-upload-zone {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--zg-border);
+}
+
+.zg-file-input {
+  display: block;
+  margin-top: 0.5rem;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--zg-text);
+}
+
+.zg-file-input:disabled {
+  color: var(--zg-text-muted);
+  cursor: not-allowed;
+}
+
+/* ---------- Access denied (AC-03) ---------- */
+
+.zg-state-denied {
+  border-color: var(--zg-error);
+}
+
+/* ---------- Soft-removal modal (ui-spec §3.4) ---------- */
+
+.zg-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(17, 24, 39, 0.45);
+}
+
+.zg-modal {
+  width: 100%;
+  max-width: 32rem;
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-border);
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
+  padding: 1.5rem;
+}
+
+@media (max-width: 767.98px) {
+  .zg-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .zg-file-actions {
+    margin-left: 0;
+    flex: 1 1 100%;
+  }
+
+  .zg-file-actions .zg-btn {
+    flex: 1 1 auto;
+  }
+
+  .zg-modal .zg-actions .zg-btn {
+    width: 100%;
+  }
+}

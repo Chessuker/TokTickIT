@@ -4,6 +4,7 @@ import RequesterSelector from './components/RequesterSelector'
 import RequireRequester from './components/RequireRequester'
 import CreateTicket from './pages/CreateTicket'
 import MyTickets from './pages/MyTickets'
+import TicketDetail from './pages/TicketDetail'
 import SystemStatus from './pages/SystemStatus'
 
 /**
@@ -21,6 +22,7 @@ function App() {
         <Route element={<AppShell />}>
           <Route path="/tickets" element={<MyTickets />} />
           <Route path="/tickets/new" element={<CreateTicket />} />
+          <Route path="/tickets/:id" element={<TicketDetail />} />
           <Route path="/system" element={<SystemStatus />} />
         </Route>
       </Route>

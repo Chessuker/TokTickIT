@@ -25,16 +25,16 @@ Unit and component tests run without a live database: the API suite mocks `src/d
 | API-02 | API | AC-01, BR-02 | New ticket status | Status is `New` | `server/tests/tickets.api.test.ts` | Pass |
 | API-03 | API | AC-01 | Create with missing required fields | `400` with field errors | `server/tests/tickets.api.test.ts` | Pass |
 | API-04 | API | AC-04 | List tickets for a requester | Only that requester's tickets returned | `server/tests/tickets.api.test.ts` | Pass |
-| API-05 | API | AC-03, BR-04 | Read another requester's ticket | `403 Forbidden` | `server/tests/tickets.api.test.ts` | _TBD_ |
+| API-05 | API | AC-03, BR-04 | Read another requester's ticket | `403 Forbidden` | `server/tests/tickets.api.test.ts` | Pass |
 | API-06 | API | AC-10 | `search`, `category`, `status`, `sort`, `page`, `pageSize` | Correct subset, order and page metadata | `server/tests/tickets.api.test.ts` | Pass |
 | API-12 | API | AC-14, BR-11 | `GET /api/requesters` | Active requesters only; inactive one absent | `server/tests/requesters.api.test.ts` | Pass |
 | API-13 | API | AC-15 | Filter that matches nothing | `200` with an empty page and correct total | `server/tests/tickets.api.test.ts` | Pass |
-| API-07 | API | AC-06, BR-06 | Upload a file larger than 5 MB | `413 Payload Too Large` | `server/tests/attachments.api.test.ts` | _TBD_ |
-| API-08 | API | AC-07, BR-05 | Upload a disallowed file type | `415 Unsupported Media Type` | `server/tests/attachments.api.test.ts` | _TBD_ |
-| API-09 | API | AC-08, BR-07 | Upload a 6th active attachment | Rejected with the limit error | `server/tests/attachments.api.test.ts` | _TBD_ |
-| API-10 | API | AC-09, BR-08 | Soft-remove an attachment with a reason | `200`; `isRemoved`, reason and timestamp set | `server/tests/attachments.api.test.ts` | _TBD_ |
-| API-11 | API | AC-09, BR-09 | Download a removed attachment | Rejected; file not served | `server/tests/attachments.api.test.ts` | _TBD_ |
-| API-14 | API | AC-09 | Soft-remove without a reason | `400`; attachment unchanged | `server/tests/attachments.api.test.ts` | _TBD_ |
+| API-07 | API | AC-06, BR-06 | Upload a file larger than 5 MB | `413 Payload Too Large` | `server/tests/attachments.api.test.ts` | Pass |
+| API-08 | API | AC-07, BR-05 | Upload a disallowed file type | `415 Unsupported Media Type` | `server/tests/attachments.api.test.ts` | Pass |
+| API-09 | API | AC-08, BR-07 | Upload a 6th active attachment | Rejected with the limit error | `server/tests/attachments.api.test.ts` | Pass |
+| API-10 | API | AC-09, BR-08 | Soft-remove an attachment with a reason | `200`; `isRemoved`, reason and timestamp set | `server/tests/attachments.api.test.ts` | Pass |
+| API-11 | API | AC-09, BR-09 | Download a removed attachment | Rejected; file not served | `server/tests/attachments.api.test.ts` | Pass |
+| API-14 | API | AC-09 | Soft-remove without a reason | `400`; attachment unchanged | `server/tests/attachments.api.test.ts` | Pass |
 | UNIT-01 | Unit | BR-01, AD-01 | Ticket number generator | Matches `TKT-YYYY-XXXXXX`, restarts per year, never repeats | `server/tests/ticketNumber.test.ts` | Pass |
 | UNIT-02 | Unit | AC-13, BR-12 | Seed run repeatedly | Later runs succeed; row counts unchanged; every write is an upsert on a unique key | `server/tests/seed.test.ts` | Pass |
 | UNIT-03 | Unit | FR-08 | Seed content | 4 categories, ≥6 related systems, ≥4 active and ≥1 inactive requester | `server/tests/seed.test.ts` | Pass |
@@ -42,14 +42,14 @@ Unit and component tests run without a live database: the API suite mocks `src/d
 | UI-02 | UI | AC-14, BR-03 | Selector content | Only active users listed; the "not a real login" notice is shown | `client/src/components/RequesterSelector.test.tsx` | Pass |
 | UI-03 | UI | AC-01 | Create Ticket form validation | Errors render under the offending fields; submit blocked | `client/src/components/CreateTicketForm.test.tsx` | Pass |
 | UI-04 | UI | AC-04, AC-10 | My Tickets list | Rows render; search and filter update the list | `client/src/components/MyTickets.test.tsx` | Pass |
-| UI-05 | UI | AC-05 | Ticket detail is read-only | No editable inputs rendered | `client/src/components/TicketDetail.test.tsx` | _TBD_ |
-| UI-06 | UI | AC-09 | Removal modal | Confirm disabled until a reason is entered | `client/src/components/TicketDetail.test.tsx` | _TBD_ |
+| UI-05 | UI | AC-05 | Ticket detail is read-only | No editable inputs rendered | `client/src/components/TicketDetail.test.tsx` | Pass |
+| UI-06 | UI | AC-09 | Removal modal | Confirm disabled until a reason is entered | `client/src/components/TicketDetail.test.tsx` | Pass |
 | UI-07 | UI | AC-02, FR-06, BR-13 | Change Requester | Switching requester re-fetches and shows only the new requester's tickets | `client/src/components/AppShell.test.tsx` | Pass |
 | UI-08 | UI | AC-12, FR-07 | Create form on backend failure | Error callout shown; entered values still present in the form | `client/src/components/CreateTicketForm.test.tsx` | Pass |
 | UI-09 | UI | AC-15 | Empty vs. no-results state | Correct distinct state rendered in each case | `client/src/components/MyTickets.test.tsx` | Pass |
 | E2E-01 | E2E | AC-01, AC-05 | Full create flow | Ticket number shown, detail page opens with the same data | `e2e/create-ticket.spec.ts` | _TBD_ |
-| E2E-02 | E2E | AC-09 | Attachment lifecycle | Upload, download, soft-remove with reason; removed file no longer downloadable | `e2e/attachments.spec.ts` | _TBD_ |
-| E2E-03 | E2E | AC-03 | Ownership guard | Opening another requester's ticket shows access denied | `e2e/ownership.spec.ts` | _TBD_ |
+| E2E-02 | E2E | AC-09 | Attachment lifecycle | Upload, download, soft-remove with reason; removed file no longer downloadable | `e2e/attachments.spec.ts` | Pass |
+| E2E-03 | E2E | AC-03 | Ownership guard | Opening another requester's ticket shows access denied | `e2e/ownership.spec.ts` | Pass |
 | E2E-04 | E2E | AC-02 | Select → change requester | Guard forces selection; switching requester swaps the visible ticket set | `e2e/requester-context.spec.ts` | _TBD_ |
 
 ---
@@ -87,9 +87,9 @@ Unit and component tests run without a live database: the API suite mocks `src/d
 | R-05 | Create Ticket | Mobile | _TBD_ | `docs/lab-02/screenshots/create-mobile.png` |
 | R-06 | My Tickets (table) | Desktop | Pass | `docs/lab-02/screenshots/list-desktop.png` |
 | R-07 | My Tickets (cards) | Mobile | Pass | `docs/lab-02/screenshots/list-mobile.png` |
-| R-08 | Ticket Detail | Desktop | _TBD_ | `docs/lab-02/screenshots/detail-desktop.png` |
-| R-09 | Ticket Detail | Mobile | _TBD_ | `docs/lab-02/screenshots/detail-mobile.png` |
-| R-10 | Removal modal | Mobile | _TBD_ | `docs/lab-02/screenshots/remove-modal-mobile.png` |
+| R-08 | Ticket Detail | Desktop | Pass | `docs/lab-02/screenshots/detail-desktop.png` |
+| R-09 | Ticket Detail | Mobile | Pass | `docs/lab-02/screenshots/detail-mobile.png` |
+| R-10 | Removal modal | Mobile | Pass | `docs/lab-02/screenshots/remove-modal-mobile.png` |
 | R-11 | Header / Change Requester | Mobile | _TBD_ | `docs/lab-02/screenshots/header-mobile.png` |
 | R-12 | My Tickets no-results state | Desktop | Pass | `docs/lab-02/screenshots/list-no-results.png` |
 
@@ -179,15 +179,56 @@ The Answer Part 7 screenshots are collected in
 [answer-part7-screenshots.md](answer-part7-screenshots.md) and were captured by
 `docs/lab-02/screenshots/capture-issue5.mjs` against that same live stack.
 
+### Issue #6 verification (Ticket Detail and attachment lifecycle)
+
+The seven attachment and ownership API tests run against a mocked Prisma client,
+so the suite still needs no database — but the file system is deliberately *not*
+mocked. `server/tests/attachments.api.test.ts` points `UPLOAD_DIR` at a
+temporary folder and lets the route write and read real bytes, because "the file
+reaches disk and comes back" is exactly what the download and soft-removal rules
+are about. The suite also asserts that a refused upload leaves the directory
+untouched, and that a soft-removed file is still on disk after the removal.
+
+The stack was then exercised **live** on 2026-09-04 — PostgreSQL 16 on :5433,
+the Express API on :5000 and Vite on :5173, seeded. `npm run test:e2e` drives
+the real screens through Playwright and passed 6/6:
+
+| E2E test | What it proves |
+| --- | --- |
+| E2E-02 upload → download → remove → refused | The whole lifecycle on one ticket, including a real file download whose bytes match what was uploaded |
+| E2E-02 API-level refusal | After removal, `GET /api/attachments/:id/download` answers `403` while `GET /api/attachments/:id` still answers `200` with the reason and timestamp |
+| E2E-02 disallowed type | A `.txt` upload is rejected and never appears in the list |
+| E2E-03 access denied | Requester B opening Requester A's ticket URL gets the access-denied screen with no ticket data on the page |
+| E2E-03 attachment ownership | Requester B gets `403` from both `GET /api/tickets/:id` and `GET /api/attachments/:id/download`, with no `Content-Disposition` |
+| E2E-03 round trip | Switching back to the owner restores access to the same URL |
+
+Confirmed live in addition: the type check reads the file's leading bytes rather
+than its name or `Content-Type`, so an executable renamed to `.pdf` is refused
+with `415`; stored files are written under a generated uuid name, so a file
+picked as `../../etc/passwd.png` cannot escape the upload directory; and
+`storagePath` never appears in any response body.
+
+Responsive check (V-03) on the detail screen, measured rather than eyeballed —
+`document.body.scrollWidth` against the viewport width:
+
+| Viewport | Layout rendered | Body scroll width | Horizontal overflow |
+| --- | --- | --- | --- |
+| 375 px | Single-column fields, stacked attachment actions | 375 px | 0 |
+| 1280 px | Four-column field grid | 1280 px | 0 |
+
+The Answer Part 8 screenshots are collected in
+[answer-part8-screenshots.md](answer-part8-screenshots.md) and were captured by
+`docs/lab-02/screenshots/capture-issue6.mjs` against that same live stack.
+
 ### Final run on `main`
 
 | Suite | Command | Files | Tests | Passed | Failed | Date |
 | --- | --- | --- | --- | --- | --- | --- |
-| Backend (unit + API) | `npm run test:server` | 5 | 87 | 87 | 0 | 2026-08-29 |
-| Frontend (component) | `npm run test:client` | 5 | 61 | 61 | 0 | 2026-08-29 |
-| End-to-end | `npm run test:e2e` | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
+| Backend (unit + API) | `npm run test:server` | 6 | 124 | 124 | 0 | 2026-09-04 |
+| Frontend (component) | `npm run test:client` | 6 | 80 | 80 | 0 | 2026-09-04 |
+| End-to-end | `npm run test:e2e` | 2 | 6 | 6 | 0 | 2026-09-04 |
 
-_Raw output / evidence: TBD._
+The end-to-end suite needs the stack up: `docker compose up -d`, `npm run prisma:migrate`, `npm run prisma:seed`. `playwright.config.ts` starts the API and Vite itself (reusing them if they are already running) but never the database, so a run cannot silently pass against an empty schema.
 
 ---
 

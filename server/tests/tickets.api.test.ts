@@ -592,3 +592,127 @@ describe('GET /api/tickets — filter that matches nothing (API-13, AC-15)', () 
     expect(lastFindManyArgs().where.requesterId).toBe(REQUESTER_ID);
   });
 });
+
+/**
+ * API-05 — GET /api/tickets/:id (AC-03, AC-05, BR-04).
+ *
+ * The detail route reads one row and compares its `requesterId` with the
+ * resolved header. The assertions below pin both halves of that: the owner sees
+ * the ticket, and Requester B gets `403` with no ticket data in the body.
+ */
+describe('GET /api/tickets/:id — ownership (API-05, AC-03, BR-04)', () => {
+  const TICKET_ID = 'c3d4e5f6-1111-4222-8333-444455556666';
+
+  function detailRow(overrides: Record<string, unknown> = {}) {
+    return {
+      ...createdTicket(),
+      requesterId: REQUESTER_ID,
+      attachments: [],
+      ...overrides
+    };
+  }
+
+  function getDetail(requesterId: string | null = REQUESTER_ID) {
+    const pending = request(app).get(`/api/tickets/${TICKET_ID}`);
+    return requesterId === null ? pending : pending.set('X-Requester-Id', requesterId);
+  }
+
+  it('returns the ticket to the requester who owns it', async () => {
+    vi.mocked(prisma.ticket.findFirst).mockResolvedValue(detailRow());
+
+    const res = await getDetail();
+
+    expect(res.status).toBe(200);
+    expect(res.body.ticketNumber).toBe('TKT-2026-000001');
+    expect(res.body.description).toBe(VALID_BODY.description);
+    expect(res.body.attachments).toEqual([]);
+    expect(res.body.attachmentCount).toBe(0);
+  });
+
+  it('answers 403 when Requester B reads Requester A\'s ticket', async () => {
+    vi.mocked(prisma.ticket.findFirst).mockResolvedValue(
+      detailRow({ requesterId: OTHER_REQUESTER_ID })
+    );
+
+    const res = await getDetail();
+
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('FORBIDDEN');
+  });
+
+  it('leaks no ticket content in the forbidden response', async () => {
+    vi.mocked(prisma.ticket.findFirst).mockResolvedValue(
+      detailRow({ requesterId: OTHER_REQUESTER_ID })
+    );
+
+    const res = await getDetail();
+    const body = JSON.stringify(res.body);
+
+    expect(body).not.toContain(VALID_BODY.summary);
+    expect(body).not.toContain(VALID_BODY.description);
+    expect(body).not.toContain('TKT-2026-000001');
+  });
+
+  it('never exposes the internal requesterId to the owner either', async () => {
+    vi.mocked(prisma.ticket.findFirst).mockResolvedValue(detailRow());
+
+    const res = await getDetail();
+
+    expect(res.body.requesterId).toBeUndefined();
+    expect(res.body.requester.id).toBe(REQUESTER_ID);
+  });
+
+  it('answers 404 for a ticket that does not exist', async () => {
+    vi.mocked(prisma.ticket.findFirst).mockResolvedValue(null);
+
+    const res = await getDetail();
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe('NOT_FOUND');
+  });
+
+  it('requires a selected requester before reading anything', async () => {
+    const res = await getDetail(null);
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('REQUESTER_REQUIRED');
+    expect(prisma.ticket.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('counts active attachments only and orders removed ones last', async () => {
+    vi.mocked(prisma.ticket.findFirst).mockResolvedValue(
+      detailRow({
+        attachments: [
+          {
+            id: 'a-1',
+            fileName: 'active.pdf',
+            mimeType: 'application/pdf',
+            sizeBytes: 1024,
+            uploadedAt: new Date('2026-08-23T05:00:00.000Z'),
+            isRemoved: false,
+            removedReason: null,
+            removedAt: null
+          },
+          {
+            id: 'a-2',
+            fileName: 'removed.png',
+            mimeType: 'image/png',
+            sizeBytes: 2048,
+            uploadedAt: new Date('2026-08-23T04:00:00.000Z'),
+            isRemoved: true,
+            removedReason: 'Wrong screenshot',
+            removedAt: new Date('2026-08-24T09:00:00.000Z')
+          }
+        ]
+      })
+    );
+
+    const res = await getDetail();
+
+    expect(res.status).toBe(200);
+    expect(res.body.attachmentCount).toBe(1);
+    expect(res.body.attachments[0].downloadUrl).toBe('/api/attachments/a-1/download');
+    expect(res.body.attachments[1].downloadUrl).toBeNull();
+    expect(res.body.attachments[1].removedReason).toBe('Wrong screenshot');
+  });
+});
