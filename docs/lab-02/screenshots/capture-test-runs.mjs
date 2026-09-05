@@ -22,6 +22,7 @@ const RUNS = [
   { file: 'server.txt', image: 'part3-test-server.png', title: 'Backend — unit and API tests' },
   { file: 'client.txt', image: 'part3-test-client.png', title: 'Frontend — component tests' },
   { file: 'e2e.txt', image: 'part3-test-e2e.png', title: 'End-to-end — Playwright' },
+  { file: 'git-history.txt', image: 'git-history.png', title: 'Branch and merge history on main' },
 ]
 
 const escape = (text) =>

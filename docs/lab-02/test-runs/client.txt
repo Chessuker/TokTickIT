@@ -1,3 +1,8 @@
+$ git rev-parse --abbrev-ref HEAD
+main
+$ git log --oneline -1
+9936b8c Merge pull request #33 from Chessuker/lab2-staging
+
 $ npm run test:client
 
 > toktickit@1.0.0 test:client
@@ -14,6 +19,6 @@ Not implemented: navigation to another Document
 
  Test Files  6 passed (6)
       Tests  80 passed (80)
-   Start at  12:05:01
-   Duration  15.12s (transform 1.47s, setup 2.00s, import 3.15s, tests 23.22s, environment 10.97s)
+   Start at  16:08:22
+   Duration  50.18s (transform 1.97s, setup 32.82s, import 16.25s, tests 23.38s, environment 168.15s)
 

@@ -1,0 +1,49 @@
+$ git log --graph --oneline --decorate -25
+*   9936b8c (HEAD -> main, origin/main, origin/HEAD) Merge pull request #33 from Chessuker/lab2-staging
+|\  
+| *   229659e (origin/lab2-staging) Merge pull request #32 from Chessuker/feature/7-ui-responsive-e2e
+| |\  
+| | * dad25b8 (origin/feature/7-ui-responsive-e2e, feature/7-ui-responsive-e2e) feature 7: refine zen green UI, responsive styles, and implement Playwright E2E tests
+| |/  
+| *   f097031 (lab2-staging) Merge pull request #31 from Chessuker/feature/6-ticket-detail-attachments
+| |\  
+| | * 4db72b0 (origin/feature/6-ticket-detail-attachments, feature/6-ticket-detail-attachments) fix MIME check
+| | * f7f2a07 feature 5: implement ticket detail view, attachment upload, download, soft removal, and ownership guards
+| |/  
+| *   accbb70 Merge pull request #30 from Chessuker/feature/5-my-tickets-list
+| |\  
+| | * 91ed7cb (origin/feature/5-my-tickets-list, feature/5-my-tickets-list) feature 5: implement My Tickets listing with search, filtering, pagination, and empty/no-results states
+| |/  
+| *   7f597a1 Merge pull request #29 from Chessuker/feature/4-create-ticket
+| |\  
+| | * 8fbcb0b (origin/feature/4-create-ticket) feature 4: implement ticket creation API, resilient create form UI, and automated tests
+* | |   f8d1155 Merge pull request #28 from Chessuker/feature/3-requester-context
+|\ \ \  
+| | |/  
+| |/|   
+| * | 3a7f601 (origin/feature/3-requester-context) feature 3: implement requester context, selector screen, and change requester shell action
+| |/  
+| *   d20a79e Merge pull request #27 from Chessuker/feature/2-db-schema-seed
+| |\  
+| | * 1ae37ec (origin/feature/2-db-schema-seed, feature/2-db-schema-seed) resolve feature2
+| | *   b07fd8e Merge branch 'lab2-staging' into feature/2-db-schema-seed
+| | |\  
+| | |/  
+| |/|   
+| * | 7a9224c Merge pull request #26 from Chessuker/feature/1-spec-docs
+|/| | 
+| * | 61089de (origin/feature/1-spec-docs) add api_spec and reviewer md
+| | * a7cbd3f fix md
+| | * f8302fc edit gitignore
+| | * 27939be feature2: implement database schema, idempotent seed data, and unit tests
+| |/  
+| * de27ca3 docs: complete sprint engineering spec, ui-spec, test plan, and ai-use tracking
+| * 5096b1d docs: complete sprint engineering spec, ui-spec, test plan, and ai-use tracking
+|/  
+* 4d334fa Fix repository link in README
+*   08d187f Merge pull request #15 from Chessuker/edit-md-lab1
+|\  
+| *   8086598 (origin/edit-md-lab1) Merge branch 'main' into edit-md-lab1
+| |\  
+| |/  
+|/|   
