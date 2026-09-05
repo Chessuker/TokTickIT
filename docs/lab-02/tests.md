@@ -289,6 +289,8 @@ width beside every capture.
 
 ### Final run on `main`
 
+Run on `main` at commit `9936b8c` (the merge of [#33](https://github.com/Chessuker/TokTickIT/pull/33), which brought `lab2-staging` into `main`), on 2026-09-05. Each log in [`test-runs/`](test-runs/) opens with `git rev-parse --abbrev-ref HEAD` and `git log --oneline -1`, so the branch and commit the suite ran against are part of the evidence rather than a claim beside it.
+
 | Suite | Command | Files | Tests | Passed | Failed | Date |
 | --- | --- | --- | --- | --- | --- | --- |
 | Backend (unit + API) | `npm run test:server` | 6 | 130 | 130 | 0 | 2026-09-05 |

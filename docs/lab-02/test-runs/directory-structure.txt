@@ -1,0 +1,129 @@
+├── .claude/
+│   └── launch.json
+├── client/
+│   ├── public/
+│   │   ├── favicon.svg
+│   │   └── icons.svg
+│   ├── src/
+│   │   ├── assets/
+│   │   │   ├── hero.png
+│   │   │   ├── react.svg
+│   │   │   └── vite.svg
+│   │   ├── components/
+│   │   │   ├── AppShell.test.tsx
+│   │   │   ├── AppShell.tsx
+│   │   │   ├── CategoryList.test.tsx
+│   │   │   ├── CategoryList.tsx
+│   │   │   ├── CreateTicketForm.test.tsx
+│   │   │   ├── CreateTicketForm.tsx
+│   │   │   ├── MyTickets.test.tsx
+│   │   │   ├── MyTickets.tsx
+│   │   │   ├── RequesterSelector.test.tsx
+│   │   │   ├── RequesterSelector.tsx
+│   │   │   ├── RequireRequester.tsx
+│   │   │   ├── TicketDetail.test.tsx
+│   │   │   └── TicketDetail.tsx
+│   │   ├── context/
+│   │   │   ├── requester.ts
+│   │   │   └── RequesterProvider.tsx
+│   │   ├── pages/
+│   │   │   ├── CreateTicket.tsx
+│   │   │   ├── MyTickets.tsx
+│   │   │   ├── SystemStatus.tsx
+│   │   │   └── TicketDetail.tsx
+│   │   ├── styles/
+│   │   │   └── zen-green.css
+│   │   ├── test/
+│   │   │   └── setup.ts
+│   │   ├── api.ts
+│   │   ├── App.css
+│   │   ├── App.tsx
+│   │   ├── attachments.ts
+│   │   ├── index.css
+│   │   ├── main.tsx
+│   │   └── useMediaQuery.ts
+│   ├── .gitignore
+│   ├── .oxlintrc.json
+│   ├── index.html
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── README.md
+│   ├── tsconfig.app.json
+│   ├── tsconfig.json
+│   ├── tsconfig.node.json
+│   └── vite.config.ts
+├── docs/
+│   ├── lab-01/
+│   │   ├── ai_use.md
+│   │   ├── reviewer.md
+│   │   └── tests.md
+│   └── lab-02/
+│       ├── test-runs/
+│       │   ├── client.txt
+│       │   ├── e2e.txt
+│       │   └── server.txt
+│       ├── ai-use.md
+│       ├── answer-part3-test-runs.md
+│       ├── answer-part6-screenshots.md
+│       ├── answer-part7-screenshots.md
+│       ├── answer-part8-screenshots.md
+│       ├── answer-part9-screenshots.md
+│       ├── api-spec.md
+│       ├── reviewer.md
+│       ├── specification.md
+│       ├── tests.md
+│       └── ui-spec.md
+├── e2e/
+│   ├── attachments.spec.ts
+│   ├── create-ticket.spec.ts
+│   ├── helpers.ts
+│   ├── ownership.spec.ts
+│   └── requester-context.spec.ts
+├── server/
+│   ├── prisma/
+│   │   ├── migrations/
+│   │   │   ├── 20260808160909_init/
+│   │   │   │   └── migration.sql
+│   │   │   └── 20260822000000_lab02_requester_ticketing/
+│   │   │       └── migration.sql
+│   │   └── schema.prisma
+│   ├── src/
+│   │   ├── app.ts
+│   │   ├── attachmentRules.ts
+│   │   ├── attachmentUpload.ts
+│   │   ├── db.ts
+│   │   ├── httpErrors.ts
+│   │   ├── index.ts
+│   │   ├── requesterContext.ts
+│   │   ├── seed.ts
+│   │   ├── seedData.ts
+│   │   ├── ticketListQuery.ts
+│   │   ├── ticketNumber.ts
+│   │   └── ticketValidation.ts
+│   ├── tests/
+│   │   ├── app.test.ts
+│   │   ├── attachments.api.test.ts
+│   │   ├── requesters.api.test.ts
+│   │   ├── seed.test.ts
+│   │   ├── ticketNumber.test.ts
+│   │   └── tickets.api.test.ts
+│   ├── .env.example
+│   ├── .gitignore
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── vitest.config.ts
+├── .env.example
+├── .gitattributes
+├── .gitignore
+├── docker-compose.yml
+├── Feature1.png
+├── Feature2.png
+├── Feature3.png
+├── Feature4.png
+├── KanbanLab1.png
+├── Lab_02_labsheet.pdf
+├── package-lock.json
+├── package.json
+├── playwright.config.ts
+└── README.md
