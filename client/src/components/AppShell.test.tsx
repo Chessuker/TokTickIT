@@ -233,7 +233,7 @@ describe('AppShell — switching requester (UI-07, AC-02, BR-13)', () => {
     await user.selectOptions(screen.getByLabelText(/development requester/i), JENNIFER.id)
     await user.click(screen.getByRole('button', { name: /continue/i }))
 
-    expect(await screen.findByText(new RegExp(`Showing tickets for ${JENNIFER.name}`, 'i')))
+    expect(await screen.findByText(new RegExp(`Tickets raised by ${JENNIFER.name}`, 'i')))
       .toBeInTheDocument()
 
     // Change requester, choose Sarah.
@@ -242,9 +242,9 @@ describe('AppShell — switching requester (UI-07, AC-02, BR-13)', () => {
     await user.selectOptions(screen.getByLabelText(/development requester/i), SARAH.id)
     await user.click(screen.getByRole('button', { name: /continue/i }))
 
-    expect(await screen.findByText(new RegExp(`Showing tickets for ${SARAH.name}`, 'i')))
+    expect(await screen.findByText(new RegExp(`Tickets raised by ${SARAH.name}`, 'i')))
       .toBeInTheDocument()
-    expect(screen.queryByText(new RegExp(`Showing tickets for ${JENNIFER.name}`, 'i')))
+    expect(screen.queryByText(new RegExp(`Tickets raised by ${JENNIFER.name}`, 'i')))
       .not.toBeInTheDocument()
   })
 })

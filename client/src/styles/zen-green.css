@@ -396,3 +396,944 @@ body {
     flex: 1;
   }
 }
+
+/* ---------- Form controls (ui-spec §2) ---------- */
+
+.zg-field {
+  margin-bottom: 1.25rem;
+}
+
+.zg-required {
+  color: var(--zg-error);
+  margin-left: 0.15rem;
+}
+
+.zg-input,
+.zg-textarea {
+  display: block;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--zg-text);
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-border);
+  border-radius: 6px;
+}
+
+.zg-textarea {
+  min-height: 8rem;
+  resize: vertical;
+}
+
+.zg-input:disabled,
+.zg-textarea:disabled {
+  background: #f3f4f6;
+  color: var(--zg-text-muted);
+  cursor: not-allowed;
+}
+
+/* V-08: the field border turns error-colored and the message sits under it. */
+.zg-input.is-invalid,
+.zg-textarea.is-invalid,
+.zg-select.is-invalid {
+  border-color: var(--zg-error);
+}
+
+.zg-field-error {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--zg-error);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.zg-hint {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--zg-text-muted);
+  font-size: 0.82rem;
+}
+
+/* ---------- Radio group ---------- */
+
+.zg-radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.zg-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--zg-border);
+  border-radius: 999px;
+  background: var(--zg-surface);
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+
+.zg-radio:has(input:checked) {
+  border-color: var(--zg-primary);
+  background: var(--zg-pale);
+  font-weight: 600;
+}
+
+.zg-radio input {
+  accent-color: var(--zg-primary);
+  margin: 0;
+}
+
+.zg-fieldset-legend {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0;
+}
+
+/* ---------- Attachment dropzone (ui-spec §3.2) ---------- */
+
+.zg-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  border: 2px dashed var(--zg-border);
+  border-radius: 8px;
+  background: var(--zg-bg);
+  color: var(--zg-text-muted);
+}
+
+.zg-dropzone.is-dragging {
+  border-color: var(--zg-primary);
+  background: var(--zg-pale);
+}
+
+.zg-file-list {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.zg-file-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--zg-border);
+  border-radius: 6px;
+  background: var(--zg-surface);
+  font-size: 0.9rem;
+}
+
+.zg-file-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.zg-file-size {
+  color: var(--zg-text-muted);
+  white-space: nowrap;
+}
+
+.zg-file-remove {
+  margin-left: auto;
+  background: transparent;
+  border: 0;
+  color: var(--zg-error);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+}
+
+.zg-rejected-list {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+}
+
+/* ---------- Success callout and badges ---------- */
+
+.zg-callout-success {
+  background: var(--zg-pale);
+  border-color: var(--zg-primary);
+  border-left-width: 4px;
+  color: #14532d;
+}
+
+.zg-ticket-number {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.zg-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid var(--zg-border);
+  background: var(--zg-pale);
+  color: #14532d;
+}
+
+.zg-form-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--zg-border);
+}
+
+.zg-spinner-sm {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-width: 2px;
+  border-color: rgba(255, 255, 255, 0.5);
+  border-top-color: #ffffff;
+}
+
+.zg-btn:disabled .zg-spinner-sm {
+  border-color: var(--zg-border);
+  border-top-color: var(--zg-text-muted);
+}
+
+@media (max-width: 767.98px) {
+  .zg-form-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .zg-form-actions .zg-btn {
+    width: 100%;
+  }
+}
+
+/* ---------- My Tickets list (ui-spec §3.3, Issue #5) ---------- */
+
+.zg-page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+/* Filter bar — search, Category, Status, Sort, Clear Filters. */
+.zg-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-border);
+  border-radius: 10px;
+  box-shadow: var(--zg-shadow);
+}
+
+.zg-filter {
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+
+.zg-filter-search {
+  flex: 2 1 18rem;
+}
+
+.zg-filter-action {
+  flex: 0 0 auto;
+}
+
+.zg-result-count {
+  margin: 0 0 0.65rem;
+  color: var(--zg-text-muted);
+  font-size: 0.88rem;
+}
+
+/* ---------- Desktop table (>= 768px) ---------- */
+
+/*
+ * V-03: the table scrolls inside its own container so a wide row can never
+ * push the page body sideways.
+ */
+.zg-table-wrap {
+  overflow-x: auto;
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-border);
+  border-radius: 10px;
+  box-shadow: var(--zg-shadow);
+}
+
+/*
+ * Fixed layout with the widths declared in the component's <colgroup>. Under
+ * auto layout the widest cell wins and the last columns fall off the page; the
+ * table wrapper still scrolls, so nothing is lost below the minimum width.
+ *
+ * The minimum is the width of the page container (1066 px at any desktop
+ * width, since the container is capped). Going wider would make the desktop
+ * table scroll and hide the Detail action; going narrower squeezes the
+ * percentage columns until a ticket number runs under the date beside it. The
+ * tablet breakpoint scrolls within this same width.
+ */
+.zg-table {
+  width: 100%;
+  min-width: 66rem;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.zg-table th,
+.zg-table td {
+  padding: 0.65rem 0.6rem;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--zg-border);
+  /* Fixed columns clip rather than push, so content has to be able to wrap. */
+  overflow-wrap: break-word;
+}
+
+/*
+ * Values that are single atoms — a ticket number, a badge, a date, a button —
+ * are never worth breaking across lines; their columns are sized to hold them.
+ * Only Summary and Category wrap.
+ */
+.zg-table .zg-cell-tight {
+  white-space: nowrap;
+}
+
+/*
+ * Headers wrap; cells do not. Ten columns only fit the 1100px container if
+ * "Requested Priority" is allowed two lines — forcing it onto one would push
+ * the last columns out of view and make every desktop read a horizontal scroll.
+ */
+.zg-table thead th {
+  background: var(--zg-pale);
+  color: #14532d;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: normal;
+  vertical-align: bottom;
+  /* Headers wrap between words but are never broken mid-word; the column
+     budget above is sized so each label's longest word fits. */
+  overflow-wrap: normal;
+}
+
+.zg-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.zg-table tbody tr:hover {
+  background: var(--zg-pale);
+}
+
+.zg-cell-summary {
+  font-weight: 500;
+}
+
+/*
+ * The ticket number is the hero of the success callout, where 1.15rem is right.
+ * In a ten-column row it is one identifier among many, and that size alone
+ * costs enough width to push the last columns off screen.
+ */
+.zg-table .zg-ticket-number {
+  font-size: 0.82rem;
+}
+
+.zg-cell-date {
+  color: var(--zg-text-muted);
+}
+
+.zg-btn-sm {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.83rem;
+}
+
+.zg-not-assigned {
+  color: var(--zg-text-muted);
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+/* ---------- Mobile card list (< 768px) ---------- */
+
+.zg-ticket-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.zg-ticket-card {
+  display: block;
+  padding: 0.9rem 1rem;
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-border);
+  border-radius: 10px;
+  box-shadow: var(--zg-shadow);
+  color: var(--zg-text);
+  text-decoration: none;
+}
+
+.zg-ticket-card:hover {
+  border-color: var(--zg-secondary);
+  background: var(--zg-pale);
+  color: var(--zg-text);
+}
+
+.zg-ticket-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.zg-ticket-card-summary {
+  margin: 0.45rem 0;
+  font-weight: 600;
+  /* Long summaries wrap instead of widening the card (V-03, V-04). */
+  overflow-wrap: anywhere;
+}
+
+.zg-ticket-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+
+.zg-ticket-card-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 0.75rem;
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.zg-ticket-card-meta dt {
+  color: var(--zg-text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.7rem;
+}
+
+.zg-ticket-card-meta dd {
+  margin: 0.1rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.zg-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--zg-border);
+  background: var(--zg-bg);
+  color: var(--zg-text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+/* ---------- Badges (ui-spec §2) ---------- */
+
+.zg-badge-status-new {
+  background: var(--zg-pale);
+  border-color: var(--zg-primary);
+  color: #14532d;
+}
+
+.zg-badge-priority-low {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1e40af;
+}
+
+.zg-badge-priority-medium {
+  background: var(--zg-warning-bg);
+  border-color: var(--zg-warning);
+  color: #92400e;
+}
+
+.zg-badge-priority-high {
+  background: #fef2f2;
+  border-color: var(--zg-error);
+  color: #991b1b;
+}
+
+/* ---------- Empty vs. no-results (AC-15) ---------- */
+
+/*
+ * The two zero-result states are deliberately different objects on the page:
+ * the empty state is a full white card with a primary call to action (there is
+ * nothing to go back to), while the no-results state is a dashed, tinted panel
+ * with a secondary "Clear Filters" action — the visual language of a filter
+ * that can be undone rather than of an account with no data.
+ */
+.zg-state {
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+}
+
+.zg-state-icon {
+  display: block;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.zg-state-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.zg-state-text {
+  margin: 0 auto 1.25rem;
+  max-width: 32rem;
+  color: var(--zg-text-muted);
+  font-size: 0.92rem;
+}
+
+.zg-state-no-results {
+  background: var(--zg-bg);
+  border: 2px dashed var(--zg-border);
+  border-radius: 10px;
+  box-shadow: none;
+  padding: 2rem 1.5rem;
+}
+
+/* ---------- Pagination ---------- */
+
+.zg-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.zg-page-numbers {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+}
+
+.zg-page-number {
+  min-width: 2.25rem;
+  padding: 0.35rem 0.6rem;
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-border);
+  border-radius: 6px;
+  color: var(--zg-text);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.zg-page-number:hover {
+  border-color: var(--zg-secondary);
+  color: var(--zg-secondary);
+}
+
+.zg-page-number.is-current {
+  background: var(--zg-primary);
+  border-color: var(--zg-primary);
+  color: var(--zg-on-primary);
+}
+
+.zg-page-status {
+  color: var(--zg-text-muted);
+  font-size: 0.85rem;
+}
+
+.zg-page-size {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+.zg-page-size .zg-label {
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
+.zg-page-size .zg-select {
+  width: auto;
+}
+
+.zg-link-button {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+@media (max-width: 767.98px) {
+  .zg-page-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .zg-page-head .zg-btn {
+    width: 100%;
+  }
+
+  /* Stacked filters, full-width controls (ui-spec §4). */
+  .zg-filter,
+  .zg-filter-search,
+  .zg-filter-action {
+    flex: 1 1 100%;
+  }
+
+  .zg-filter-action .zg-btn {
+    width: 100%;
+  }
+
+  .zg-pagination {
+    justify-content: center;
+  }
+
+  .zg-page-size {
+    margin-left: 0;
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ---------- Ticket Detail (ui-spec §3.4) ---------- */
+
+.zg-breadcrumb {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+  color: var(--zg-text-muted);
+}
+
+.zg-breadcrumb a {
+  color: var(--zg-secondary);
+  font-weight: 600;
+}
+
+.zg-detail-headline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.zg-section-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--zg-text);
+}
+
+.zg-subsection-title {
+  margin: 1.25rem 0 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--zg-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/*
+ * Read-only fields (AC-05). Deliberately a definition list and not a disabled
+ * form: a greyed-out input still reads as "editable, but not right now", which
+ * is the wrong promise on a screen where nothing is ever editable.
+ */
+.zg-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem 1.5rem;
+  margin: 1rem 0 0;
+}
+
+.zg-detail-item-wide {
+  grid-column: 1 / -1;
+}
+
+.zg-detail-label {
+  margin: 0 0 0.2rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--zg-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.zg-detail-value {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--zg-text);
+  overflow-wrap: anywhere;
+}
+
+.zg-detail-description {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.55;
+}
+
+/* ---------- Attachment rows on the detail screen ---------- */
+
+.zg-file-row {
+  flex-wrap: wrap;
+}
+
+.zg-file-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.zg-file-actions .zg-file-remove {
+  margin-left: 0;
+}
+
+/*
+ * A removed attachment is muted rather than hidden (BR-10, V-10): the row is
+ * still there, still names the file, and carries the reason and the timestamp —
+ * what it loses is the Download button and any visual claim on attention.
+ */
+.zg-file-row-removed {
+  background: var(--zg-bg);
+  border-style: dashed;
+  color: var(--zg-text-muted);
+}
+
+.zg-file-row-removed .zg-file-name {
+  font-weight: 600;
+  text-decoration: line-through;
+}
+
+.zg-badge-removed {
+  background: #f3f4f6;
+  border-color: var(--zg-text-muted);
+  color: #374151;
+}
+
+.zg-file-removed-meta {
+  flex: 1 1 100%;
+  font-size: 0.82rem;
+  color: var(--zg-text-muted);
+}
+
+.zg-upload-zone {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--zg-border);
+}
+
+.zg-file-input {
+  display: block;
+  margin-top: 0.5rem;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--zg-text);
+}
+
+.zg-file-input:disabled {
+  color: var(--zg-text-muted);
+  cursor: not-allowed;
+}
+
+/* ---------- Access denied (AC-03) ---------- */
+
+.zg-state-denied {
+  border-color: var(--zg-error);
+}
+
+/* ---------- Soft-removal modal (ui-spec §3.4) ---------- */
+
+.zg-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(17, 24, 39, 0.45);
+}
+
+.zg-modal {
+  width: 100%;
+  max-width: 32rem;
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-border);
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
+  padding: 1.5rem;
+}
+
+@media (max-width: 767.98px) {
+  .zg-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .zg-file-actions {
+    margin-left: 0;
+    flex: 1 1 100%;
+  }
+
+  .zg-file-actions .zg-btn {
+    flex: 1 1 auto;
+  }
+
+  .zg-modal .zg-actions .zg-btn {
+    width: 100%;
+  }
+}
+
+/* ---------- Tablet and up: two-column Create Ticket form (AC-11) ---------- */
+
+/*
+ * From 768 px the form lays its short fields out two to a row, which stops
+ * Category, Related System and Priority from each claiming a full 900 px line
+ * of empty space. Summary, Description and the upload area opt out with
+ * `zg-field-wide`: those three are the ones whose content actually benefits
+ * from the extra width, and a half-width Description would fight the reader.
+ */
+@media (min-width: 768px) {
+  .zg-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 1.5rem;
+    align-items: start;
+  }
+
+  .zg-form-grid > .zg-field-wide,
+  .zg-form-grid > .zg-form-actions,
+  .zg-form-grid > .zg-callout {
+    grid-column: 1 / -1;
+  }
+
+  /* The fieldset is a grid item here, so its default min-width would let a
+     long radio group push the column wider than its share. */
+  .zg-form-grid > fieldset.zg-field {
+    min-width: 0;
+  }
+}
+
+/* ---------- Touch targets below the tablet breakpoint (AC-11) ---------- */
+
+/*
+ * 44 px is the size a finger can hit reliably; the desktop layout keeps its
+ * denser 28–38 px controls because a pointer does not need the slack. The rule
+ * is scoped to the mobile breakpoint rather than applied everywhere so the
+ * table does not grow a row of oversized buttons on a laptop.
+ */
+@media (max-width: 767.98px) {
+  .zg-btn,
+  .zg-page-number,
+  .zg-header-toggle,
+  .zg-file-remove,
+  .zg-link-button {
+    min-height: 44px;
+  }
+
+  .zg-btn-sm {
+    padding-inline: 0.9rem;
+  }
+
+  .zg-page-number {
+    min-width: 44px;
+  }
+
+  .zg-pagination {
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+}
+
+/* ---------- Tablet header: keep labels on one line (V-04) ---------- */
+
+/*
+ * Between 768 and 991 px the header has just enough room for the three nav
+ * items and the requester block, but only if none of them wraps. Left to wrap,
+ * "My Tickets" and "Change Requester" each break across two lines and the bar
+ * grows to twice its height for no reason.
+ */
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .zg-nav-link,
+  .zg-header-identity .zg-btn,
+  .zg-requester-name,
+  .zg-brand {
+    white-space: nowrap;
+  }
+
+  .zg-nav {
+    gap: 0.85rem;
+  }
+
+  .zg-header-bar {
+    gap: 0.6rem;
+  }
+
+  .zg-nav-link,
+  .zg-header-identity .zg-btn {
+    font-size: 0.85rem;
+  }
+
+  /* The "Requester" caption is what does not fit once nothing wraps. The name
+     underneath it says the same thing, so the caption is the part to drop. */
+  .zg-requester-label {
+    display: none;
+  }
+}
+
+/* ---------- Mobile pagination order ---------- */
+
+/*
+ * Previous and Next are the controls a thumb reaches for, so they share the
+ * first row and the numbered pages drop below them rather than pushing Next
+ * onto a line of its own.
+ */
+@media (max-width: 767.98px) {
+  .zg-page-numbers {
+    order: 3;
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+
+  .zg-page-status {
+    order: 4;
+    flex: 1 1 100%;
+    text-align: center;
+  }
+}

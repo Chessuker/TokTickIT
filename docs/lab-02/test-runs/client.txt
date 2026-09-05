@@ -1,0 +1,19 @@
+$ npm run test:client
+
+> toktickit@1.0.0 test:client
+> npm --prefix client run test
+
+
+> client@0.0.0 test
+> vitest run
+
+
+ RUN  v4.1.10 D:/OpalFolder/KMUTT/3-1/CPE334/TikTokIT/client
+
+Not implemented: navigation to another Document
+
+ Test Files  6 passed (6)
+      Tests  80 passed (80)
+   Start at  12:05:01
+   Duration  15.12s (transform 1.47s, setup 2.00s, import 3.15s, tests 23.22s, environment 10.97s)
+

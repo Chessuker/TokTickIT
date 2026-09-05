@@ -20,8 +20,8 @@ function CategoryList() {
       if (!res.ok) {
         throw new Error(`Request failed with status ${res.status}`)
       }
-      const data = await res.json()
-      setCategories(data)
+      const body = await res.json()
+      setCategories(Array.isArray(body?.data) ? body.data : [])
     } catch (err) {
       setError('Failed to load categories. Please try again.')
     } finally {

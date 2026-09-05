@@ -25,3 +25,11 @@ logs/
 Thumbs.dbD
 
 Lab_02_labsheet.pdf
+
+# Uploaded attachments (local disk storage, API-D-01)
+server/uploads/
+
+# Playwright
+e2e/report/
+test-results/
+playwright/.cache/

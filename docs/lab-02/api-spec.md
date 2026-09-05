@@ -226,10 +226,15 @@ Create one validated ticket for the selected requester (FR-01, AC-01).
 | `summary` | Required. Trimmed. 5–150 characters after trimming. |
 | `description` | Required. Trimmed. 10–5000 characters after trimming. |
 | `categoryId` | Required. Must reference an existing active category. |
-| `relatedSystemId` | Optional, nullable. When present, must reference an existing active related system. |
+| `relatedSystemId` | Required. Must reference an existing active related system. |
 | `priority` | Required. One of `Low`, `Medium`, `High`. |
 
 Unknown body fields are ignored. `status` and `ticketNumber` are rejected if supplied — they are server-owned (BR-01, BR-02).
+
+**`relatedSystemId` is required on create.** An earlier draft of this table made it optional. Issue #4 marks the field
+with a red asterisk alongside the other four, and a ticket that names no system is materially harder to route, so the
+create contract requires it. The column stays nullable in the schema — that is a later-sprint concern (a system can be
+retired and the foreign key is `SetNull`), not a licence to omit it here.
 
 **Success** — `201`, body is the created `TicketDetail` with `attachments: []`.
 
@@ -324,7 +329,7 @@ Upload one attachment to an owned ticket (FR-05).
 | Ticket has < 5 **active** attachments | `400 ATTACHMENT_LIMIT_REACHED` (AC-08) |
 
 - The type check uses the sniffed content type, not the client-supplied extension — a `.pdf` rename of an executable is rejected.
-- The size limit is enforced by the upload middleware so an oversized body is refused while streaming, not after being buffered.
+- The order above is the whole point of the table: a file that is both oversized **and** of a disallowed type answers `415`, not `413`. That rules out enforcing the size cap in the upload middleware, which would abort the request before anything could look at the content. The multipart reader instead retains only the first `5 MB + 1` bytes and counts the rest, so memory stays bounded while both checks still have what they need.
 - Soft-removed attachments do **not** count toward the limit of five.
 - The original `fileName` is stored for display but never used as a path. Files are written under a generated uuid name, so `../` and reserved Windows names cannot escape the storage directory.
 
@@ -439,7 +444,7 @@ Planned tests for this contract are listed in [tests.md](tests.md).
 
 | ID | Decision | Status |
 | --- | --- | --- |
-| API-D-01 | Attachment storage location — local disk under `server/uploads/` vs. object storage | _TBD_ |
-| API-D-02 | Whether `search` also matches the category or related-system name | _TBD_ |
+| API-D-01 | Attachment storage location — local disk under `server/uploads/` vs. object storage | **Resolved (Issue #6): local disk.** Files are written under `server/uploads/` (override with `UPLOAD_DIR`) with a generated uuid name; the row stores that name, never a path, so the original file name can never reach the file system. Object storage is a Lab 3 concern and only changes the two helpers that read and write the bytes |
+| API-D-02 | Whether `search` also matches the category or related-system name | **Resolved (Issue #5): no.** `search` covers `summary`, `description` and `ticketNumber` only. Category and Related System already have their own filter, and folding them into the free-text match would make a search for "network" return every Network ticket regardless of what it says |
 | API-D-03 | Rate limiting on upload | Out of scope for Lab 2 |
-| API-D-04 | Response caching headers for reference data | _TBD_ |
+| API-D-04 | Response caching headers for reference data | **Resolved (Issue #7): none this sprint.** Categories and related systems are two small queries against a seeded table, and a cache header would have to be invalidated the first time someone deactivates a row. Revisit when the reference data is editable |
