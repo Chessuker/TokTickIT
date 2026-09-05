@@ -16,6 +16,7 @@
     "prisma:seed": "npm --prefix server run prisma:seed"
   },
   "devDependencies": {
-    "@playwright/test": "1.62.1"
+    "@playwright/test": "1.62.1",
+    "marked": "^18.0.11"
   }
 }

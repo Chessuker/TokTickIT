@@ -54,6 +54,34 @@ Covered by **API-06** and **UI-04**.
 
 ---
 
+## 3b. Sorting
+
+![Sorted by priority, High first](screenshots/list-07-sort-priority-desc.png)
+
+`Priority (High first)` selected. Every row on page 1 is **High**, where the
+default `Newest first` order interleaved them — the same ten rows read
+Low, Medium, Medium, Medium, Medium, High, Medium, Medium, Medium, Low before the
+sort was changed.
+
+![Sorted by priority, Low first](screenshots/list-08-sort-priority-asc.png)
+
+Reversed to `Priority (Low first)`, page 1 becomes Low, Low, Low, Low, Low, Low,
+Medium, Medium, Medium, Medium.
+
+The ordering is the server's: the control writes the `sort` query parameter and
+the endpoint orders in SQL, so it applies to the whole result set rather than to
+the ten rows already on screen. Priority sorts by rank rather than alphabetically
+— High, Medium, Low, not High, Low, Medium — and every sort is tie-broken by `id`
+ascending so no row can appear on two pages.
+
+These two captures were taken later than the rest of Part 7, after the
+end-to-end suite had added tickets, so the dataset is larger than the fourteen
+tickets in the images above.
+
+Covered by **API-06** and **UI-04**.
+
+---
+
 ## 4. Pagination controls
 
 ![Pagination on page 2](screenshots/list-04-pagination.png)
@@ -87,6 +115,17 @@ The same requester as screenshot 1, searching for `quantum teleporter`. The serv
 AC-15 requires this to be visibly distinct from the empty state above, and it is, in three ways: a dashed tinted panel instead of a solid white card, a magnifier instead of a seedling, and a secondary *Clear Filters* action instead of a primary *Create* action. The distinction is decided from the response plus whether a filter is active: `totalItems === 0` with no active search or filter is the empty state; `totalItems === 0` with one is the no-results state.
 
 Covered by **API-13** and **UI-09**.
+
+---
+
+## Cross-requester access
+
+Section 2 shows that switching requester replaces the visible list. The refusal
+that backs it — opening another requester's ticket by URL, and requesting their
+attachment directly — is in
+[Answer Part 8](answer-part8-screenshots.md) §6, where the screen shows Access
+denied and the API answers `403` to both `GET /api/tickets/:id` and
+`GET /api/attachments/:id/download`.
 
 ---
 
