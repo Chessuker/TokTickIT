@@ -47,10 +47,10 @@ Unit and component tests run without a live database: the API suite mocks `src/d
 | UI-07 | UI | AC-02, FR-06, BR-13 | Change Requester | Switching requester re-fetches and shows only the new requester's tickets | `client/src/components/AppShell.test.tsx` | Pass |
 | UI-08 | UI | AC-12, FR-07 | Create form on backend failure | Error callout shown; entered values still present in the form | `client/src/components/CreateTicketForm.test.tsx` | Pass |
 | UI-09 | UI | AC-15 | Empty vs. no-results state | Correct distinct state rendered in each case | `client/src/components/MyTickets.test.tsx` | Pass |
-| E2E-01 | E2E | AC-01, AC-05 | Full create flow | Ticket number shown, detail page opens with the same data | `e2e/create-ticket.spec.ts` | _TBD_ |
+| E2E-01 | E2E | AC-01, AC-05 | Full create flow | Ticket number shown, detail page opens with the same data | `e2e/create-ticket.spec.ts` | Pass |
 | E2E-02 | E2E | AC-09 | Attachment lifecycle | Upload, download, soft-remove with reason; removed file no longer downloadable | `e2e/attachments.spec.ts` | Pass |
 | E2E-03 | E2E | AC-03 | Ownership guard | Opening another requester's ticket shows access denied | `e2e/ownership.spec.ts` | Pass |
-| E2E-04 | E2E | AC-02 | Select → change requester | Guard forces selection; switching requester swaps the visible ticket set | `e2e/requester-context.spec.ts` | _TBD_ |
+| E2E-04 | E2E | AC-02 | Select → change requester | Guard forces selection; switching requester swaps the visible ticket set | `e2e/requester-context.spec.ts` | Pass |
 
 ---
 
@@ -80,17 +80,19 @@ Unit and component tests run without a live database: the API suite mocks `src/d
 
 | # | Screen | Viewport | Result | Screenshot |
 | --- | --- | --- | --- | --- |
-| R-01 | Requester Selection | Desktop ≥ 992 px | _TBD_ | `docs/lab-02/screenshots/selector-desktop.png` |
-| R-02 | Requester Selection | Mobile < 768 px | _TBD_ | `docs/lab-02/screenshots/selector-mobile.png` |
-| R-03 | Create Ticket | Desktop | _TBD_ | `docs/lab-02/screenshots/create-desktop.png` |
-| R-04 | Create Ticket | Tablet 768–991 px | _TBD_ | `docs/lab-02/screenshots/create-tablet.png` |
-| R-05 | Create Ticket | Mobile | _TBD_ | `docs/lab-02/screenshots/create-mobile.png` |
+| R-01 | Requester Selection | Desktop ≥ 992 px | Pass | `docs/lab-02/screenshots/selector-desktop.png` |
+| R-02 | Requester Selection | Mobile < 768 px | Pass | `docs/lab-02/screenshots/selector-mobile.png` |
+| R-03 | Create Ticket | Desktop | Pass | `docs/lab-02/screenshots/create-desktop.png` |
+| R-04 | Create Ticket | Tablet 768–991 px | Pass | `docs/lab-02/screenshots/create-tablet.png` |
+| R-05 | Create Ticket | Mobile | Pass | `docs/lab-02/screenshots/create-mobile.png` |
 | R-06 | My Tickets (table) | Desktop | Pass | `docs/lab-02/screenshots/list-desktop.png` |
+| R-06b | My Tickets (table) | Tablet 768–991 px | Pass | `docs/lab-02/screenshots/list-tablet.png` |
 | R-07 | My Tickets (cards) | Mobile | Pass | `docs/lab-02/screenshots/list-mobile.png` |
 | R-08 | Ticket Detail | Desktop | Pass | `docs/lab-02/screenshots/detail-desktop.png` |
+| R-08b | Ticket Detail | Tablet 768–991 px | Pass | `docs/lab-02/screenshots/detail-tablet.png` |
 | R-09 | Ticket Detail | Mobile | Pass | `docs/lab-02/screenshots/detail-mobile.png` |
 | R-10 | Removal modal | Mobile | Pass | `docs/lab-02/screenshots/remove-modal-mobile.png` |
-| R-11 | Header / Change Requester | Mobile | _TBD_ | `docs/lab-02/screenshots/header-mobile.png` |
+| R-11 | Header / Change Requester | Mobile | Pass | `docs/lab-02/screenshots/header-mobile.png` |
 | R-12 | My Tickets no-results state | Desktop | Pass | `docs/lab-02/screenshots/list-no-results.png` |
 
 Each row is checked against the Visual Inspection Checklist in [ui-spec.md](ui-spec.md).
@@ -243,13 +245,58 @@ The Answer Part 8 screenshots are collected in
 [answer-part8-screenshots.md](answer-part8-screenshots.md) and were captured by
 `docs/lab-02/screenshots/capture-issue6.mjs` against that same live stack.
 
+### Issue #7 verification (UI refinement, responsive layout, end-to-end)
+
+The two remaining end-to-end journeys were written and the suite now covers all
+four: `create-ticket.spec.ts` (E2E-01) and `requester-context.spec.ts` (E2E-04)
+join the attachment and ownership specs from Issue #6. Sixteen tests, all
+passing against the live stack.
+
+E2E-01 threads the server-generated ticket number through three screens: it is
+read off the confirmation, then found again on the detail screen beside the same
+summary, description, category and related system, and finally searched for in
+My Tickets. E2E-04 covers both halves of AC-02 — every application route
+redirects to the selector when no requester is chosen, and a requester switch
+genuinely replaces the visible data rather than leaving the previous requester's
+rows on screen.
+
+**The UI pass was measured, not eyeballed.** A script walked all three screens at
+1280 px, 820 px and 375 px and read the page rather than looking at it: body
+scroll width against viewport width, every leaf element's `scrollWidth` against
+its `clientWidth`, every form control's labelling, every button's height, and
+the computed contrast ratio of each text-on-background pair. The results are in
+the V-01 … V-10 table in [ui-spec.md](ui-spec.md). What it caught:
+
+| Finding | Fix |
+| --- | --- |
+| Mobile controls between 28 px and 38 px tall — above the 24 px WCAG 2.2 floor but below what a thumb hits reliably | 44 px minimum on buttons, page numbers and the header toggle below 768 px, and the tap-target TBD in ui-spec §4 resolved at that number |
+| The Create Ticket form ran one field per row at tablet width, so Category, Related System and Priority each claimed a full 800 px line | Two-column grid from 768 px, with Summary, Description and the upload area opting out via `zg-field-wide` |
+| The header wrapped to two lines at 820 px, doubling its height | Nav and requester block pinned to one line; the small "Requester" caption is dropped at that width since the name below already says it |
+| At tablet width the ticket number ran underneath the Created Date beside it | `.zg-table` minimum width raised from 56 rem to 66 rem — the page container's width — and the Ticket No. column widened from 12.5% to 13.5% |
+| Pagination pushed Next onto a line of its own at 375 px | Previous and Next share the first row; the numbered pages drop below them |
+
+Nothing was found for V-03 (no horizontal overflow at any of the nine
+screen-and-width combinations), V-06 (no unlabelled control anywhere) or V-08
+(every field error below its own control, in `#DC2626`, with a matching border).
+The lowest contrast ratio measured anywhere is 4.83:1, on muted dates and the
+italic _Unassigned_ placeholder, which clears the 4.5:1 AA requirement; the
+status and priority badges range from 6.84:1 to 8.21:1.
+
+The nine Answer Part 9 screenshots are collected in
+[answer-part9-screenshots.md](answer-part9-screenshots.md) and were captured by
+`docs/lab-02/screenshots/capture-issue7.mjs`, which prints the measured body
+width beside every capture.
+
 ### Final run on `main`
 
 | Suite | Command | Files | Tests | Passed | Failed | Date |
 | --- | --- | --- | --- | --- | --- | --- |
-| Backend (unit + API) | `npm run test:server` | 6 | 130 | 130 | 0 | 2026-09-04 |
-| Frontend (component) | `npm run test:client` | 6 | 80 | 80 | 0 | 2026-09-04 |
-| End-to-end | `npm run test:e2e` | 2 | 6 | 6 | 0 | 2026-09-04 |
+| Backend (unit + API) | `npm run test:server` | 6 | 130 | 130 | 0 | 2026-09-05 |
+| Frontend (component) | `npm run test:client` | 6 | 80 | 80 | 0 | 2026-09-05 |
+| End-to-end | `npm run test:e2e` | 4 | 16 | 16 | 0 | 2026-09-05 |
+| **Total** | | **16** | **226** | **226** | **0** | 2026-09-05 |
+
+The raw output of all three commands is kept verbatim in [`test-runs/`](test-runs/) and rendered for Answer Part 3 as `docs/lab-02/screenshots/part3-test-server.png`, `part3-test-client.png` and `part3-test-e2e.png`.
 
 The end-to-end suite needs the stack up: `docker compose up -d`, `npm run prisma:migrate`, `npm run prisma:seed`. `playwright.config.ts` starts the API and Vite itself (reusing them if they are already running) but never the database, so a run cannot silently pass against an empty schema.
 

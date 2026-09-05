@@ -357,9 +357,9 @@ function CreateTicketForm() {
   }
 
   return (
-    <form className="zg-card" onSubmit={handleSubmit} noValidate>
+    <form className="zg-card zg-form-grid" onSubmit={handleSubmit} noValidate>
       {optionsError && (
-        <div className="zg-callout zg-callout-error mb-3" role="alert">
+        <div className="zg-callout zg-callout-error mb-3 zg-field-wide" role="alert">
           <span aria-hidden="true">⚠️</span>
           <div>
             {optionsError}{' '}
@@ -370,7 +370,7 @@ function CreateTicketForm() {
         </div>
       )}
 
-      <div className="zg-field">
+      <div className="zg-field zg-field-wide">
         <label className="zg-label" htmlFor="summary">
           Summary / Title <span className="zg-required" aria-hidden="true">*</span>
         </label>
@@ -392,7 +392,7 @@ function CreateTicketForm() {
         )}
       </div>
 
-      <div className="zg-field">
+      <div className="zg-field zg-field-wide">
         <label className="zg-label" htmlFor="description">
           Description <span className="zg-required" aria-hidden="true">*</span>
         </label>
@@ -492,7 +492,7 @@ function CreateTicketForm() {
         )}
       </fieldset>
 
-      <div className="zg-field">
+      <div className="zg-field zg-field-wide">
         <span className="zg-label" id="attachments-label">
           Attachments
         </span>

@@ -6,7 +6,7 @@
 | Sprint / Lab | CPE334 Lab 2 — Requester Ticketing MVP |
 | Author | Thawat Boonsuk (67070501024) |
 | Status | Draft |
-| Last updated | _TBD_ |
+| Last updated | 2026-09-05 (Issue #7 — sprint complete) |
 | Related documents | [api-spec.md](api-spec.md), [ui-spec.md](ui-spec.md), [tests.md](tests.md), [reviewer.md](reviewer.md), [ai-use.md](ai-use.md) |
 
 ---

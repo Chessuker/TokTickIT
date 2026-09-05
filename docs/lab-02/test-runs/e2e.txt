@@ -1,0 +1,22 @@
+$ npx playwright test
+
+Running 16 tests using 1 worker
+
+  ok  1 [chromium] › e2e\attachments.spec.ts:18:7 › Attachment lifecycle (E2E-02) › upload, download, remove with a reason, then download is refused (2.9s)
+  ok  2 [chromium] › e2e\attachments.spec.ts:58:7 › Attachment lifecycle (E2E-02) › a removed attachment is refused by the API as well as hidden in the UI (2.0s)
+  ok  3 [chromium] › e2e\attachments.spec.ts:109:7 › Attachment lifecycle (E2E-02) › rejects a disallowed file type without attaching it (AC-07) (2.0s)
+  ok  4 [chromium] › e2e\create-ticket.spec.ts:19:7 › Create ticket (E2E-01) › create a ticket, then open it and find the same data (1.7s)
+  ok  5 [chromium] › e2e\create-ticket.spec.ts:58:7 › Create ticket (E2E-01) › the new ticket appears in My Tickets under its number (1.7s)
+  ok  6 [chromium] › e2e\create-ticket.spec.ts:80:7 › Create ticket (E2E-01) › an invalid form is refused with errors under the offending fields (1.3s)
+  ok  7 [chromium] › e2e\ownership.spec.ts:19:7 › Ownership guard (E2E-03) › opening another requester's ticket shows access denied (2.0s)
+  ok  8 [chromium] › e2e\ownership.spec.ts:35:7 › Ownership guard (E2E-03) › another requester cannot download the owner's attachment (1.9s)
+  ok  9 [chromium] › e2e\ownership.spec.ts:75:7 › Ownership guard (E2E-03) › the requester still sees their own ticket after the switch back (2.9s)
+  ok 10 [chromium] › e2e\requester-context.spec.ts:16:9 › Requester guard (E2E-04, AC-02) › opening /tickets with no requester redirects to the selector (913ms)
+  ok 11 [chromium] › e2e\requester-context.spec.ts:16:9 › Requester guard (E2E-04, AC-02) › opening /tickets/new with no requester redirects to the selector (931ms)
+  ok 12 [chromium] › e2e\requester-context.spec.ts:16:9 › Requester guard (E2E-04, AC-02) › opening /system with no requester redirects to the selector (872ms)
+  ok 13 [chromium] › e2e\requester-context.spec.ts:24:7 › Requester guard (E2E-04, AC-02) › the selector says plainly that it is not a real login (1.0s)
+  ok 14 [chromium] › e2e\requester-context.spec.ts:32:7 › Requester guard (E2E-04, AC-02) › the selection survives a reload (1.5s)
+  ok 15 [chromium] › e2e\requester-context.spec.ts:43:7 › Change Requester (E2E-04, FR-06, BR-13) › switching requester swaps the visible ticket set (2.6s)
+  ok 16 [chromium] › e2e\requester-context.spec.ts:79:7 › Change Requester (E2E-04, FR-06, BR-13) › the header shows the selected requester on every screen (2.2s)
+
+  16 passed (32.3s)
