@@ -13,6 +13,18 @@ Every image was captured against the **running stack with a real database** — 
 
 ---
 
+## 0. Before the form — the Development Requester
+
+The lab sheet folds Part 5 into this part's points. The selector screen, its
+active-only dropdown, its loading and failure states, and the selected requester
+shown in the application shell with Change Requester are in
+[Answer Part 5](answer-part5-requester-selector.md).
+
+The link matters for §4 below: the Requester saved on the ticket is the one
+chosen there, and it is never read from the form.
+
+---
+
 ## 1. Create Ticket, empty, with master data loaded
 
 ![Create Ticket with master data loaded](screenshots/create-01-master-data-loaded.png)

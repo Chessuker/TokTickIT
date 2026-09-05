@@ -14,7 +14,7 @@ The lab sheet asks for one PDF with the headings **Answer Part 1** through **Ans
 | 2 | 5 | Spec-driven development | [answer-part2-spec-evidence.md](answer-part2-spec-evidence.md) + rendered [specification.md](specification.md) |
 | 3 | 10 | Test-driven development and traceability | [answer-part3-test-runs.md](answer-part3-test-runs.md) + rendered [tests.md](tests.md) |
 | 4 | 5 | AI use with reflection | [ai-use.md](ai-use.md) |
-| 5 | 0 | Development Requester selection screen | Covered inside Part 6 |
+| 5 | 0 | Development Requester selection screen | [answer-part5-requester-selector.md](answer-part5-requester-selector.md) — points graded inside Part 6 |
 | 6 | 10 | Working Ticket screen — Create mode | [answer-part6-screenshots.md](answer-part6-screenshots.md) |
 | 7 | 10 | Working My Tickets screen | [answer-part7-screenshots.md](answer-part7-screenshots.md) |
 | 8 | 5 | Ticket detail and attachment lifecycle | [answer-part8-screenshots.md](answer-part8-screenshots.md) |
