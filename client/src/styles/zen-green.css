@@ -686,11 +686,17 @@ body {
 /*
  * Fixed layout with the widths declared in the component's <colgroup>. Under
  * auto layout the widest cell wins and the last columns fall off the page; the
- * table wrapper still scrolls, so nothing is lost below 56rem either.
+ * table wrapper still scrolls, so nothing is lost below the minimum width.
+ *
+ * The minimum is the width of the page container (1066 px at any desktop
+ * width, since the container is capped). Going wider would make the desktop
+ * table scroll and hide the Detail action; going narrower squeezes the
+ * percentage columns until a ticket number runs under the date beside it. The
+ * tablet breakpoint scrolls within this same width.
  */
 .zg-table {
   width: 100%;
-  min-width: 56rem;
+  min-width: 66rem;
   table-layout: fixed;
   border-collapse: collapse;
   font-size: 0.86rem;
@@ -1211,5 +1217,123 @@ body {
 
   .zg-modal .zg-actions .zg-btn {
     width: 100%;
+  }
+}
+
+/* ---------- Tablet and up: two-column Create Ticket form (AC-11) ---------- */
+
+/*
+ * From 768 px the form lays its short fields out two to a row, which stops
+ * Category, Related System and Priority from each claiming a full 900 px line
+ * of empty space. Summary, Description and the upload area opt out with
+ * `zg-field-wide`: those three are the ones whose content actually benefits
+ * from the extra width, and a half-width Description would fight the reader.
+ */
+@media (min-width: 768px) {
+  .zg-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 1.5rem;
+    align-items: start;
+  }
+
+  .zg-form-grid > .zg-field-wide,
+  .zg-form-grid > .zg-form-actions,
+  .zg-form-grid > .zg-callout {
+    grid-column: 1 / -1;
+  }
+
+  /* The fieldset is a grid item here, so its default min-width would let a
+     long radio group push the column wider than its share. */
+  .zg-form-grid > fieldset.zg-field {
+    min-width: 0;
+  }
+}
+
+/* ---------- Touch targets below the tablet breakpoint (AC-11) ---------- */
+
+/*
+ * 44 px is the size a finger can hit reliably; the desktop layout keeps its
+ * denser 28–38 px controls because a pointer does not need the slack. The rule
+ * is scoped to the mobile breakpoint rather than applied everywhere so the
+ * table does not grow a row of oversized buttons on a laptop.
+ */
+@media (max-width: 767.98px) {
+  .zg-btn,
+  .zg-page-number,
+  .zg-header-toggle,
+  .zg-file-remove,
+  .zg-link-button {
+    min-height: 44px;
+  }
+
+  .zg-btn-sm {
+    padding-inline: 0.9rem;
+  }
+
+  .zg-page-number {
+    min-width: 44px;
+  }
+
+  .zg-pagination {
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+}
+
+/* ---------- Tablet header: keep labels on one line (V-04) ---------- */
+
+/*
+ * Between 768 and 991 px the header has just enough room for the three nav
+ * items and the requester block, but only if none of them wraps. Left to wrap,
+ * "My Tickets" and "Change Requester" each break across two lines and the bar
+ * grows to twice its height for no reason.
+ */
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .zg-nav-link,
+  .zg-header-identity .zg-btn,
+  .zg-requester-name,
+  .zg-brand {
+    white-space: nowrap;
+  }
+
+  .zg-nav {
+    gap: 0.85rem;
+  }
+
+  .zg-header-bar {
+    gap: 0.6rem;
+  }
+
+  .zg-nav-link,
+  .zg-header-identity .zg-btn {
+    font-size: 0.85rem;
+  }
+
+  /* The "Requester" caption is what does not fit once nothing wraps. The name
+     underneath it says the same thing, so the caption is the part to drop. */
+  .zg-requester-label {
+    display: none;
+  }
+}
+
+/* ---------- Mobile pagination order ---------- */
+
+/*
+ * Previous and Next are the controls a thumb reaches for, so they share the
+ * first row and the numbered pages drop below them rather than pushing Next
+ * onto a line of its own.
+ */
+@media (max-width: 767.98px) {
+  .zg-page-numbers {
+    order: 3;
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+
+  .zg-page-status {
+    order: 4;
+    flex: 1 1 100%;
+    text-align: center;
   }
 }

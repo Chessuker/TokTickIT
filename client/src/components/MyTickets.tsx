@@ -457,9 +457,9 @@ function MyTickets() {
                  * including the Detail action — on screen at desktop width.
                  */}
                 <colgroup>
-                  <col style={{ width: '12.5%' }} />
+                  <col style={{ width: '13.5%' }} />
                   <col style={{ width: '9.5%' }} />
-                  <col style={{ width: '15.5%' }} />
+                  <col style={{ width: '14.5%' }} />
                   <col style={{ width: '9.5%' }} />
                   <col style={{ width: '10%' }} />
                   <col style={{ width: '9%' }} />
