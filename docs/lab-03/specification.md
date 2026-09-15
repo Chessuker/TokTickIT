@@ -419,14 +419,14 @@ Every AC maps to at least one planned test in [tests.md](tests.md) §3.
 
 ## Appendix — GitHub Issue Traceability
 
-Issue numbers are filled in once the Issues exist on GitHub.
+Issues [#36](https://github.com/Chessuker/TokTickIT/issues/36) – [#42](https://github.com/Chessuker/TokTickIT/issues/42).
 
 | Issue | Title | Covers |
 | --- | --- | --- |
-| #TBD-1 | Sprint 3 engineering contract | This document, `api-spec.md`, `ui-spec.md`, `tests.md` |
-| #TBD-2 | Authentication foundation | FR-01 … FR-05, FR-14, BR-01 … BR-14, BR-28 … BR-30, §7, AC-01 … AC-13, AC-31, AC-32 |
-| #TBD-3 | Requester regression, Public Comments and resolution indication | FR-05 … FR-07, BR-21 … BR-23, AC-13 … AC-15 |
-| #TBD-4 | IT Staff Ticket Queue | FR-08, AD-10, AC-16, AC-17, AC-34 |
-| #TBD-5 | IT Staff Ticket operations | FR-09 … FR-12, BR-15 … BR-23, AC-18 … AC-24 |
-| #TBD-6 | Administrator user management | FR-13, BR-24 … BR-27, AC-25 … AC-30 |
-| #TBD-7 | E2E, visual inspection, release integration | AC-33, AC-34, ui-spec.md §5, tests.md §4–§5, `ai-use.md`, PDF |
+| #36 | Sprint 3 engineering contract | This document, `api-spec.md`, `ui-spec.md`, `tests.md` |
+| #37 | Authentication foundation | FR-01 … FR-05, FR-14, BR-01 … BR-14, BR-28 … BR-30, §7, AC-01 … AC-13, AC-31, AC-32 |
+| #38 | Requester regression, Public Comments and resolution indication | FR-05 … FR-07, BR-21 … BR-23, AC-13 … AC-15 |
+| #39 | IT Staff Ticket Queue | FR-08, AD-10, AC-16, AC-17, AC-34 |
+| #40 | IT Staff Ticket operations | FR-09 … FR-12, BR-15 … BR-23, AC-18 … AC-24 |
+| #41 | Administrator user management | FR-13, BR-24 … BR-27, AC-25 … AC-30 |
+| #42 | E2E, visual inspection, release integration | AC-33, AC-34, ui-spec.md §5, tests.md §4–§5, `ai-use.md`, PDF |

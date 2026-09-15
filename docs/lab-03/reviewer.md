@@ -30,13 +30,13 @@ One row per pull request. Base branch is `lab3-staging` for feature PRs and `mai
 
 | # | Issue | PR | Branch | Base | Reviewed By | Merged | Outcome |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Sprint 3 engineering contract | | `feature/<n>-lab3-spec-docs` | `lab3-staging` | | | |
-| 2 | Authentication foundation | | | `lab3-staging` | | | |
-| 3 | Requester regression, comments, resolution | | | `lab3-staging` | | | |
-| 4 | IT Staff Ticket Queue | | | `lab3-staging` | | | |
-| 5 | IT Staff Ticket operations | | | `lab3-staging` | | | |
-| 6 | Administrator user management | | | `lab3-staging` | | | |
-| 7 | E2E, visual inspection, release | | | `lab3-staging` | | | |
+| 1 | #36 Sprint 3 engineering contract | | `feature/36-lab3-spec-docs` | `lab3-staging` | | | |
+| 2 | #37 Authentication foundation | | `feature/37-auth-foundation` | `lab3-staging` | | | |
+| 3 | #38 Requester regression, comments, resolution | | `feature/38-requester-comments` | `lab3-staging` | | | |
+| 4 | #39 IT Staff Ticket Queue | | `feature/39-staff-queue` | `lab3-staging` | | | |
+| 5 | #40 IT Staff Ticket operations | | `feature/40-staff-ticket-ops` | `lab3-staging` | | | |
+| 6 | #41 Administrator user management | | `feature/41-admin-users` | `lab3-staging` | | | |
+| 7 | #42 E2E, visual inspection, release | | `feature/42-e2e-release` | `lab3-staging` | | | |
 | 8 | Release Lab 3 | | `lab3-staging` | `main` | | | |
 
 ---
