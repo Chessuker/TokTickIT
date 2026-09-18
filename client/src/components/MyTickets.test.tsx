@@ -3,9 +3,7 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import MyTickets from './MyTickets'
-import { RequesterProvider } from '../context/RequesterProvider'
-import { REQUESTER_STORAGE_KEY } from '../context/requester'
-import type { Requester } from '../context/requester'
+import { AuthStub, JENNIFER } from '../test/auth'
 
 /**
  * UI-04 (AC-04, AC-10) and UI-09 (AC-15) — the My Tickets list.
@@ -16,13 +14,6 @@ import type { Requester } from '../context/requester'
  * the assertions worth anything — a component that rendered a cached array and
  * never re-queried would pass against a canned response, but fails here.
  */
-
-const JENNIFER: Requester = {
-  id: 'aaaaaaaa-1111-4222-8333-444455556666',
-  name: 'Jennifer Anderson',
-  email: 'jennifer.anderson@kmutt.ac.th',
-  department: 'Registrar',
-}
 
 const HARDWARE = { id: 'c1111111-1111-4222-8333-444455556666', name: 'Hardware' }
 const NETWORK = { id: 'c2222222-1111-4222-8333-444455556666', name: 'Network' }
@@ -131,13 +122,13 @@ function stubApi(tickets: Row[]) {
 function renderList(tickets: Row[]) {
   const fetchMock = stubApi(tickets)
   vi.stubGlobal('fetch', fetchMock)
-  window.sessionStorage.setItem(REQUESTER_STORAGE_KEY, JSON.stringify(JENNIFER))
 
+  // UI-20 (AC-13): rendered under the auth context, never the Lab 2 requester context.
   render(
     <MemoryRouter initialEntries={['/tickets']}>
-      <RequesterProvider>
+      <AuthStub user={JENNIFER}>
         <MyTickets />
-      </RequesterProvider>
+      </AuthStub>
     </MemoryRouter>,
   )
 
@@ -216,14 +207,14 @@ describe('MyTickets — list rendering (UI-04, AC-04)', () => {
     )
   })
 
-  it('sends the requester id as a header rather than as a query parameter (BR-04)', async () => {
+  it('identifies the caller by the session cookie, never by a header or query parameter (UI-20, AC-13)', async () => {
     const fetchMock = renderList(TICKETS)
     await screen.findByRole('table')
 
     const ticketCall = fetchMock.mock.calls.find((call) => String(call[0]).includes('/api/tickets'))!
-    expect((ticketCall[1] as RequestInit).headers).toMatchObject({
-      'X-Requester-Id': JENNIFER.id,
-    })
+    const init = ticketCall[1] as RequestInit
+    expect(init.credentials).toBe('include')
+    expect((init.headers ?? {}) as Record<string, string>).not.toHaveProperty('X-Requester-Id')
     expect(String(ticketCall[0])).not.toContain(JENNIFER.id)
   })
 
@@ -434,7 +425,6 @@ describe('MyTickets — empty vs. no-results (UI-09, AC-15)', () => {
 
 describe('MyTickets — failure handling', () => {
   it('shows an error callout with a retry instead of a misleading empty state', async () => {
-    window.sessionStorage.setItem(REQUESTER_STORAGE_KEY, JSON.stringify(JENNIFER))
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => {
@@ -444,9 +434,9 @@ describe('MyTickets — failure handling', () => {
 
     render(
       <MemoryRouter initialEntries={['/tickets']}>
-        <RequesterProvider>
+        <AuthStub user={JENNIFER}>
           <MyTickets />
-        </RequesterProvider>
+        </AuthStub>
       </MemoryRouter>,
     )
 

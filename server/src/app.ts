@@ -1,10 +1,12 @@
 import express from 'express';
 import type { Response } from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import { prisma } from './db.js';
 import { generateTicketNumber } from './ticketNumber.js';
 import { validateCreateTicketInput } from './ticketValidation.js';
-import { getRequester, requireRequester } from './requesterContext.js';
+import { getSessionUser, requireAuth, requireRole } from './auth.js';
+import { authRouter } from './authRoutes.js';
 import { parseTicketListQuery, toOrderBy } from './ticketListQuery.js';
 import { sendError, sendInternalError, sendValidationFailed } from './httpErrors.js';
 import {
@@ -26,8 +28,19 @@ import { receiveUpload } from './attachmentUpload.js';
 
 export const app = express();
 
-app.use(cors());
+/**
+ * The client runs on its own origin (Vite on 5173) and identifies itself with
+ * a cookie, so CORS must name that origin and allow credentials (AD-12); a
+ * wildcard origin cannot carry cookies.
+ */
+export const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+
+app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
+app.use(cookieParser());
 app.use(express.json());
+
+// Authentication (api-spec.md §3.1 – §3.4).
+app.use('/api/auth', authRouter);
 
 // Health check endpoint
 app.get('/api/health', async (_req, res) => {
@@ -49,23 +62,11 @@ app.get('/api/health', async (_req, res) => {
   });
 });
 
-// User routes (Prisma integration)
-app.get('/api/users', async (_req, res) => {
-  try {
-    const users = await prisma.user.findMany({
-      orderBy: { createdAt: 'desc' }
-    });
-    res.json(users);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch users' });
-  }
-});
-
-// Reference data (api-spec.md §3.2, §3.3). Neither endpoint requires the
-// requester header: the lists are identical for everyone and carry nothing
-// requester-scoped. Both return active rows only, so a deactivated category can
-// never be offered in the Create Ticket dropdowns.
-app.get('/api/categories', async (_req, res) => {
+// Reference data (Lab 2 api-spec.md §3.2, §3.3). Both lists are identical for
+// every role and carry nothing user-scoped, so any signed-in user may read
+// them. Both return active rows only, so a deactivated category can never be
+// offered in the Create Ticket dropdowns.
+app.get('/api/categories', requireAuth, async (_req, res) => {
   try {
     const categories = await prisma.category.findMany({
       where: { isActive: true },
@@ -78,7 +79,7 @@ app.get('/api/categories', async (_req, res) => {
   }
 });
 
-app.get('/api/related-systems', async (_req, res) => {
+app.get('/api/related-systems', requireAuth, async (_req, res) => {
   try {
     const relatedSystems = await prisma.relatedSystem.findMany({
       where: { isActive: true },
@@ -91,31 +92,13 @@ app.get('/api/related-systems', async (_req, res) => {
   }
 });
 
-// Development Requester routes (Issue #3, FR-02, BR-11, AC-14).
-//
-// This endpoint backs the Development Requester selector, which is a testing
-// mechanism and not authentication (BR-03). Only active requesters are ever
-// returned, and `isActive` itself is never exposed: an inactive requester must
-// be indistinguishable from one that does not exist.
-app.get('/api/requesters', async (_req, res) => {
-  try {
-    const requesters = await prisma.requesterUser.findMany({
-      where: { isActive: true },
-      orderBy: { name: 'asc' },
-      select: { id: true, name: true, email: true, department: true }
-    });
-    res.json({ data: requesters });
-  } catch (error) {
-    res.status(500).json({
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: 'Something went wrong. Please try again.'
-      }
-    });
-  }
-});
+/** The reduced `UserRef` shape embedded as `owner` (Lab 3 api-spec.md §2). */
+const USER_REF_SELECT = { id: true, name: true, role: true } as const;
 
-/** The `select` behind a TicketDetail response (api-spec.md §2). */
+/**
+ * The `select` behind a TicketDetail response (Lab 2 api-spec.md §2, plus the
+ * three Lab 3 fields `itPriority`, `owner` and `requesterResolvedAt`).
+ */
 const TICKET_DETAIL_SELECT = {
   id: true,
   ticketNumber: true,
@@ -123,11 +106,14 @@ const TICKET_DETAIL_SELECT = {
   description: true,
   status: true,
   priority: true,
+  itPriority: true,
+  requesterResolvedAt: true,
   createdAt: true,
   updatedAt: true,
   category: { select: { id: true, name: true } },
   relatedSystem: { select: { id: true, name: true } },
-  requester: { select: { id: true, name: true, email: true, department: true } }
+  requester: { select: { id: true, name: true, email: true, department: true } },
+  owner: { select: USER_REF_SELECT }
 } as const;
 
 /**
@@ -145,10 +131,13 @@ const TICKET_LIST_SELECT = {
   summary: true,
   status: true,
   priority: true,
+  itPriority: true,
+  requesterResolvedAt: true,
   createdAt: true,
   updatedAt: true,
   category: { select: { id: true, name: true } },
   relatedSystem: { select: { id: true, name: true } },
+  owner: { select: USER_REF_SELECT },
   attachments: { where: { isRemoved: false }, select: { id: true } }
 } as const;
 
@@ -178,11 +167,11 @@ function isTicketNumberCollision(error: unknown): boolean {
   return typeof target === 'string' ? target.includes('ticketNumber') : true;
 }
 
-// POST /api/tickets — create one validated ticket (FR-01, AC-01).
+// POST /api/tickets — create one validated ticket (Lab 2 FR-01, AC-01).
 //
-// `requesterId` is never read from the body: it comes from the resolved
-// X-Requester-Id, so a client cannot file a ticket in someone else's name.
-app.post('/api/tickets', requireRequester, async (req, res) => {
+// `requesterId` is never read from the body: it comes from the session user
+// (BR-03, AC-03), so a client cannot file a ticket in someone else's name.
+app.post('/api/tickets', requireAuth, requireRole('Requester'), async (req, res) => {
   const { fieldErrors, values } = validateCreateTicketInput(req.body);
 
   if (!values) {
@@ -214,7 +203,7 @@ app.post('/api/tickets', requireRequester, async (req, res) => {
       return;
     }
 
-    const requester = getRequester(res);
+    const requester = getSessionUser(res);
     let lastCollision: unknown = null;
 
     for (let attempt = 0; attempt < TICKET_NUMBER_ATTEMPTS; attempt += 1) {
@@ -230,6 +219,9 @@ app.post('/api/tickets', requireRequester, async (req, res) => {
               summary: values.summary,
               description: values.description,
               priority: values.priority,
+              // IT Priority starts equal to the Requested Priority (BR-16);
+              // only IT Staff may move it afterwards.
+              itPriority: values.priority,
               // `status` is left to the schema default: `New` is server-owned
               // and not reachable from the request body (BR-02).
               requesterId: requester.id,
@@ -254,13 +246,15 @@ app.post('/api/tickets', requireRequester, async (req, res) => {
   }
 });
 
-// GET /api/tickets — the selected requester's tickets, searched, filtered,
-// sorted and paginated (FR-03, AC-04, AC-10, api-spec.md §3.5).
+// GET /api/tickets — the signed-in requester's tickets, searched, filtered,
+// sorted and paginated (Lab 2 FR-03, AC-04, AC-10, api-spec.md §3.5).
 //
-// BR-04 is enforced by construction: `requesterId` is written into the `where`
-// from the resolved header and the parsed query contributes only the remaining
-// clauses, so no combination of parameters can reach another requester's rows.
-app.get('/api/tickets', requireRequester, async (req, res) => {
+// Ownership is enforced by construction: `requesterId` is written into the
+// `where` from the session user and the parsed query contributes only the
+// remaining clauses, so no combination of parameters — including a
+// `requesterId` query parameter, which is simply ignored (AC-03) — can reach
+// another requester's rows.
+app.get('/api/tickets', requireAuth, requireRole('Requester'), async (req, res) => {
   const { fieldErrors, query } = parseTicketListQuery(req.query);
 
   if (!query) {
@@ -268,7 +262,7 @@ app.get('/api/tickets', requireRequester, async (req, res) => {
     return;
   }
 
-  const requester = getRequester(res);
+  const requester = getSessionUser(res);
 
   const where: Record<string, unknown> = { requesterId: requester.id };
   if (query.categoryId) where.categoryId = query.categoryId;
@@ -333,9 +327,18 @@ interface Refusal {
 }
 
 /**
- * Answers the ownership question for one ticket in a single place (BR-04), and
- * hands the verdict back rather than writing it. Every route below funnels
- * through this, so a new one cannot accidentally skip the check.
+ * True when the session user may read any ticket or attachment: IT Staff and
+ * Administrators have read-only continuity over Requester resources (BR-14,
+ * AC-24). Requesters are always owner-scoped.
+ */
+function canReadAnyTicket(res: Response): boolean {
+  return getSessionUser(res).role !== 'Requester';
+}
+
+/**
+ * Answers the ownership question for one ticket in a single place (Lab 2 BR-04,
+ * Lab 3 BR-14), and hands the verdict back rather than writing it. Every route
+ * below funnels through this, so a new one cannot accidentally skip the check.
  *
  * The refusal is returned instead of sent because the upload route has to drain
  * the request body before it can answer at all; every other caller just passes
@@ -351,9 +354,9 @@ async function findTicketForRequester(res: Response, ticketId: string) {
     return { refusal: { status: 404, code: 'NOT_FOUND', message: 'Ticket not found.' } as Refusal };
   }
 
-  if (ticket.requesterId !== getRequester(res).id) {
+  if (ticket.requesterId !== getSessionUser(res).id && !canReadAnyTicket(res)) {
     // 403 rather than 404: the ticket exists, and the refusal is about
-    // ownership. api-spec.md §3.6 fixes this choice.
+    // ownership. Lab 2 api-spec.md §3.6 fixes this choice (AD-11).
     return {
       refusal: {
         status: 403,
@@ -435,7 +438,7 @@ async function loadOwnedAttachment(res: Response, attachmentId: string) {
     return null;
   }
 
-  if (attachment.ticket.requesterId !== getRequester(res).id) {
+  if (attachment.ticket.requesterId !== getSessionUser(res).id && !canReadAnyTicket(res)) {
     sendError(res, 403, 'FORBIDDEN', "This attachment belongs to another requester's ticket.");
     return null;
   }
@@ -443,8 +446,9 @@ async function loadOwnedAttachment(res: Response, attachmentId: string) {
   return attachment;
 }
 
-// GET /api/tickets/:id — one owned ticket, read-only (FR-04, AC-03, AC-05).
-app.get('/api/tickets/:id', requireRequester, async (req, res) => {
+// GET /api/tickets/:id — one ticket, read-only (Lab 2 FR-04, AC-03, AC-05).
+// Owner, or any IT Staff / Administrator (Lab 3 api-spec.md §3.5).
+app.get('/api/tickets/:id', requireAuth, async (req, res) => {
   try {
     const ticket = await loadOwnedTicket(res, String(req.params.id));
     if (!ticket) return;
@@ -459,8 +463,9 @@ app.get('/api/tickets/:id', requireRequester, async (req, res) => {
 // (FR-05, AC-06, AC-07, AC-08).
 //
 // The checks run in the order api-spec.md §3.7 fixes, so a request that breaks
-// several rules at once is told about the most specific one.
-app.post('/api/tickets/:id/attachments', requireRequester, async (req, res) => {
+// several rules at once is told about the most specific one. Owner only: IT
+// Staff and Administrators may read attachments but never add them (BR-14).
+app.post('/api/tickets/:id/attachments', requireAuth, requireRole('Requester'), async (req, res) => {
   try {
     const { ticket, refusal } = await findTicketForRequester(res, String(req.params.id));
 
@@ -559,7 +564,7 @@ app.post('/api/tickets/:id/attachments', requireRequester, async (req, res) => {
 // GET /api/attachments/:id — metadata without the bytes (api-spec.md §3.8).
 // A removed attachment answers 200 here: its metadata is exactly what the
 // detail screen shows (BR-10). Only `downloadUrl` disappears.
-app.get('/api/attachments/:id', requireRequester, async (req, res) => {
+app.get('/api/attachments/:id', requireAuth, async (req, res) => {
   try {
     const attachment = await loadOwnedAttachment(res, String(req.params.id));
     if (!attachment) return;
@@ -571,7 +576,7 @@ app.get('/api/attachments/:id', requireRequester, async (req, res) => {
 });
 
 // GET /api/attachments/:id/download — stream an active attachment (AC-09, BR-09).
-app.get('/api/attachments/:id/download', requireRequester, async (req, res) => {
+app.get('/api/attachments/:id/download', requireAuth, async (req, res) => {
   try {
     const attachment = await loadOwnedAttachment(res, String(req.params.id));
     if (!attachment) return;
@@ -612,7 +617,7 @@ app.get('/api/attachments/:id/download', requireRequester, async (req, res) => {
 //
 // Nothing is deleted: neither the row nor the stored file. The record gains the
 // three removal fields and loses its download URL.
-app.patch('/api/attachments/:id/remove', requireRequester, async (req, res) => {
+app.patch('/api/attachments/:id/remove', requireAuth, requireRole('Requester'), async (req, res) => {
   try {
     const attachment = await loadOwnedAttachment(res, String(req.params.id));
     if (!attachment) return;
@@ -645,18 +650,3 @@ app.patch('/api/attachments/:id/remove', requireRequester, async (req, res) => {
   }
 });
 
-app.post('/api/users', async (req, res) => {
-  try {
-    const { email, name } = req.body;
-    if (!email) {
-      return res.status(400).json({ error: 'Email is required' });
-    }
-
-    const user = await prisma.user.create({
-      data: { email, name }
-    });
-    res.status(201).json(user);
-  } catch (error) {
-    res.status(400).json({ error: 'User creation failed. Email may already exist.' });
-  }
-});

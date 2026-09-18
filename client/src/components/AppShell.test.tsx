@@ -1,250 +1,215 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { useEffect, useState } from 'react'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import App from '../App'
 import AppShell from './AppShell'
-import { RequesterProvider } from '../context/RequesterProvider'
-import { REQUESTER_STORAGE_KEY, useRequester } from '../context/requester'
-import type { Requester } from '../context/requester'
+import { AuthProvider } from '../context/AuthProvider'
+import { useAuth } from '../context/auth'
+import type { SessionUser } from '../context/auth'
+import { AuthStub, JENNIFER, PRIYA, ADMIN, SARAH, authValue } from '../test/auth'
 
 /**
- * UI-07 (AC-02, FR-06, BR-13) — the Change Requester control is present on
- * every screen, and switching requester clears the previous requester's loaded
- * data before the new requester's data is shown.
+ * UI-08 (AC-11, AC-08, FR-03) — the application shell shows the signed-in
+ * user, only their role's navigation, and a profile menu whose Log out ends
+ * the session on the server and lands on /login. The Development Requester
+ * block from Lab 2 is gone.
  */
 
-const JENNIFER: Requester = {
-  id: 'r-1',
-  name: 'Jennifer Anderson',
-  email: 'jennifer.anderson@kmutt.ac.th',
-  department: 'Registrar',
+function jsonResponse(status: number, body: unknown) {
+  return { ok: status >= 200 && status < 300, status, json: async () => body }
 }
 
-const SARAH: Requester = {
-  id: 'r-2',
-  name: 'Sarah Johnson',
-  email: 'sarah.johnson@kmutt.ac.th',
-  department: 'Finance',
-}
-
-/** Tickets keyed by requester id, standing in for the Issue #5 list endpoint. */
-const TICKETS_BY_REQUESTER: Record<string, string[]> = {
-  [JENNIFER.id]: ['TKT-2026-000001 Laptop battery drains quickly'],
-  [SARAH.id]: ['TKT-2026-000002 Cannot connect to the VPN'],
-}
-
-/**
- * A requester-scoped screen that loads its data once on mount and then keeps
- * it in its own state. If the shell failed to discard the subtree on a
- * requester switch, this component would keep rendering the stale tickets —
- * which is exactly the BR-13 violation the tests below look for.
- */
-function TicketsProbe({ onLoad }: { onLoad?: () => void }) {
-  const { requester } = useRequester()
-  const [tickets, setTickets] = useState<string[]>([])
-
-  useEffect(() => {
-    onLoad?.()
-    setTickets(TICKETS_BY_REQUESTER[requester?.id ?? ''] ?? [])
-    // Deliberately mount-only: the component never reloads on its own, so the
-    // shell has to be the thing that clears it.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  return (
-    <div>
-      <h1>My Tickets</h1>
-      <ul>
-        {tickets.map((ticket) => (
-          <li key={ticket}>{ticket}</li>
-        ))}
-      </ul>
-    </div>
-  )
-}
-
-function renderShell(initialRequester: Requester, probe?: { onLoad?: () => void }) {
-  window.sessionStorage.setItem(REQUESTER_STORAGE_KEY, JSON.stringify(initialRequester))
-
-  return render(
-    <MemoryRouter initialEntries={['/tickets']}>
-      <RequesterProvider>
+function renderShell(user: SessionUser, overrides: Parameters<typeof authValue>[1] = {}, initialPath = '/tickets') {
+  const value = authValue(user, overrides)
+  render(
+    <MemoryRouter initialEntries={[initialPath]}>
+      <AuthStub value={value}>
         <Routes>
           <Route element={<AppShell />}>
-            <Route path="/tickets" element={<TicketsProbe onLoad={probe?.onLoad} />} />
+            <Route path="/tickets" element={<h1>My Tickets</h1>} />
+            <Route path="/tickets/new" element={<h1>Create Ticket</h1>} />
+            <Route path="/staff/queue" element={<h1>Ticket Queue</h1>} />
+            <Route path="/admin/users" element={<h1>Users</h1>} />
+            <Route path="/change-password" element={<h1>Change Your Password</h1>} />
           </Route>
-          <Route path="/select-requester" element={<h1>Development Requester Selection</h1>} />
+          <Route path="/login" element={<h1>Sign in to your account</h1>} />
         </Routes>
-      </RequesterProvider>
+      </AuthStub>
     </MemoryRouter>,
   )
+  return value
 }
-
-/**
- * Answers every endpoint the shell's screens touch. `/system` still hosts the
- * Lab 1 diagnostics page, so its endpoints are stubbed here too.
- */
-function stubFetch() {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn().mockImplementation((input: string) => {
-      const url = String(input)
-      const body = url.includes('/api/requesters')
-        ? { data: [JENNIFER, SARAH] }
-        : url.includes('/api/health')
-          ? { status: 'ok', service: 'TokTickIT API', timestamp: '', database: 'CONNECTED' }
-          : []
-      return Promise.resolve({ ok: true, status: 200, json: async () => body })
-    }),
-  )
-}
-
-beforeEach(() => {
-  window.sessionStorage.clear()
-  stubFetch()
-})
 
 afterEach(() => {
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
 })
 
-describe('AppShell — header identity (FR-06)', () => {
-  it('shows the selected requester name in the header', () => {
+describe('AppShell — identity and role navigation (UI-08, AC-11)', () => {
+  it('shows the user name and a role badge in the header', () => {
     renderShell(JENNIFER)
 
-    expect(screen.getByText(JENNIFER.name)).toBeInTheDocument()
+    const header = screen.getByRole('banner')
+    expect(within(header).getByText(JENNIFER.name)).toBeInTheDocument()
+    expect(within(header).getByText('Requester')).toHaveClass('zg-badge-role-requester')
   })
 
-  it('offers a Change Requester control on every screen', async () => {
-    window.sessionStorage.setItem(REQUESTER_STORAGE_KEY, JSON.stringify(JENNIFER))
+  it.each([
+    ['Requester', JENNIFER, ['My Tickets', 'Create Ticket'], ['Queue', 'Users']],
+    ['IT Staff', PRIYA, ['Queue'], ['My Tickets', 'Create Ticket', 'Users']],
+    ['Administrator', ADMIN, ['Users', 'Queue'], ['My Tickets', 'Create Ticket']],
+  ])('renders only the %s navigation', (_label, user, present, absent) => {
+    renderShell(user, {}, '/tickets')
 
-    for (const path of ['/tickets', '/tickets/new', '/system']) {
-      const view = render(
-        <MemoryRouter initialEntries={[path]}>
-          <RequesterProvider>
-            <App />
-          </RequesterProvider>
-        </MemoryRouter>,
-      )
-
-      expect(await screen.findByRole('button', { name: /change requester/i })).toBeInTheDocument()
-      expect(screen.getByText(JENNIFER.name)).toBeInTheDocument()
-
-      view.unmount()
+    const nav = screen.getByRole('navigation', { name: /main/i })
+    expect(within(nav).getAllByRole('link').map((link) => link.textContent)).toEqual(present)
+    for (const label of absent) {
+      expect(within(nav).queryByRole('link', { name: label })).not.toBeInTheDocument()
     }
+  })
+
+  it('has no Development Requester block and no Change Requester control (FR-05)', () => {
+    renderShell(JENNIFER)
+
+    expect(screen.queryByText(/development requester/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /change requester/i })).not.toBeInTheDocument()
+    expect(document.querySelector('.zg-requester')).toBeNull()
+  })
+
+  it('links the app name to the role home', () => {
+    renderShell(ADMIN, {}, '/staff/queue')
+    expect(screen.getByRole('link', { name: 'TokTickIT' })).toHaveAttribute('href', '/admin/users')
+  })
+
+  it('collapses to the app name and Log out while a password change is pending (AC-02)', () => {
+    renderShell(SARAH, {}, '/change-password')
+
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /log out/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /change password/i })).not.toBeInTheDocument()
   })
 })
 
-describe('AppShell — switching requester (UI-07, AC-02, BR-13)', () => {
-  it('clears the selection and returns to the selector when Change Requester is clicked', async () => {
+describe('AppShell — profile menu and logout (UI-08, AC-08)', () => {
+  it('opens a menu with Change password and Log out', async () => {
     const user = userEvent.setup()
     renderShell(JENNIFER)
 
-    await user.click(screen.getByRole('button', { name: /change requester/i }))
+    const trigger = screen.getByRole('button', { name: new RegExp(JENNIFER.name) })
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
 
-    expect(
-      await screen.findByRole('heading', { name: /development requester selection/i }),
-    ).toBeInTheDocument()
-    expect(window.sessionStorage.getItem(REQUESTER_STORAGE_KEY)).toBeNull()
+    await user.click(trigger)
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    const menu = screen.getByRole('menu', { name: /profile/i })
+    expect(within(menu).getByRole('menuitem', { name: /change password/i })).toBeInTheDocument()
+    expect(within(menu).getByRole('menuitem', { name: /log out/i })).toBeInTheDocument()
   })
 
-  it('discards the previous requester data and reloads for the new requester', async () => {
+  it('navigates to /change-password from the menu', async () => {
     const user = userEvent.setup()
-    const onLoad = vi.fn()
-    renderShell(JENNIFER, { onLoad })
+    renderShell(JENNIFER)
 
-    expect(await screen.findByText(/laptop battery drains quickly/i)).toBeInTheDocument()
-    expect(onLoad).toHaveBeenCalledTimes(1)
+    await user.click(screen.getByRole('button', { name: new RegExp(JENNIFER.name) }))
+    await user.click(screen.getByRole('menuitem', { name: /change password/i }))
 
-    // Switch to Sarah through the real selector flow.
-    await user.click(screen.getByRole('button', { name: /change requester/i }))
-    await screen.findByRole('heading', { name: /development requester selection/i })
+    expect(await screen.findByRole('heading', { name: /change your password/i })).toBeInTheDocument()
+  })
 
-    // The route stub above replaces the selector, so drive the context the way
-    // the selector does and assert on what the shell renders afterwards.
-    window.sessionStorage.setItem(REQUESTER_STORAGE_KEY, JSON.stringify(SARAH))
-    const view = renderShell(SARAH, { onLoad })
+  it('calls logout and lands on /login', async () => {
+    const user = userEvent.setup()
+    const logout = vi.fn().mockResolvedValue(undefined)
+    renderShell(JENNIFER, { logout })
 
-    expect(await screen.findByText(/cannot connect to the vpn/i)).toBeInTheDocument()
-    expect(screen.queryByText(/laptop battery drains quickly/i)).not.toBeInTheDocument()
-    expect(screen.getByText(SARAH.name)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: new RegExp(JENNIFER.name) }))
+    await user.click(screen.getByRole('menuitem', { name: /log out/i }))
+
+    expect(logout).toHaveBeenCalledTimes(1)
+    expect(await screen.findByRole('heading', { name: /sign in to your account/i })).toBeInTheDocument()
+  })
+
+  it('posts to /api/auth/logout with credentials and forgets the user (through the real provider)', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn((input: string, init?: RequestInit) => {
+      const url = String(input)
+      if (url.endsWith('/api/auth/me')) return Promise.resolve(jsonResponse(200, JENNIFER))
+      if (url.endsWith('/api/auth/logout') && init?.method === 'POST') return Promise.resolve({ ok: true, status: 204, json: async () => null })
+      if (url.includes('/api/tickets')) return Promise.resolve(jsonResponse(200, { data: [], pagination: { page: 1, pageSize: 10, totalItems: 0, totalPages: 0, hasNextPage: false, hasPreviousPage: false } }))
+      if (url.includes('/api/categories')) return Promise.resolve(jsonResponse(200, { data: [] }))
+      return Promise.resolve(jsonResponse(404, {}))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(
+      <MemoryRouter initialEntries={['/tickets']}>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    // The provider asks /api/auth/me first; the shell then shows Jennifer.
+    await user.click(await screen.findByRole('button', { name: new RegExp(JENNIFER.name) }))
+    await user.click(screen.getByRole('menuitem', { name: /log out/i }))
+
+    expect(await screen.findByRole('heading', { name: /sign in to your account/i })).toBeInTheDocument()
+    const logoutCall = fetchMock.mock.calls.find(([url]) => String(url).endsWith('/api/auth/logout'))
+    expect(logoutCall?.[1]?.credentials).toBe('include')
     expect(screen.queryByText(JENNIFER.name)).not.toBeInTheDocument()
-
-    view.unmount()
   })
+})
 
-  it('remounts requester-scoped screens when the requester changes in place (BR-13)', async () => {
-    const user = userEvent.setup()
+describe('AppShell — identity change discards loaded data', () => {
+  /** A screen that loads once on mount and keeps its own state. */
+  function Probe({ onLoad }: { onLoad: () => void }) {
+    const { user } = useAuth()
+    const [loadedFor, setLoadedFor] = useState('')
+    useEffect(() => {
+      onLoad()
+      setLoadedFor(user?.name ?? '')
+      // Deliberately mount-only: the shell has to be the thing that clears it.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+    return <p>Loaded for {loadedFor}</p>
+  }
+
+  it('remounts the routed subtree when a different user signs in', async () => {
     const onLoad = vi.fn()
 
-    // A control that swaps the requester without unmounting the shell — the
-    // hardest case for BR-13, since nothing else forces the child to reset.
-    function SwitchToSarah() {
-      const { selectRequester } = useRequester()
+    function Harness() {
+      const [current, setCurrent] = useState<SessionUser>(JENNIFER)
       return (
-        <button type="button" onClick={() => selectRequester(SARAH)}>
-          Switch to Sarah
-        </button>
+        <MemoryRouter initialEntries={['/tickets']}>
+          <AuthStub value={authValue(current)}>
+            <button type="button" onClick={() => setCurrent(PRIYA)}>
+              Become Priya
+            </button>
+            <Routes>
+              <Route element={<AppShell />}>
+                <Route path="/tickets" element={<Probe onLoad={onLoad} />} />
+              </Route>
+            </Routes>
+          </AuthStub>
+        </MemoryRouter>
       )
     }
 
-    window.sessionStorage.setItem(REQUESTER_STORAGE_KEY, JSON.stringify(JENNIFER))
-    render(
-      <MemoryRouter initialEntries={['/tickets']}>
-        <RequesterProvider>
-          <SwitchToSarah />
-          <Routes>
-            <Route element={<AppShell />}>
-              <Route path="/tickets" element={<TicketsProbe onLoad={onLoad} />} />
-            </Route>
-          </Routes>
-        </RequesterProvider>
-      </MemoryRouter>,
-    )
+    const user = userEvent.setup()
+    render(<Harness />)
 
-    expect(await screen.findByText(/laptop battery drains quickly/i)).toBeInTheDocument()
+    expect(await screen.findByText(`Loaded for ${JENNIFER.name}`)).toBeInTheDocument()
     expect(onLoad).toHaveBeenCalledTimes(1)
 
-    await user.click(screen.getByRole('button', { name: /switch to sarah/i }))
+    await user.click(screen.getByRole('button', { name: /become priya/i }))
 
-    expect(await screen.findByText(/cannot connect to the vpn/i)).toBeInTheDocument()
-    expect(screen.queryByText(/laptop battery drains quickly/i)).not.toBeInTheDocument()
+    await waitFor(() => expect(screen.getByText(`Loaded for ${PRIYA.name}`)).toBeInTheDocument())
+    expect(screen.queryByText(`Loaded for ${JENNIFER.name}`)).not.toBeInTheDocument()
     expect(onLoad).toHaveBeenCalledTimes(2)
-    expect(screen.getByText(SARAH.name)).toBeInTheDocument()
   })
+})
 
-  it('shows only the new requester tickets after a full select → change → select journey', async () => {
-    const user = userEvent.setup()
-    window.sessionStorage.clear()
-
-    render(
-      <MemoryRouter initialEntries={['/tickets']}>
-        <RequesterProvider>
-          <App />
-        </RequesterProvider>
-      </MemoryRouter>,
-    )
-
-    // Guard sends us to the selector, choose Jennifer.
-    await screen.findByRole('heading', { name: /development requester selection/i })
-    await user.selectOptions(screen.getByLabelText(/development requester/i), JENNIFER.id)
-    await user.click(screen.getByRole('button', { name: /continue/i }))
-
-    expect(await screen.findByText(new RegExp(`Tickets raised by ${JENNIFER.name}`, 'i')))
-      .toBeInTheDocument()
-
-    // Change requester, choose Sarah.
-    await user.click(screen.getByRole('button', { name: /change requester/i }))
-    await screen.findByRole('heading', { name: /development requester selection/i })
-    await user.selectOptions(screen.getByLabelText(/development requester/i), SARAH.id)
-    await user.click(screen.getByRole('button', { name: /continue/i }))
-
-    expect(await screen.findByText(new RegExp(`Tickets raised by ${SARAH.name}`, 'i')))
-      .toBeInTheDocument()
-    expect(screen.queryByText(new RegExp(`Tickets raised by ${JENNIFER.name}`, 'i')))
-      .not.toBeInTheDocument()
-  })
+beforeEach(() => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(404, {})))
 })

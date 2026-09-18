@@ -27,7 +27,8 @@ Six to ten prompts that materially shaped the sprint. Rows are added as the spri
 | P-03 | API contract | contract | Write `api-spec.md` extending Lab 2: cookie conventions, error codes, one subsection per endpoint, map each endpoint to API test ids | 22 endpoint sections; `permittedTransitions` returned by the server so the client never encodes the matrix | |
 | P-04 | UI spec | contract | Write `ui-spec.md`: badges for eight statuses / IT priority / roles, Public-vs-Internal visual rule, five new screens with modes and feedback states, V-01…14 | | |
 | P-05 | Test plan | contract | Write `tests.md` before code: keep the handout's API-01 / API-08 / E2E-02 ids, cover every AC with at least one test, list real file paths | UNIT-01…07, API-01…48, UI-01…25, E2E-01…07, traceability matrix | |
-| P-06 | | | | | |
+| P-06 | Implementation | #37 | "Read Issue #37 and implement it" in a fresh session with only the contract (specification.md, api-spec.md, ui-spec.md, tests.md) and the Lab 2 code as context | Hand-written migration renaming `RequesterUser` → `User` in place, `Session` table + cookie helpers, `requireAuth` / `requireRole` / `requireSession` middleware, the four `/api/auth` routes, in-memory login throttle, bcrypt seed for all roles, `verify-lab03-migration.ts`; client `AuthProvider`, `apiClient` (`credentials: 'include'`), `RequireAuth`, Login, Change Password, role-aware shell; Lab 2 suites moved from the header to the cookie; 210 server + 113 client tests green | Two adjustments from the contract while implementing: the seed gives David Lee a ready password (`Requester2!`) so the Lab 2 ownership E2E has two sign-in-able requesters (specification.md §7 updated), and the Lab 1 `SystemStatus` page was removed with `/api/users` because nothing else used it. MIG-01/02 and E2E-01…03 still need a PostgreSQL run to record |
+| P-07 | | | | | |
 
 ---
 

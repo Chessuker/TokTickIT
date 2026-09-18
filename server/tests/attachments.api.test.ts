@@ -10,7 +10,7 @@ process.env.UPLOAD_DIR = UPLOAD_DIR;
 
 vi.mock('../src/db.js', () => ({
   prisma: {
-    requesterUser: { findFirst: vi.fn() },
+    session: { findUnique: vi.fn() },
     ticket: { findFirst: vi.fn() },
     attachment: {
       findFirst: vi.fn(),
@@ -25,6 +25,7 @@ import request from 'supertest';
 import { app } from '../src/app.js';
 import { prisma } from '../src/db.js';
 import { MAX_FILE_BYTES } from '../src/attachmentRules.js';
+import { ADMIN, JENNIFER, PRIYA, cookieHeader, mockSessionFor } from './lab-03/sessionMock.js';
 
 /**
  * API-07 … API-11 and API-14 — the attachment lifecycle (FR-05, AC-06 … AC-09,
@@ -91,24 +92,26 @@ function attachmentRow(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function upload(bytes: Buffer, fileName: string, contentType: string, requesterId = REQUESTER_ID) {
+// Lab 3 (API-19): the caller is the session user behind the test cookie —
+// Jennifer unless a test re-mocks `session.findUnique`.
+function upload(bytes: Buffer, fileName: string, contentType: string) {
   return request(app)
     .post(`/api/tickets/${TICKET_ID}/attachments`)
-    .set('X-Requester-Id', requesterId)
+    .set('Cookie', cookieHeader())
     .attach('file', bytes, { filename: fileName, contentType });
 }
 
-function removal(body: unknown, requesterId = REQUESTER_ID) {
+function removal(body: unknown) {
   return request(app)
     .patch(`/api/attachments/${ATTACHMENT_ID}/remove`)
-    .set('X-Requester-Id', requesterId)
+    .set('Cookie', cookieHeader())
     .send(body as object);
 }
 
 beforeEach(() => {
   vi.resetAllMocks();
 
-  vi.mocked(prisma.requesterUser.findFirst).mockResolvedValue(REQUESTER);
+  mockSessionFor(vi.mocked(prisma.session.findUnique), JENNIFER);
   vi.mocked(prisma.ticket.findFirst).mockResolvedValue(ticketRow());
   vi.mocked(prisma.attachment.count).mockResolvedValue(0);
   vi.mocked(prisma.attachment.findFirst).mockResolvedValue(attachmentRow());
@@ -246,7 +249,7 @@ describe('POST /api/tickets/:id/attachments — disallowed type (API-08, AC-07, 
   it('rejects a request that carries no file at all', async () => {
     const res = await request(app)
       .post(`/api/tickets/${TICKET_ID}/attachments`)
-      .set('X-Requester-Id', REQUESTER_ID)
+      .set('Cookie', cookieHeader())
       .field('note', 'no file here');
 
     expect(res.status).toBe(400);
@@ -380,7 +383,7 @@ describe('GET /api/attachments/:id/download (API-11, AC-09, BR-09, BR-10)', () =
 
     const res = await request(app)
       .get(`/api/attachments/${ATTACHMENT_ID}/download`)
-      .set('X-Requester-Id', REQUESTER_ID);
+      .set('Cookie', cookieHeader());
 
     expect(created.status).toBe(201);
     expect(res.status).toBe(200);
@@ -404,7 +407,7 @@ describe('GET /api/attachments/:id/download (API-11, AC-09, BR-09, BR-10)', () =
 
     const res = await request(app)
       .get(`/api/attachments/${ATTACHMENT_ID}/download`)
-      .set('X-Requester-Id', REQUESTER_ID);
+      .set('Cookie', cookieHeader());
 
     expect(created.status).toBe(201);
     expect(res.status).toBe(403);
@@ -421,7 +424,7 @@ describe('GET /api/attachments/:id/download (API-11, AC-09, BR-09, BR-10)', () =
 
     const res = await request(app)
       .get(`/api/attachments/${ATTACHMENT_ID}/download`)
-      .set('X-Requester-Id', REQUESTER_ID);
+      .set('Cookie', cookieHeader());
 
     expect(res.status).toBe(403);
   });
@@ -433,7 +436,7 @@ describe('GET /api/attachments/:id/download (API-11, AC-09, BR-09, BR-10)', () =
 
     const res = await request(app)
       .get(`/api/attachments/${ATTACHMENT_ID}/download`)
-      .set('X-Requester-Id', REQUESTER_ID);
+      .set('Cookie', cookieHeader());
 
     expect(res.status).toBe(404);
     expect(res.body.error.code).toBe('NOT_FOUND');
@@ -444,16 +447,16 @@ describe('GET /api/attachments/:id/download (API-11, AC-09, BR-09, BR-10)', () =
 
     const res = await request(app)
       .get(`/api/attachments/${ATTACHMENT_ID}/download`)
-      .set('X-Requester-Id', REQUESTER_ID);
+      .set('Cookie', cookieHeader());
 
     expect(res.status).toBe(404);
   });
 
-  it('requires a selected requester', async () => {
+  it('requires a session', async () => {
     const res = await request(app).get(`/api/attachments/${ATTACHMENT_ID}/download`);
 
-    expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('REQUESTER_REQUIRED');
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('UNAUTHORIZED');
   });
 });
 
@@ -469,7 +472,7 @@ describe('GET /api/attachments/:id — metadata (BR-10)', () => {
 
     const res = await request(app)
       .get(`/api/attachments/${ATTACHMENT_ID}`)
-      .set('X-Requester-Id', REQUESTER_ID);
+      .set('Cookie', cookieHeader());
 
     expect(res.status).toBe(200);
     expect(res.body.isRemoved).toBe(true);
@@ -481,7 +484,7 @@ describe('GET /api/attachments/:id — metadata (BR-10)', () => {
   it('never leaks the storage path', async () => {
     const res = await request(app)
       .get(`/api/attachments/${ATTACHMENT_ID}`)
-      .set('X-Requester-Id', REQUESTER_ID);
+      .set('Cookie', cookieHeader());
 
     expect(res.body.storagePath).toBeUndefined();
   });
@@ -551,5 +554,50 @@ describe('POST /api/tickets/:id/attachments — check order (AC-06, AC-07)', () 
 
     expect(res.status).toBe(415);
     expect(res.body.error.code).toBe('UNSUPPORTED_MEDIA_TYPE');
+  });
+});
+
+/**
+ * API-21 — IT Staff and Administrators have read-only continuity over another
+ * Requester's attachments (Lab 3 AC-24, BR-14): metadata and download answer
+ * `200`, add and remove answer `403`.
+ */
+describe('Staff and Administrator access to attachments (API-21, AC-24, BR-14)', () => {
+  it.each([
+    ['IT Staff', PRIYA],
+    ['Administrator', ADMIN]
+  ])('%s can read and download but not add or remove', async (_label, user) => {
+    mockSessionFor(vi.mocked(prisma.session.findUnique), user);
+    const { writeFile, mkdir } = await import('node:fs/promises');
+    await mkdir(UPLOAD_DIR, { recursive: true });
+    await writeFile(path.join(UPLOAD_DIR, 'stored-file.pdf'), PDF_BYTES);
+
+    const metadata = await request(app).get(`/api/attachments/${ATTACHMENT_ID}`).set('Cookie', cookieHeader());
+    expect(metadata.status).toBe(200);
+    expect(metadata.body.fileName).toBe('battery-report.pdf');
+
+    const download = await request(app)
+      .get(`/api/attachments/${ATTACHMENT_ID}/download`)
+      .set('Cookie', cookieHeader());
+    expect(download.status).toBe(200);
+    expect(download.headers['content-type']).toContain('application/pdf');
+
+    const added = await upload(PDF_BYTES, 'battery-report.pdf', 'application/pdf');
+    expect(added.status).toBe(403);
+    expect(added.body.error.code).toBe('FORBIDDEN');
+    expect(prisma.attachment.create).not.toHaveBeenCalled();
+
+    const removed = await removal({ reason: 'Wrong file' });
+    expect(removed.status).toBe(403);
+    expect(prisma.attachment.update).not.toHaveBeenCalled();
+  });
+
+  it('answers 404 for an attachment id that does not exist', async () => {
+    mockSessionFor(vi.mocked(prisma.session.findUnique), PRIYA);
+    vi.mocked(prisma.attachment.findFirst).mockResolvedValue(null);
+
+    const res = await request(app).get(`/api/attachments/${ATTACHMENT_ID}`).set('Cookie', cookieHeader());
+
+    expect(res.status).toBe(404);
   });
 });

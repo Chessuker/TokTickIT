@@ -3,8 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import CreateTicketForm from './CreateTicketForm'
-import { RequesterContext } from '../context/requester'
-import type { Requester } from '../context/requester'
+import { AuthStub, JENNIFER } from '../test/auth'
 
 /**
  * UI-03 (AC-01) — submitting an empty form renders an error under each
@@ -12,13 +11,6 @@ import type { Requester } from '../context/requester'
  * UI-08 (AC-12, FR-07) — a backend failure shows a callout and leaves every
  * entered value in place so the user can retry immediately.
  */
-
-const REQUESTER: Requester = {
-  id: '6f1b7c58-6c2a-4f5f-9b31-2c1f0a9d77e2',
-  name: 'Jennifer Anderson',
-  email: 'jennifer.anderson@kmutt.ac.th',
-  department: 'Registrar',
-}
 
 const CATEGORIES = [
   { id: 'cat-hardware', name: 'Hardware' },
@@ -54,18 +46,14 @@ function createFetchMock(onCreate?: () => Promise<unknown>) {
   })
 }
 
+// UI-20 (AC-13): the form renders under the auth context instead of the
+// Lab 2 requester context, and no request carries `X-Requester-Id`.
 function renderForm() {
-  const contextValue = {
-    requester: REQUESTER,
-    selectRequester: vi.fn(),
-    clearRequester: vi.fn(),
-  }
-
   return render(
     <MemoryRouter>
-      <RequesterContext.Provider value={contextValue}>
+      <AuthStub user={JENNIFER}>
         <CreateTicketForm />
-      </RequesterContext.Provider>
+      </AuthStub>
     </MemoryRouter>,
   )
 }
@@ -274,7 +262,8 @@ describe('CreateTicketForm — success (AC-01)', () => {
 
     const [, init] = fetchMock.mock.calls.find(([, i]) => (i as RequestInit | undefined)?.method === 'POST')!
     const request = init as RequestInit
-    expect((request.headers as Record<string, string>)['X-Requester-Id']).toBe(REQUESTER.id)
+    expect((request.headers as Record<string, string>)['X-Requester-Id']).toBeUndefined()
+    expect(request.credentials).toBe('include')
 
     const body = JSON.parse(request.body as string)
     expect(body).not.toHaveProperty('requesterId')

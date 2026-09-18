@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { API_URL } from '../api'
-import { useRequester } from '../context/requester'
+import { apiFetch, apiJson } from '../apiClient'
 import {
   ALLOWED_MIME_TYPES,
   ALLOWED_TYPES_LABEL,
@@ -92,8 +91,6 @@ function validate(values: FormValues): Record<string, string> {
 }
 
 function CreateTicketForm() {
-  const { requester } = useRequester()
-
   const [values, setValues] = useState<FormValues>(INITIAL_VALUES)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState<string | null>(null)
@@ -127,8 +124,8 @@ function CreateTicketForm() {
     setOptionsError(null)
     try {
       const [categoryRes, systemRes] = await Promise.all([
-        fetch(`${API_URL}/api/categories`),
-        fetch(`${API_URL}/api/related-systems`),
+        apiFetch('/api/categories'),
+        apiFetch('/api/related-systems'),
       ])
 
       if (!categoryRes.ok || !systemRes.ok) {
@@ -194,9 +191,8 @@ function CreateTicketForm() {
       form.append('file', file)
 
       try {
-        const res = await fetch(`${API_URL}/api/tickets/${ticketId}/attachments`, {
+        const res = await apiFetch(`/api/tickets/${ticketId}/attachments`, {
           method: 'POST',
-          headers: { 'X-Requester-Id': requester?.id ?? '' },
           body: form,
         })
 
@@ -231,21 +227,14 @@ function CreateTicketForm() {
     setSubmitting(true)
 
     try {
-      const res = await fetch(`${API_URL}/api/tickets`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Requester context travels in the header, never in the body
-          // (api-spec.md §1.1), so the server decides who owns the ticket.
-          'X-Requester-Id': requester?.id ?? '',
-        },
-        body: JSON.stringify({
-          summary: values.summary.trim(),
-          description: values.description.trim(),
-          categoryId: values.categoryId,
-          relatedSystemId: values.relatedSystemId,
-          priority: values.priority,
-        }),
+      // The caller is the session cookie, never anything in the body (Lab 3
+      // api-spec.md §1.1, AC-03), so the server decides who owns the ticket.
+      const res = await apiJson('/api/tickets', 'POST', {
+        summary: values.summary.trim(),
+        description: values.description.trim(),
+        categoryId: values.categoryId,
+        relatedSystemId: values.relatedSystemId,
+        priority: values.priority,
       })
 
       if (res.status === 201) {
