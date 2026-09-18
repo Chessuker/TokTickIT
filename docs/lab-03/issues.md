@@ -50,7 +50,7 @@ Covers FR-08; AD-10; AC-16, AC-17, AC-34.
 
 `ticketWorkflow.ts` (transition matrix + owner rule, unit-tested); `GET /api/staff/tickets/:id`, claim / owner / it-priority / status endpoints; Internal Notes endpoints; `StaffTicketDetail` with read-only group, three operational controls, tabs, confirmation dialog, Administrator read-only view.
 
-Covers FR-09 … FR-12; BR-15 … BR-23; AC-18 … AC-24.
+Covers FR-09 … FR-12; BR-15 … BR-23, BR-31; AC-18 … AC-24.
 
 ## Issue #41 — Administrator user management
 

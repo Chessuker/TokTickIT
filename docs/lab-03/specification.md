@@ -105,11 +105,11 @@ BR-01 … BR-05 are the handout's mandatory rules, kept verbatim.
 | BR-04 | Public Comments are visible to the Requester, IT Staff, and Administrator. Internal Notes are visible only to IT Staff and Administrator. |
 | BR-05 | A Requester may indicate that the problem appears resolved, but cannot formally set the Ticket to Resolved or Closed. |
 | BR-06 | A failed login (unknown email or wrong password) answers `401 INVALID_CREDENTIALS` with the same message in both cases. Only when the credentials are correct *and* the account is inactive does the server answer `403 ACCOUNT_INACTIVE`, so an attacker cannot learn whether an email exists without already knowing its password. |
-| BR-07 | After 5 failed logins for the same email within 15 minutes the server answers `429 TOO_MANY_ATTEMPTS` for that email until the window passes. The counter is in-memory (local lab), resets on a successful login, and is never shown to the user beyond "try again later". |
+| BR-07 | After 5 failed logins for the same email within 15 minutes the server answers `429 TOO_MANY_ATTEMPTS` for that email until the window passes. Only `401 INVALID_CREDENTIALS` responses count; a `403 ACCOUNT_INACTIVE` answer (correct password, inactive account) does not increment the counter. The counter is in-memory (local lab), resets on a successful login, and is never shown to the user beyond "try again later". |
 | BR-08 | Password policy: 8–72 characters, at least one upper-case letter, one lower-case letter, one digit and one non-alphanumeric character. Applies to Change Password and to any initial password an Administrator sets. |
 | BR-09 | Passwords are stored only as bcrypt hashes (cost 10). A password or hash never appears in any API response, log line or seed output. |
-| BR-10 | A session is a random 256-bit token stored hashed in the `Session` table and delivered in an `httpOnly`, `SameSite=Lax` cookie. It expires 8 hours after login. Logout deletes the session row; an expired or deleted session answers `401 UNAUTHORIZED`. Deactivating a user, changing their role, or setting a new initial password deletes all of that user's sessions. |
-| BR-11 | Change Password requires the current password, a new password satisfying BR-08 that differs from the current one, and a matching confirmation. Success clears `mustChangePassword` and keeps the current session. |
+| BR-10 | A session is a random 256-bit token stored hashed in the `Session` table and delivered in an `httpOnly`, `SameSite=Lax` cookie. It expires 8 hours after login. Logout deletes the session row; an expired or deleted session answers `401 UNAUTHORIZED`. Deactivating a user, changing their role, or setting a new initial password deletes all of that user's sessions; a successful Change Password deletes all of that user's sessions except the current one (BR-11). |
+| BR-11 | Change Password requires the current password, a new password satisfying BR-08 that differs from the current one, and a matching confirmation. Success clears `mustChangePassword`, keeps the current session and deletes every other session of that user, so a stolen cookie stops working once the password is changed. |
 | BR-12 | Email addresses are unique case-insensitively and stored lower-cased and trimmed. Login matching is case-insensitive. |
 | BR-13 | Every user has exactly one role: `Requester`, `ITStaff` or `Administrator`. |
 
@@ -121,6 +121,7 @@ BR-01 … BR-05 are the handout's mandatory rules, kept verbatim.
 | BR-15 | A Ticket has zero or one owner. The owner must be an active user with role `ITStaff`. Claim sets the caller as owner; assign/reassign sets another active IT Staff; unassign clears the owner. An inactive or non-IT-Staff target is rejected with `400 VALIDATION_FAILED`. |
 | BR-16 | `itPriority` is copied from the Requested Priority when a ticket is created (and by the migration for existing tickets). Only IT Staff may change it afterwards. The Requested Priority is immutable once the ticket exists. |
 | BR-17 | Administrators have read-only access to the queue, ticket detail, comments and internal notes. Any ticket mutation by an Administrator is `403 FORBIDDEN`. |
+| BR-31 | Owner and IT Priority changes follow the ticket status: claim, assign, reassign, unassign and Set IT Priority are all `409 INVALID_TRANSITION` on a `Closed` or `Cancelled` ticket; unassigning an `InProgress` ticket is `409 INVALID_TRANSITION` (it must first move to another status or be reassigned); claiming *or* assigning a `New` ticket sets its status to `Open` in the same operation. |
 
 ### Status workflow
 
@@ -173,7 +174,8 @@ BR-01 … BR-05 are the handout's mandatory rules, kept verbatim.
 | Operation | Requester | IT Staff | Administrator |
 | --- | --- | --- | --- |
 | Login / logout / `GET me` / change password | ✓ | ✓ | ✓ |
-| Create ticket, list own tickets, view own ticket | ✓ owner | – | – |
+| Create ticket, list own tickets | ✓ owner | – | – |
+| View ticket detail (`GET /api/tickets/:id`) | ✓ owner | ✓ read | ✓ read |
 | Add / remove attachment | ✓ owner | – | – |
 | View / download attachment | ✓ owner | ✓ read | ✓ read |
 | Read Public Comments | ✓ owner | ✓ | ✓ |
@@ -361,7 +363,7 @@ AC-01 … AC-04 are the handout's examples, kept verbatim.
 | AC-28 | **Given** a user, **when** the Administrator sets a new initial password, **then** the user's next login succeeds only with it and is immediately routed to Change Password. |
 | AC-29 | **Given** the Administrator's own account or the last active Administrator, **when** deactivation (or, for the last Administrator, a role change) is attempted, **then** the server answers `409 CONFLICT` and the UI shows the reason inline. |
 | AC-30 | **Given** a Requester or IT Staff, **when** they open `/admin/users` or call any `/api/admin/*` endpoint, **then** the UI shows a forbidden state and the API answers `403` with no user data. |
-| AC-31 | **Given** a Lab 2 database with tickets and attachments, **when** the Lab 3 migration and seed run, **then** ticket and attachment counts are unchanged, every `requesterId` still resolves, `itPriority` equals `priority`, and each former requester can log in with the documented initial password and is forced to change it. |
+| AC-31 | **Given** a Lab 2 database with tickets and attachments, **when** the Lab 3 migration and seed run, **then** ticket and attachment counts are unchanged, every `requesterId` still resolves, `itPriority` equals `priority`, and one active migrated requester (e.g. Sarah Johnson) can log in with the documented initial password and is forced to change it; inactive migrated users are refused (`403 ACCOUNT_INACTIVE`). |
 | AC-32 | **Given** a seeded database, **when** the seed runs again, **then** it succeeds and creates no duplicate users, tickets, comments or notes. |
 | AC-33 | **Given** Login, Change Password, Queue, Staff Ticket Detail and Users at 1280 / 820 / 375 px, **when** each is inspected, **then** it matches ui-spec.md with no clipping or horizontal overflow. |
 | AC-34 | **Given** the backend is unreachable or answers `500`, **when** Login, the Queue, Staff Ticket Detail or Users is used, **then** a safe failure message is shown, entered values are preserved, and no stack trace or internal detail is displayed. |
@@ -374,7 +376,7 @@ Every AC maps to at least one planned test in [tests.md](tests.md) §3.
 
 ### 10.1 Product
 
-- [ ] FR-01 … FR-14 implemented; BR-01 … BR-30 enforced on the server.
+- [ ] FR-01 … FR-14 implemented; BR-01 … BR-31 enforced on the server.
 - [ ] AC-01 … AC-34 verified by the tests named in [tests.md](tests.md); every test passes on `main` from the documented commands; none skipped, disabled or commented out.
 - [ ] Authorization matrix and transition matrix implemented exactly as in §5; direct-API evidence captured for each refused row.
 - [ ] Migration applied to a database holding Lab 2 data with counts and ownership verified (AC-31); seed re-run twice with identical row counts (AC-32).
@@ -427,6 +429,6 @@ Issues [#36](https://github.com/Chessuker/TokTickIT/issues/36) – [#42](https:/
 | #37 | Authentication foundation | FR-01 … FR-05, FR-14, BR-01 … BR-14, BR-28 … BR-30, §7, AC-01 … AC-13, AC-31, AC-32 |
 | #38 | Requester regression, Public Comments and resolution indication | FR-05 … FR-07, BR-21 … BR-23, AC-13 … AC-15 |
 | #39 | IT Staff Ticket Queue | FR-08, AD-10, AC-16, AC-17, AC-34 |
-| #40 | IT Staff Ticket operations | FR-09 … FR-12, BR-15 … BR-23, AC-18 … AC-24 |
+| #40 | IT Staff Ticket operations | FR-09 … FR-12, BR-15 … BR-23, BR-31, AC-18 … AC-24 |
 | #41 | Administrator user management | FR-13, BR-24 … BR-27, AC-25 … AC-30 |
 | #42 | E2E, visual inspection, release integration | AC-33, AC-34, ui-spec.md §5, tests.md §4–§5, `ai-use.md`, PDF |

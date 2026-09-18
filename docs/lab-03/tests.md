@@ -45,7 +45,7 @@ The three example rows from the handout (API-01, API-08, E2E-02) keep their ids.
 | API-01 | API | AC-01 | Valid login | Authenticated response; safe user data | `server/tests/lab-03/auth.api.test.ts` | Planned |
 | API-02 | API | AC-05, BR-06 | Unknown email vs wrong password | Both `401 INVALID_CREDENTIALS` with byte-identical body | `server/tests/lab-03/auth.api.test.ts` | Planned |
 | API-03 | API | AC-06, BR-01, BR-06 | Inactive account, correct password | `403 ACCOUNT_INACTIVE`; no `Set-Cookie`; no session created | `server/tests/lab-03/auth.api.test.ts` | Planned |
-| API-04 | API | AC-07, BR-07 | Sixth failed attempt for one email | `429 TOO_MANY_ATTEMPTS`, even with the right password | `server/tests/lab-03/auth.api.test.ts` | Planned |
+| API-04 | API | AC-07, BR-07 | Sixth failed attempt for one email; five `403 ACCOUNT_INACTIVE` answers for an inactive account | `429 TOO_MANY_ATTEMPTS`, even with the right password / still `403`, never `429` | `server/tests/lab-03/auth.api.test.ts` | Planned |
 | API-05 | API | AC-01, BR-09, BR-10 | Login response and cookie hygiene | Cookie is `HttpOnly; SameSite=Lax; Path=/`; body has no `passwordHash`; `lastLoginAt` updated | `server/tests/lab-03/auth.api.test.ts` | Planned |
 | API-06 | API | AC-05 | Login body validation | Missing/malformed email or empty password → `400` with `fields` | `server/tests/lab-03/auth.api.test.ts` | Planned |
 | API-07 | API | AC-08, BR-10 | Logout | `204`; session row deleted; cookie cleared; subsequent `GET /api/auth/me` `401` | `server/tests/lab-03/auth.api.test.ts` | Planned |
@@ -73,9 +73,9 @@ The three example rows from the handout (API-01, API-08, E2E-02) keep their ids.
 | API-29 | API | AC-17 | Invalid `status`, `sort`, `pageSize`, `page=0`, out-of-range page | `400` naming the parameter; out-of-range → `200` empty with real total | `server/tests/lab-03/staff-queue.api.test.ts` | Planned |
 | API-30 | API | AC-16, AC-19 | `GET /api/staff/assignees`; Administrator gets the queue | Active IT Staff only, sorted; Administrator `200` | `server/tests/lab-03/staff-queue.api.test.ts` | Planned |
 | API-31 | API | AC-24 | `GET /api/staff/tickets/:id` shape | `StaffTicketDetail` with counts, attachments, `permittedTransitions`; unknown id `404` | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
-| API-32 | API | AC-18, BR-15, BR-19 | Claim on New / on owned-by-other / on Closed | Owner = caller and `Open` / owner replaced / `409` | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
-| API-33 | API | AC-19, BR-15 | Owner PATCH: active IT Staff, inactive IT Staff, Requester id, `null` on Open, `null` on InProgress | `200` / `400 fields.ownerId` / `400` / `200` unassigned / `409` | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
-| API-34 | API | AC-20, BR-16 | IT priority PATCH valid and invalid | `200` with `requestedPriority` unchanged / `400` | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
+| API-32 | API | AC-18, BR-15, BR-19, BR-31 | Claim on New / on owned-by-other / on Closed | Owner = caller and `Open` / owner replaced / `409` | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
+| API-33 | API | AC-19, BR-15, BR-31 | Owner PATCH: active IT Staff, inactive IT Staff, Requester id, `null` on Open, `null` on InProgress, assign on New, assign on Closed | `200` / `400 fields.ownerId` / `400` / `200` unassigned / `409` / `200` and status `Open` / `409` | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
+| API-34 | API | AC-20, BR-16, BR-31 | IT priority PATCH valid, invalid, and on a Closed ticket | `200` with `requestedPriority` unchanged / `400` / `409` | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
 | API-35 | API | AC-21, BR-18 | Status PATCH for a permitted pair and for a forbidden pair | `200` with recomputed `permittedTransitions` / `409 INVALID_TRANSITION` | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
 | API-36 | API | AC-22, BR-19, BR-20 | InProgress and Resolved on an unassigned ticket; Resolved/Closed/Reopened timestamps | `409` / `409`; timestamps set and cleared per BR-20 | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
 | API-37 | API | AC-21 | Status PATCH with unknown value; on Cancelled ticket | `400` / `409` | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
@@ -125,8 +125,8 @@ The three example rows from the handout (API-01, API-08, E2E-02) keep their ids.
 
 | Test ID | Type | Requirement / AC | What It Tests | Expected Result | Automated Test File Path | Final Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| MIG-01 | Migration | AC-31, BR-28 | Scripted before/after check on a database holding Lab 2 data: counts of tickets, attachments, users; every `Ticket.requesterId` resolves to a `User`; `itPriority = priority` on every row; all migrated users are `Requester` with `mustChangePassword = true` | All assertions hold; output pasted into §5 | `server/scripts/verify-lab03-migration.ts` (run manually against PostgreSQL) | Planned |
-| MIG-02 | Migration | AC-31 | Migrated requester logs in with the documented initial password | Login succeeds and lands on Change Password | `e2e/lab-03/authentication.spec.ts` (shares E2E-02) | Planned |
+| MIG-01 | Migration | AC-31, BR-28 | Scripted before/after check on a database holding Lab 2 data, run after `prisma migrate deploy` and **before** the seed (the seed upserts extra tickets, so counts are only comparable pre-seed): counts of tickets, attachments, users; every `Ticket.requesterId` resolves to a `User`; `itPriority = priority` on every row; all migrated users are `Requester` with `mustChangePassword = true` | All assertions hold; output pasted into §5 | `server/scripts/verify-lab03-migration.ts` (run manually against PostgreSQL) | Planned |
+| MIG-02 | Migration | AC-31 | One active migrated requester (Sarah Johnson) logs in with the documented initial password, after the seed has written the hash | Login succeeds and lands on Change Password | `e2e/lab-03/authentication.spec.ts` (shares E2E-02) | Planned |
 
 ### End-to-end
 
@@ -230,7 +230,7 @@ npm run test:e2e                # Playwright; needs the migrated + seeded databa
 
 ### Migration and regression evidence (AC-31) — to be recorded
 
-Procedure: on a database that already holds Lab 2 data, record `SELECT count(*)` for `Ticket`, `Attachment`, `RequesterUser` and the distinct `requesterId` set; run `prisma migrate deploy`; record the same counts on `Ticket`, `Attachment`, `User`; assert equality and `SELECT count(*) FROM "Ticket" WHERE "itPriority" <> "priority"` = 0; run the seed; log in as a migrated requester with the documented initial password and confirm the forced change. Output pasted here.
+Procedure: on a database that already holds Lab 2 data, record `SELECT count(*)` for `Ticket`, `Attachment`, `RequesterUser` and the distinct `requesterId` set; run `prisma migrate deploy`; record the same counts on `Ticket`, `Attachment`, `User`; assert equality and `SELECT count(*) FROM "Ticket" WHERE "itPriority" <> "priority"` = 0 (all of this **before** the seed runs); then run the seed; log in as one active migrated requester (Sarah Johnson) with the documented initial password and confirm the forced change. Output pasted here.
 
 ### Per-issue verification logs
 

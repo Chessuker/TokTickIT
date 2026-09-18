@@ -164,7 +164,7 @@ Authenticate and start a session (FR-01, AC-01, AC-05 … AC-07).
 | Success | `200` — `SessionUser`; `Set-Cookie: toktickit_session=…` (§1.1); `lastLoginAt` stamped; failure counter for the email reset |
 | Errors | `401 INVALID_CREDENTIALS` (unknown email or wrong password — identical message "Invalid email or password."), `403 ACCOUNT_INACTIVE` ("This account is inactive. Please contact an administrator."), `429 TOO_MANY_ATTEMPTS` ("Too many failed attempts. Try again in a few minutes."), `500` |
 
-Order of checks: validation → throttle (5 failures / 15 min per email, BR-07) → load user by email → bcrypt compare (against a fixed dummy hash when the user is missing, so timing is uniform) → inactive check → create session. The throttle counts `401`s only.
+Order of checks: validation → throttle (5 failures / 15 min per email, BR-07) → load user by email → bcrypt compare (against a fixed dummy hash when the user is missing, so timing is uniform) → inactive check → create session. The throttle counts `401 INVALID_CREDENTIALS` only; `403 ACCOUNT_INACTIVE` does not increment it (BR-07).
 
 ### 3.2 `POST /api/auth/logout`
 
@@ -195,7 +195,7 @@ Set a new password (FR-02, AC-02, AC-09, AC-10).
 | Auth | Session cookie. Allowed (and required) while `mustChangePassword` is set |
 | Body | `{ "currentPassword": "…", "newPassword": "…", "confirmPassword": "…" }` |
 | Validation | `currentPassword` must match the stored hash → otherwise `400` with `fields.currentPassword = "Current password is incorrect."`. `newPassword` per BR-08 (8–72 chars, upper, lower, digit, special) and ≠ `currentPassword` → `fields.newPassword`. `confirmPassword` must equal `newPassword` → `fields.confirmPassword` |
-| Success | `200` — `SessionUser` with `mustChangePassword: false`. Other sessions of the user are deleted; the current one is kept |
+| Success | `200` — `SessionUser` with `mustChangePassword: false`. Other sessions of the user are deleted; the current one is kept (BR-11) |
 | Errors | `400 VALIDATION_FAILED`, `401`, `500` |
 
 A wrong `currentPassword` is `400` (a field error), not `401`, because the caller *is* authenticated; answering `401` would log them out for a typo.
@@ -301,7 +301,7 @@ Active IT Staff for the owner dropdown (FR-09).
 
 ### 3.12 `POST /api/staff/tickets/:id/claim`
 
-Take ownership (FR-09, BR-15, BR-19, AC-18).
+Take ownership (FR-09, BR-15, BR-19, BR-31, AC-18).
 
 | | |
 | --- | --- |
@@ -314,26 +314,26 @@ Claiming a ticket that already has another owner is allowed (it is a reassign-to
 
 ### 3.13 `PATCH /api/staff/tickets/:id/owner`
 
-Assign, reassign or unassign (FR-09, BR-15, AC-19).
+Assign, reassign or unassign (FR-09, BR-15, BR-31, AC-19).
 
 | | |
 | --- | --- |
 | Auth | IT Staff |
 | Body | `{ "ownerId": "<uuid>" }` or `{ "ownerId": null }` |
 | Validation | `ownerId` must be an active user with role `ITStaff` → otherwise `400 VALIDATION_FAILED` with `fields.ownerId`. `null` unassigns |
-| Success | `200` — `StaffTicketDetail`. Assigning a `New` ticket sets `Open` (same rule as claim) |
-| Errors | `400`, `401`, `403`, `404`, `409 INVALID_TRANSITION` (unassigning while `InProgress`, or any change on `Closed`/`Cancelled`), `500` |
+| Success | `200` — `StaffTicketDetail`. Assigning a `New` ticket sets `Open` (same rule as claim, BR-31) |
+| Errors | `400`, `401`, `403`, `404`, `409 INVALID_TRANSITION` (unassigning while `InProgress`, or any change on `Closed`/`Cancelled` — BR-31), `500` |
 
 ### 3.14 `PATCH /api/staff/tickets/:id/it-priority`
 
-Set IT Priority (FR-10, BR-16, AC-20).
+Set IT Priority (FR-10, BR-16, BR-31, AC-20).
 
 | | |
 | --- | --- |
 | Auth | IT Staff |
 | Body | `{ "itPriority": "Low" \| "Medium" \| "High" }` |
 | Success | `200` — `StaffTicketDetail`; `requestedPriority` untouched |
-| Errors | `400`, `401`, `403`, `404`, `409 INVALID_TRANSITION` (`Closed`/`Cancelled`), `500` |
+| Errors | `400`, `401`, `403`, `404`, `409 INVALID_TRANSITION` (`Closed`/`Cancelled`, BR-31), `500` |
 
 ### 3.15 `PATCH /api/staff/tickets/:id/status`
 
