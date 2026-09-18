@@ -43,14 +43,14 @@ PRs submitted by me and reviewed by my partner, as well as PRs submitted by my p
 
 ### 5.1 PR Approval Evidence
 
-![Feature 1](../../Feature1.png)
+![Feature 1](screenshots/Feature1.png)
 
-![Feature 2](../../Feature2.png)
+![Feature 2](screenshots/Feature2.png)
 
-![Feature 3](../../Feature3.png)
+![Feature 3](screenshots/Feature3.png)
 
-![Feature 4](../../Feature4.png)
+![Feature 4](screenshots/Feature4.png)
 
 ### 5.2 Kanban Board Evidence
 
-![Kanban board](../../KanbanLab1.png)
+![Kanban board](screenshots/KanbanLab1.png)

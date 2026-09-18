@@ -18,15 +18,17 @@ yarn-error.log*
 logs/
 *.log
 
-# IDE & OS files
+# IDE, AI-tooling & OS files
 .vscode/
 .idea/
+.claude/
 .DS_Store
 Thumbs.db
 
-# Course material, not project source
+# Course material (lab sheets), not project source — keep locally under docs/lab-XX/
 Lab_02_labsheet.pdf
 Lab_3_sheet.pdf
+*_labsheet.pdf
 
 # Uploaded attachments (local disk storage, API-D-01)
 server/uploads/
