@@ -1792,3 +1792,239 @@ body {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* ---------- IT Staff Ticket Queue (Lab 3 ui-spec §3.4) ---------- */
+
+/* Toolbar: same surface as the Lab 2 filter bar; the filters panel sits under it. */
+.zg-queue-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-border);
+  border-radius: 10px;
+  box-shadow: var(--zg-shadow);
+}
+
+.zg-queue-toolbar .zg-filter-action {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.zg-queue-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75rem 1rem;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  background: var(--zg-pale);
+  border: 1px solid var(--zg-border);
+  border-radius: 10px;
+}
+
+.zg-queue-filters fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.zg-queue-filters legend {
+  padding: 0;
+}
+
+.zg-filter-wide {
+  flex: 1 1 100%;
+}
+
+.zg-btn.is-active {
+  background: var(--zg-pale);
+  border-color: var(--zg-secondary);
+}
+
+.zg-filter-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-left: 0.4rem;
+  border-radius: 999px;
+  background: var(--zg-secondary);
+  vertical-align: middle;
+}
+
+/* Status chips: a pressed chip is filled, the level is always written. */
+.zg-chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.zg-chip-toggle {
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0.3rem 0.8rem;
+  background: var(--zg-surface);
+  color: var(--zg-text);
+}
+
+.zg-chip-toggle:hover {
+  border-color: var(--zg-secondary);
+}
+
+.zg-chip-toggle:focus-visible {
+  outline: 2px solid var(--zg-secondary);
+  outline-offset: 2px;
+}
+
+.zg-chip-toggle.is-selected {
+  background: var(--zg-primary);
+  border-color: var(--zg-primary);
+  color: var(--zg-on-primary);
+}
+
+/* Sortable headers: the whole header is the button; the icon shows direction. */
+.zg-sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.zg-sort-button:focus-visible {
+  outline: 2px solid var(--zg-secondary);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+.zg-sort-icon {
+  font-size: 0.8rem;
+  opacity: 0.45;
+}
+
+.zg-sort-icon.is-active {
+  opacity: 1;
+  color: var(--zg-primary);
+}
+
+/* Summary clamps to two lines; the full text is on the cell's title and on focus. */
+.zg-clamp-2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.zg-clamp-2:focus-visible {
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  outline: 2px solid var(--zg-secondary);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+.zg-status-cell,
+.zg-owner-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+/* The Open column is the narrowest; the button gives up its side padding there. */
+.zg-queue-table td:last-child {
+  padding-inline: 0.35rem;
+}
+
+.zg-queue-table td:last-child .zg-btn-sm {
+  padding-inline: 0.55rem;
+}
+
+.zg-resolved-icon {
+  color: var(--zg-secondary);
+  font-size: 0.95rem;
+}
+
+.zg-you-tag {
+  display: inline-block;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: var(--zg-pale);
+  border: 1px solid var(--zg-secondary);
+  color: #14532d;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Loading: skeleton rows in place of the table (ui-spec §3.4 "States"). */
+.zg-skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.zg-skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.zg-skeleton {
+  display: block;
+  height: 0.9rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+  background-size: 200% 100%;
+  animation: zg-shimmer 1.4s ease-in-out infinite;
+}
+
+.zg-skeleton-short {
+  width: 7rem;
+}
+
+.zg-skeleton-long {
+  flex: 1;
+}
+
+.zg-skeleton-badge {
+  width: 4.5rem;
+}
+
+@keyframes zg-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zg-skeleton {
+    animation: none;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .zg-queue-toolbar .zg-filter-action {
+    width: 100%;
+  }
+
+  .zg-queue-toolbar .zg-filter-action .zg-btn {
+    flex: 1;
+  }
+}

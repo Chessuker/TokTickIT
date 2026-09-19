@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { prisma } from '../src/db.js';
 import { seed } from '../src/seed.js';
-import { ADMINISTRATORS, CATEGORIES, IT_STAFF, RELATED_SYSTEMS, REQUESTERS, USERS } from '../src/seedData.js';
+import { ADMINISTRATORS, CATEGORIES, IT_STAFF, RELATED_SYSTEMS, REQUESTERS, TICKETS, USERS } from '../src/seedData.js';
 
 type Row = Record<string, unknown>;
 
@@ -24,7 +24,9 @@ function createFakeClient(uniqueFields: Record<string, string>) {
         calls.push(`${model}.upsert`);
         const key = String(where[uniqueField]);
         const existing = rows.get(key);
-        const row = existing ? { ...existing, ...update } : { ...create };
+        // Like the real client, a created row gets an id and the row is returned,
+        // which is what the seed relies on to wire tickets to users and categories.
+        const row = existing ? { ...existing, ...update } : { id: `${model}-${rows.size + 1}`, ...create };
         rows.set(key, row);
         return row;
       },
@@ -35,6 +37,7 @@ function createFakeClient(uniqueFields: Record<string, string>) {
     user: delegate('user'),
     category: delegate('category'),
     relatedSystem: delegate('relatedSystem'),
+    ticket: delegate('ticket'),
   };
 
   return {
@@ -49,6 +52,7 @@ const UNIQUE_FIELDS = {
   user: 'email',
   category: 'name',
   relatedSystem: 'name',
+  ticket: 'ticketNumber',
 };
 
 /** A cheap, recognisable stand-in for bcrypt so the suite stays fast. */
@@ -68,6 +72,8 @@ describe('seed', () => {
     expect(fake.count('category')).toBe(CATEGORIES.length);
     expect(fake.count('relatedSystem')).toBe(RELATED_SYSTEMS.length);
     expect(fake.count('user')).toBe(USERS.length);
+    expect(fake.count('ticket')).toBe(TICKETS.length);
+    expect(TICKETS).toHaveLength(24);
   });
 
   it('seeds 5 requesters, 4 IT Staff and 1 Administrator', async () => {
@@ -88,6 +94,7 @@ describe('seed', () => {
       user: fake.count('user'),
       category: fake.count('category'),
       relatedSystem: fake.count('relatedSystem'),
+      ticket: fake.count('ticket'),
     };
 
     await expect(seed(fake.client, { hashPassword: fakeHash })).resolves.toBeUndefined();
@@ -97,6 +104,7 @@ describe('seed', () => {
       user: fake.count('user'),
       category: fake.count('category'),
       relatedSystem: fake.count('relatedSystem'),
+      ticket: fake.count('ticket'),
     }).toEqual(afterFirstRun);
   });
 
@@ -107,7 +115,7 @@ describe('seed', () => {
     await seed(fake.client, { hashPassword: fakeHash });
 
     expect(fake.calls.every((call) => call.endsWith('.upsert'))).toBe(true);
-    expect(firstRun).toHaveLength(CATEGORIES.length + RELATED_SYSTEMS.length + USERS.length);
+    expect(firstRun).toHaveLength(CATEGORIES.length + RELATED_SYSTEMS.length + USERS.length + TICKETS.length);
     expect(fake.calls.slice(firstRun.length)).toEqual(firstRun);
   });
 
@@ -118,10 +126,12 @@ describe('seed', () => {
     const emails = fake.rows('user').map((row) => row.email);
     const categoryNames = fake.rows('category').map((row) => row.name);
     const systemNames = fake.rows('relatedSystem').map((row) => row.name);
+    const ticketNumbers = fake.rows('ticket').map((row) => row.ticketNumber);
 
     expect(new Set(emails).size).toBe(emails.length);
     expect(new Set(categoryNames).size).toBe(categoryNames.length);
     expect(new Set(systemNames).size).toBe(systemNames.length);
+    expect(new Set(ticketNumbers).size).toBe(ticketNumbers.length);
   });
 
   /** FR-14, BR-09: credentials are hashed before they are written, never stored as typed. */
@@ -208,4 +218,73 @@ describe('seed', () => {
       expect(String(row.email)).toBe(String(row.email).toLowerCase());
     }
   });
+
+  /** Lab 3 specification.md §7 "Tickets" — the queue's seed (Issue #39). */
+  describe('tickets', () => {
+    const STATUSES = ['New', 'Open', 'InProgress', 'WaitingForRequester', 'Reopened', 'Resolved', 'Closed', 'Cancelled'];
+
+    it('numbers every ticket in the reserved TKT-2026-9000xx range', () => {
+      for (const ticket of TICKETS) {
+        expect(ticket.ticketNumber).toMatch(/^TKT-2026-9000\d{2}$/);
+      }
+    });
+
+    it('covers every status at least twice and every priority', () => {
+      for (const status of STATUSES) {
+        expect(TICKETS.filter((ticket) => ticket.status === status).length).toBeGreaterThanOrEqual(2);
+      }
+      for (const priority of ['Low', 'Medium', 'High']) {
+        expect(TICKETS.some((ticket) => ticket.priority === priority)).toBe(true);
+        expect(TICKETS.some((ticket) => ticket.itPriority === priority)).toBe(true);
+      }
+    });
+
+    it('spreads the tickets over the four active requesters, about a third unassigned, the rest over active IT Staff', () => {
+      const activeRequesters = REQUESTERS.filter((user) => user.isActive).map((user) => user.email);
+      const activeStaff = IT_STAFF.filter((user) => user.isActive).map((user) => user.email);
+
+      for (const ticket of TICKETS) {
+        expect(activeRequesters).toContain(ticket.requesterEmail);
+        if (ticket.ownerEmail !== null) expect(activeStaff).toContain(ticket.ownerEmail);
+      }
+      expect(new Set(TICKETS.map((ticket) => ticket.requesterEmail)).size).toBe(4);
+
+      const unassigned = TICKETS.filter((ticket) => ticket.ownerEmail === null).length;
+      expect(unassigned).toBeGreaterThanOrEqual(6);
+      expect(unassigned).toBeLessThanOrEqual(10);
+      for (const staff of activeStaff) {
+        expect(TICKETS.some((ticket) => ticket.ownerEmail === staff)).toBe(true);
+      }
+    });
+
+    it('writes the ids of the seeded users, categories and systems, never the names', async () => {
+      await seed(fake.client, { hashPassword: fakeHash });
+
+      const users = Object.fromEntries(fake.rows('user').map((row) => [row.email, row.id]));
+      const categories = Object.fromEntries(fake.rows('category').map((row) => [row.name, row.id]));
+      const rows = fake.rows('ticket');
+
+      for (const [index, ticket] of TICKETS.entries()) {
+        const row = rows[index];
+        expect(row.ticketNumber).toBe(ticket.ticketNumber);
+        expect(row.requesterId).toBe(users[ticket.requesterEmail]);
+        expect(row.ownerId).toBe(ticket.ownerEmail ? users[ticket.ownerEmail] : null);
+        expect(row.categoryId).toBe(categories[ticket.category]);
+        expect(row).not.toHaveProperty('requesterEmail');
+      }
+    });
+
+    it('stamps resolvedAt on Resolved and Closed tickets and closedAt on Closed ones (BR-20)', async () => {
+      await seed(fake.client, { hashPassword: fakeHash });
+
+      for (const row of fake.rows('ticket')) {
+        const status = row.status as string;
+        expect(row.resolvedAt instanceof Date).toBe(status === 'Resolved' || status === 'Closed');
+        expect(row.closedAt instanceof Date).toBe(status === 'Closed');
+        expect(row.createdAt).toBeInstanceOf(Date);
+        expect(row.updatedAt).toBeInstanceOf(Date);
+      }
+    });
+  });
 });
+

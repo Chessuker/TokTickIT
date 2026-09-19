@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../../src/db.js', () => ({
   prisma: {
-    user: { findUnique: vi.fn(), update: vi.fn() },
+    user: { findUnique: vi.fn(), findMany: vi.fn(), update: vi.fn() },
     session: { findUnique: vi.fn(), create: vi.fn(), delete: vi.fn(), deleteMany: vi.fn() },
     category: { findFirst: vi.fn(), findMany: vi.fn() },
     relatedSystem: { findFirst: vi.fn(), findMany: vi.fn() },
@@ -44,7 +44,15 @@ const PROTECTED_ROUTES: { method: 'get' | 'post' | 'patch'; path: string }[] = [
   { method: 'patch', path: `/api/attachments/${ATTACHMENT_ID}/remove` },
   { method: 'get', path: `/api/tickets/${TICKET_ID}/comments` },
   { method: 'post', path: `/api/tickets/${TICKET_ID}/comments` },
-  { method: 'post', path: `/api/tickets/${TICKET_ID}/resolution-indication` }
+  { method: 'post', path: `/api/tickets/${TICKET_ID}/resolution-indication` },
+  { method: 'get', path: '/api/staff/tickets' },
+  { method: 'get', path: '/api/staff/assignees' }
+];
+
+/** Staff-only route families a Requester is refused on before any lookup (API-14). */
+const STAFF_ROUTES: { method: 'get'; path: string }[] = [
+  { method: 'get', path: '/api/staff/tickets' },
+  { method: 'get', path: '/api/staff/assignees' }
 ];
 
 function ticketRow(requesterId: string) {
@@ -101,6 +109,21 @@ describe('Unauthenticated calls (API-13, AC-12, BR-30)', () => {
 
     expect(res.status).toBe(401);
     expect(res.body.error.code).toBe('UNAUTHORIZED');
+  });
+});
+
+describe('Requester on staff routes (API-14, AC-04, AC-12)', () => {
+  it.each(STAFF_ROUTES)('$method $path answers 403 FORBIDDEN with no lookup', async ({ method, path }) => {
+    mockSessionFor(vi.mocked(prisma.session.findUnique), JENNIFER);
+
+    const res = await request(app)[method](path).set('Cookie', cookieHeader());
+
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({
+      error: { code: 'FORBIDDEN', message: 'You do not have access to this resource.' }
+    });
+    expect(prisma.ticket.findMany).not.toHaveBeenCalled();
+    expect(prisma.ticket.count).not.toHaveBeenCalled();
   });
 });
 
