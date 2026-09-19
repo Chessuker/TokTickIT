@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { REQUESTER_A, selectRequester } from './helpers'
+import { REQUESTER_A, loginAs } from './helpers'
 
 /**
  * E2E-01 — the full create flow (AC-01, AC-05).
@@ -17,7 +17,7 @@ const DESCRIPTION =
 
 test.describe('Create ticket (E2E-01)', () => {
   test('create a ticket, then open it and find the same data', async ({ page }) => {
-    await selectRequester(page, REQUESTER_A)
+    await loginAs(page, REQUESTER_A)
 
     await page.goto('/tickets/new')
     await page.getByLabel(/summary/i).fill(SUMMARY)
@@ -56,7 +56,7 @@ test.describe('Create ticket (E2E-01)', () => {
   })
 
   test('the new ticket appears in My Tickets under its number', async ({ page }) => {
-    await selectRequester(page, REQUESTER_A)
+    await loginAs(page, REQUESTER_A)
 
     await page.goto('/tickets/new')
     await page.getByLabel(/summary/i).fill('E2E listed after create')
@@ -78,7 +78,7 @@ test.describe('Create ticket (E2E-01)', () => {
   })
 
   test('an invalid form is refused with errors under the offending fields', async ({ page }) => {
-    await selectRequester(page, REQUESTER_A)
+    await loginAs(page, REQUESTER_A)
     await page.goto('/tickets/new')
 
     // Submitted empty: every required field should name its own problem, and

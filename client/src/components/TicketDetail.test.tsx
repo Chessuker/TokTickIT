@@ -3,9 +3,7 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import TicketDetail from './TicketDetail'
-import { RequesterProvider } from '../context/RequesterProvider'
-import { REQUESTER_STORAGE_KEY } from '../context/requester'
-import type { Requester } from '../context/requester'
+import { AuthStub, JENNIFER as SESSION_JENNIFER } from '../test/auth'
 
 /**
  * UI-05 (AC-05) and UI-06 (AC-09) — the Requester Ticket Detail screen.
@@ -16,10 +14,11 @@ import type { Requester } from '../context/requester'
  * write instead of one that patches its own state and hopes.
  */
 
-const JENNIFER: Requester = {
-  id: 'aaaaaaaa-1111-4222-8333-444455556666',
-  name: 'Jennifer Anderson',
-  email: 'jennifer.anderson@kmutt.ac.th',
+/** The requester embedded in the ticket response (Lab 2 `TicketDetail` shape). */
+const JENNIFER = {
+  id: SESSION_JENNIFER.id,
+  name: SESSION_JENNIFER.name,
+  email: SESSION_JENNIFER.email,
   department: 'Registrar',
 }
 
@@ -196,15 +195,15 @@ function stubApi(options: StubOptions = {}) {
 function renderDetail(options: StubOptions = {}) {
   const fetchMock = stubApi(options)
   vi.stubGlobal('fetch', fetchMock)
-  window.sessionStorage.setItem(REQUESTER_STORAGE_KEY, JSON.stringify(JENNIFER))
 
+  // UI-20 (AC-13): rendered under the auth context, never the Lab 2 requester context.
   render(
     <MemoryRouter initialEntries={[`/tickets/${TICKET_ID}`]}>
-      <RequesterProvider>
+      <AuthStub user={SESSION_JENNIFER}>
         <Routes>
           <Route path="/tickets/:id" element={<TicketDetail />} />
         </Routes>
-      </RequesterProvider>
+      </AuthStub>
     </MemoryRouter>,
   )
 
@@ -303,7 +302,7 @@ describe('TicketDetail — attachment list (BR-10, V-10)', () => {
     expect(screen.queryByTestId('active-attachments')).toBeNull()
   })
 
-  it('downloads an active attachment through the API with the requester header', async () => {
+  it('downloads an active attachment through the API with the session cookie', async () => {
     const fetchMock = renderDetail({ attachments: [attachment()] })
 
     const list = await screen.findByTestId('active-attachments')
@@ -314,8 +313,9 @@ describe('TicketDetail — attachment list (BR-10, V-10)', () => {
         String(input).includes('/api/attachments/att-1/download'),
       )
       expect(call).toBeTruthy()
+      expect(call?.[1]?.credentials).toBe('include')
       const sent = (call?.[1]?.headers ?? {}) as Record<string, string>
-      expect(sent['X-Requester-Id']).toBe(JENNIFER.id)
+      expect(sent['X-Requester-Id']).toBeUndefined()
     })
 
     expect(URL.createObjectURL).toHaveBeenCalled()
@@ -491,7 +491,7 @@ describe('TicketDetail — ownership guard (AC-03, BR-04)', () => {
     expect(screen.queryByTestId('ticket-fields')).toBeNull()
   })
 
-  it('sends the selected requester in the header on every read', async () => {
+  it('sends the session cookie on every read and never an X-Requester-Id header (UI-20)', async () => {
     const fetchMock = renderDetail()
 
     await screen.findByTestId('ticket-fields')
@@ -499,7 +499,8 @@ describe('TicketDetail — ownership guard (AC-03, BR-04)', () => {
     const call = fetchMock.mock.calls.find(([input]) =>
       String(input).endsWith(`/api/tickets/${TICKET_ID}`),
     )
+    expect(call?.[1]?.credentials).toBe('include')
     const sent = (call?.[1]?.headers ?? {}) as Record<string, string>
-    expect(sent['X-Requester-Id']).toBe(JENNIFER.id)
+    expect(sent['X-Requester-Id']).toBeUndefined()
   })
 })

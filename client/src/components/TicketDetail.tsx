@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { API_URL } from '../api'
-import { useRequester } from '../context/requester'
+import { apiFetch, apiJson } from '../apiClient'
+import { useAuth } from '../context/auth'
 import {
   ALLOWED_MIME_TYPES,
   ALLOWED_TYPES_LABEL,
@@ -117,8 +117,7 @@ function ReadOnlyField({
 
 function TicketDetail() {
   const { id = '' } = useParams()
-  const { requester } = useRequester()
-  const requesterId = requester?.id ?? ''
+  const { user } = useAuth()
 
   const [ticket, setTicket] = useState<TicketDetailData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -138,15 +137,13 @@ function TicketDetail() {
   const [removing, setRemoving] = useState(false)
   const [removeError, setRemoveError] = useState<string | null>(null)
 
-  const headers = useCallback(() => ({ 'X-Requester-Id': requesterId }), [requesterId])
-
   useEffect(() => {
     let cancelled = false
 
     setLoading(true)
     setFailure(null)
 
-    fetch(`${API_URL}/api/tickets/${id}`, { headers: { 'X-Requester-Id': requesterId } })
+    apiFetch(`/api/tickets/${id}`)
       .then(async (res) => {
         const body = await res.json().catch(() => null)
         if (cancelled) return
@@ -177,7 +174,7 @@ function TicketDetail() {
     return () => {
       cancelled = true
     }
-  }, [id, requesterId, reloadToken])
+  }, [id, reloadToken])
 
   const reload = useCallback(() => setReloadToken((token) => token + 1), [])
 
@@ -186,9 +183,8 @@ function TicketDetail() {
   const atAttachmentLimit = activeAttachments.length >= MAX_ATTACHMENTS
 
   /**
-   * Uploads one file at a time. The requester context lives in a header, so a
-   * plain form post will not do — and one request per file means a rejected
-   * file names itself instead of failing the whole batch.
+   * Uploads one file at a time: one request per file means a rejected file
+   * names itself instead of failing the whole batch.
    */
   const uploadFiles = async (picked: FileList | null) => {
     if (!picked || picked.length === 0) return
@@ -227,9 +223,8 @@ function TicketDetail() {
       form.append('file', file)
 
       try {
-        const res = await fetch(`${API_URL}/api/tickets/${id}/attachments`, {
+        const res = await apiFetch(`/api/tickets/${id}/attachments`, {
           method: 'POST',
-          headers: headers(),
           body: form,
         })
 
@@ -256,18 +251,17 @@ function TicketDetail() {
   }
 
   /**
-   * Downloads through `fetch` rather than a bare link: the requester context
-   * travels in a header, which an `<a href>` cannot carry. The blob is handed
-   * to a temporary anchor so the browser saves it under its original name.
+   * Downloads through `fetch` rather than a bare link so a refusal (`403`,
+   * `404`) can be shown inline instead of as a browser error page. The blob is
+   * handed to a temporary anchor so the browser saves it under its original
+   * name.
    */
   const download = async (attachment: Attachment) => {
     setDownloadError(null)
     setDownloadingId(attachment.id)
 
     try {
-      const res = await fetch(`${API_URL}/api/attachments/${attachment.id}/download`, {
-        headers: headers(),
-      })
+      const res = await apiFetch(`/api/attachments/${attachment.id}/download`)
 
       if (!res.ok) {
         const body = await res.json().catch(() => null)
@@ -310,10 +304,8 @@ function TicketDetail() {
     setRemoveError(null)
 
     try {
-      const res = await fetch(`${API_URL}/api/attachments/${removeTarget.id}/remove`, {
-        method: 'PATCH',
-        headers: { ...headers(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason: reason.trim() }),
+      const res = await apiJson(`/api/attachments/${removeTarget.id}/remove`, 'PATCH', {
+        reason: reason.trim(),
       })
 
       if (res.ok) {
@@ -353,7 +345,7 @@ function TicketDetail() {
         <h1 className="zg-state-title">Access denied</h1>
         <p className="zg-state-text">
           This ticket belongs to another requester. You can only open tickets raised by{' '}
-          {requester?.name ?? 'the selected requester'}.
+          {user?.name ?? 'you'}.
         </p>
         <Link className="zg-btn zg-btn-primary" to="/tickets">
           Back to My Tickets

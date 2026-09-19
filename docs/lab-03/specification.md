@@ -282,7 +282,7 @@ Two tables rather than one with a `visibility` column: a query that forgets a `w
 
 | Set | Rows | Notes |
 | --- | --- | --- |
-| Requesters | 4 active (Jennifer Anderson, Sarah Johnson, David Lee, Michael Brown), 1 inactive (Alex Smith) | The five Lab 2 rows, upserted by email. Jennifer is seeded with `mustChangePassword = false` and password `Requester1!` so E2E can log straight in; the other four keep `Welcome123!` + `mustChangePassword = true` (first-login E2E uses Sarah) |
+| Requesters | 4 active (Jennifer Anderson, Sarah Johnson, David Lee, Michael Brown), 1 inactive (Alex Smith) | The five Lab 2 rows, upserted by email. Jennifer (`Requester1!`) and David (`Requester2!`) are seeded with `mustChangePassword = false` so the Lab 2 ownership E2E can sign in as two requesters without a forced change; Sarah, Michael and Alex keep `Welcome123!` + `mustChangePassword = true` (first-login E2E uses Sarah) |
 | IT Staff | 3 active (Nattapong Srisuk, Priya Raman, Chen Wei), 1 inactive (Robert Wilson) | Password `Staff1!pass`, `mustChangePassword = false` |
 | Administrator | 1 active (`admin@toktickit.xyz`, "System Administrator") | Password `Admin1!pass`, `mustChangePassword = false` |
 | Categories, Related Systems | unchanged from Lab 2 | |

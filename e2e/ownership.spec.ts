@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { changeRequester, createTicket, REQUESTER_A, REQUESTER_B, selectRequester } from './helpers'
+import { createTicket, loginAs, REQUESTER_A, REQUESTER_B, switchUser } from './helpers'
 
 /**
  * E2E-03 — the ownership guard (AC-03, BR-04).
@@ -17,10 +17,10 @@ const PNG_BYTES = Buffer.concat([
 
 test.describe("Ownership guard (E2E-03)", () => {
   test("opening another requester's ticket shows access denied", async ({ page }) => {
-    await selectRequester(page, REQUESTER_A)
+    await loginAs(page, REQUESTER_A)
     const ticket = await createTicket(page, 'E2E ownership guard')
 
-    await changeRequester(page, REQUESTER_B)
+    await switchUser(page, REQUESTER_B)
     await page.goto(ticket.url)
 
     await expect(page.getByTestId('access-denied')).toBeVisible()
@@ -32,8 +32,8 @@ test.describe("Ownership guard (E2E-03)", () => {
     await expect(page.getByTestId('ticket-fields')).toHaveCount(0)
   })
 
-  test("another requester cannot download the owner's attachment", async ({ page, request }) => {
-    await selectRequester(page, REQUESTER_A)
+  test("another requester cannot download the owner's attachment", async ({ page }) => {
+    await loginAs(page, REQUESTER_A)
     const ticket = await createTicket(page, 'E2E ownership of attachments')
 
     await page.getByLabel(/add a file/i).setInputFiles({
@@ -43,45 +43,35 @@ test.describe("Ownership guard (E2E-03)", () => {
     })
     await expect(page.getByTestId('active-attachments')).toBeVisible()
 
-    const ownerId = await page.evaluate(() => {
-      const raw = window.sessionStorage.getItem('toktickit.requester')
-      return raw ? (JSON.parse(raw) as { id: string }).id : ''
-    })
-
-    const detail = await request.get(`http://localhost:5000/api/tickets/${ticket.id}`, {
-      headers: { 'X-Requester-Id': ownerId },
-    })
+    // Direct API calls ride on the browser's own session cookie (Lab 3
+    // api-spec.md §1.1): `page.request` shares the page's cookie jar, so the
+    // first call is the owner and, after the switch, the second is the intruder.
+    const detail = await page.request.get(`http://localhost:5000/api/tickets/${ticket.id}`)
+    expect(detail.status()).toBe(200)
     const attachmentId = (await detail.json()).attachments[0].id as string
 
-    await changeRequester(page, REQUESTER_B)
-    const intruderId = await page.evaluate(() => {
-      const raw = window.sessionStorage.getItem('toktickit.requester')
-      return raw ? (JSON.parse(raw) as { id: string }).id : ''
-    })
+    await switchUser(page, REQUESTER_B)
 
-    const refusedTicket = await request.get(`http://localhost:5000/api/tickets/${ticket.id}`, {
-      headers: { 'X-Requester-Id': intruderId },
-    })
+    const refusedTicket = await page.request.get(`http://localhost:5000/api/tickets/${ticket.id}`)
     expect(refusedTicket.status()).toBe(403)
 
-    const refusedDownload = await request.get(
+    const refusedDownload = await page.request.get(
       `http://localhost:5000/api/attachments/${attachmentId}/download`,
-      { headers: { 'X-Requester-Id': intruderId } },
     )
     expect(refusedDownload.status()).toBe(403)
     expect(refusedDownload.headers()['content-disposition']).toBeUndefined()
   })
 
   test('the requester still sees their own ticket after the switch back', async ({ page }) => {
-    await selectRequester(page, REQUESTER_A)
+    await loginAs(page, REQUESTER_A)
     const ticket = await createTicket(page, 'E2E ownership round trip')
 
-    await changeRequester(page, REQUESTER_B)
+    await switchUser(page, REQUESTER_B)
     await page.goto(ticket.url)
     await expect(page.getByTestId('access-denied')).toBeVisible()
 
     await page.goto('/tickets')
-    await changeRequester(page, REQUESTER_A)
+    await switchUser(page, REQUESTER_A)
     await page.goto(ticket.url)
 
     await expect(page.getByTestId('ticket-fields')).toBeVisible()

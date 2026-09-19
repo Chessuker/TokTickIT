@@ -37,3 +37,4 @@ server/uploads/
 e2e/report/
 test-results/
 playwright/.cache/
+*Lab_3_sheet.pdf
