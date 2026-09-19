@@ -21,9 +21,9 @@ export const TICKET_STATUSES = [
   'Open',
   'InProgress',
   'WaitingForRequester',
+  'Reopened',
   'Resolved',
   'Closed',
-  'Reopened',
   'Cancelled'
 ] as const;
 export type TicketStatusValue = (typeof TICKET_STATUSES)[number];

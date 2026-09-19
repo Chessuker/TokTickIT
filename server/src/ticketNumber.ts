@@ -30,6 +30,13 @@ export function parseTicketSequence(ticketNumber: string): number {
   return Number(ticketNumber.slice(-SEQUENCE_LENGTH));
 }
 
+/**
+ * Seeded tickets live at `TKT-YYYY-9000xx` (specification.md §7) so they can
+ * never collide with user-created numbers. The generator ignores that range:
+ * otherwise the first ticket raised after a seed would be numbered 900025.
+ */
+export const SEED_SEQUENCE_START = 900000;
+
 /** The slice of the Prisma client this generator needs, so it can be tested without a database. */
 export interface TicketNumberSource {
   ticket: {
@@ -50,7 +57,12 @@ export async function generateTicketNumber(
   const year = now.getFullYear();
 
   const latest = await client.ticket.findFirst({
-    where: { ticketNumber: { startsWith: `TKT-${year}-` } },
+    where: {
+      ticketNumber: {
+        startsWith: `TKT-${year}-`,
+        lt: formatTicketNumber(year, SEED_SEQUENCE_START),
+      },
+    },
     orderBy: { ticketNumber: 'desc' },
     select: { ticketNumber: true },
   });
