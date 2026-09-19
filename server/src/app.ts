@@ -25,6 +25,7 @@ import {
 } from './attachmentRules.js';
 import type { AttachmentRow } from './attachmentRules.js';
 import { receiveUpload } from './attachmentUpload.js';
+import { COMMENT_SELECT, validateCommentBody } from './commentRules.js';
 
 export const app = express();
 
@@ -650,3 +651,161 @@ app.patch('/api/attachments/:id/remove', requireAuth, requireRole('Requester'), 
   }
 });
 
+
+// ---------------------------------------------------------------------------
+// Public Comments and the resolution indication (Issue #38 — FR-06, FR-07).
+// ---------------------------------------------------------------------------
+
+/**
+ * The statuses in which a ticket is finished from the Requester's point of
+ * view (BR-21). Issue #40 grows this into the full transition matrix in
+ * `ticketWorkflow.ts`; until then only the resolution indication needs it.
+ */
+const TERMINAL_STATUSES = new Set(['Resolved', 'Closed', 'Cancelled']);
+
+/**
+ * The comment routes need to know only whether the caller may see the ticket
+ * (BR-23), so they load three columns rather than the whole detail. The 404 /
+ * 403 rule is the same one `findTicketForRequester` applies: unknown id is
+ * 404, someone else's ticket is 403 for a Requester and readable for staff.
+ */
+async function loadTicketAccess(res: Response, ticketId: string) {
+  const ticket = await prisma.ticket.findFirst({
+    where: { id: ticketId },
+    select: { id: true, requesterId: true, status: true }
+  });
+
+  if (!ticket) {
+    sendError(res, 404, 'NOT_FOUND', 'Ticket not found.');
+    return null;
+  }
+
+  if (ticket.requesterId !== getSessionUser(res).id && !canReadAnyTicket(res)) {
+    sendError(res, 403, 'FORBIDDEN', 'This ticket belongs to another requester.');
+    return null;
+  }
+
+  return ticket;
+}
+
+// GET /api/tickets/:id/comments — the ticket's Public Comments, newest first
+// (api-spec.md §3.6, BR-04, AC-14). Owner, IT Staff or Administrator.
+//
+// The query runs against `TicketComment` only: an Internal Note lives in a
+// different table, so no `where` mistake here can ever return one (AD-03).
+app.get('/api/tickets/:id/comments', requireAuth, async (req, res) => {
+  try {
+    const ticket = await loadTicketAccess(res, String(req.params.id));
+    if (!ticket) return;
+
+    const comments = await prisma.ticketComment.findMany({
+      where: { ticketId: ticket.id },
+      orderBy: { createdAt: 'desc' },
+      select: COMMENT_SELECT
+    });
+
+    res.json({ data: comments });
+  } catch (error) {
+    sendInternalError(res, 'GET /api/tickets/:id/comments', error);
+  }
+});
+
+// POST /api/tickets/:id/comments — append one Public Comment (api-spec.md
+// §3.7, BR-22, BR-23, AC-14). Requester (own ticket) or IT Staff; an
+// Administrator is refused by the role gate before any lookup (BR-17).
+//
+// Allowed in every status, including Closed and Cancelled: a late reply is
+// still useful to IT Staff, who may reopen.
+app.post(
+  '/api/tickets/:id/comments',
+  requireAuth,
+  requireRole('Requester', 'ITStaff'),
+  async (req, res) => {
+    try {
+      const ticket = await loadTicketAccess(res, String(req.params.id));
+      if (!ticket) return;
+
+      const { body, error } = validateCommentBody(
+        (req.body as { body?: unknown } | undefined)?.body
+      );
+
+      if (!body) {
+        sendValidationFailed(res, { body: error as string });
+        return;
+      }
+
+      const author = getSessionUser(res);
+
+      // Author and time are server-owned (BR-22): the body is the only field
+      // a client contributes. The ticket's `updatedAt` is touched in the same
+      // transaction so the list's "Last Updated" reflects the new activity.
+      const comment = await prisma.$transaction(async (tx) => {
+        const created = await tx.ticketComment.create({
+          data: { ticketId: ticket.id, authorId: author.id, body },
+          select: COMMENT_SELECT
+        });
+
+        await tx.ticket.update({
+          where: { id: ticket.id },
+          data: { updatedAt: new Date() },
+          select: { id: true }
+        });
+
+        return created;
+      });
+
+      res.status(201).json(comment);
+    } catch (error) {
+      sendInternalError(res, 'POST /api/tickets/:id/comments', error);
+    }
+  }
+);
+
+// POST /api/tickets/:id/resolution-indication — the Requester says the problem
+// appears resolved (api-spec.md §3.8, BR-05, BR-21, AC-15). Owner only.
+//
+// Only `requesterResolvedAt` moves; the status is IT Staff's to change, so a
+// Requester can *indicate* but never *resolve* (BR-05). The call is
+// idempotent: a repeat answers 200 with the original timestamp rather than
+// overwriting the moment the Requester first said so.
+app.post(
+  '/api/tickets/:id/resolution-indication',
+  requireAuth,
+  requireRole('Requester'),
+  async (req, res) => {
+    try {
+      const { ticket, refusal } = await findTicketForRequester(res, String(req.params.id));
+
+      if (!ticket) {
+        const { status, code, message } = refusal as Refusal;
+        sendError(res, status, code, message);
+        return;
+      }
+
+      if (TERMINAL_STATUSES.has(ticket.status)) {
+        sendError(
+          res,
+          409,
+          'INVALID_TRANSITION',
+          'This ticket is already resolved, closed or cancelled.'
+        );
+        return;
+      }
+
+      if (ticket.requesterResolvedAt) {
+        res.json(toTicketDetail(ticket));
+        return;
+      }
+
+      const updated = await prisma.ticket.update({
+        where: { id: ticket.id },
+        data: { requesterResolvedAt: new Date() },
+        select: { ...TICKET_DETAIL_SELECT, requesterId: true, attachments: TICKET_DETAIL_ATTACHMENTS }
+      });
+
+      res.json(toTicketDetail(updated));
+    } catch (error) {
+      sendInternalError(res, 'POST /api/tickets/:id/resolution-indication', error);
+    }
+  }
+);

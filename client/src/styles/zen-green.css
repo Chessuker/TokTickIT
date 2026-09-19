@@ -1613,3 +1613,182 @@ body {
     width: 100%;
   }
 }
+
+/* ---------- Status and IT priority badges (Lab 3 ui-spec §2) ---------- */
+
+.zg-badge-status-open {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1e40af;
+}
+
+.zg-badge-status-in-progress {
+  background: var(--zg-warning-bg);
+  border-color: var(--zg-warning);
+  color: #92400e;
+}
+
+.zg-badge-status-waiting {
+  background: #f5f3ff;
+  border-color: #c4b5fd;
+  color: #5b21b6;
+}
+
+.zg-badge-status-resolved {
+  background: var(--zg-pale);
+  border-color: var(--zg-secondary);
+  color: #14532d;
+}
+
+.zg-badge-status-closed {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+.zg-badge-status-reopened {
+  background: #fff7ed;
+  border-color: #fdba74;
+  color: #9a3412;
+}
+
+.zg-badge-status-cancelled {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  color: #6b7280;
+  text-decoration: line-through;
+}
+
+/* Same fills as Requested Priority; the "IT" prefix in the label tells them apart. */
+.zg-badge-it-priority-low {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1e40af;
+}
+
+.zg-badge-it-priority-medium {
+  background: var(--zg-warning-bg);
+  border-color: var(--zg-warning);
+  color: #92400e;
+}
+
+.zg-badge-it-priority-high {
+  background: #fef2f2;
+  border-color: var(--zg-error);
+  color: #991b1b;
+}
+
+.zg-owner {
+  font-weight: 500;
+}
+
+.zg-owner-unassigned {
+  color: var(--zg-text-muted);
+  font-style: italic;
+  font-weight: 400;
+}
+
+.zg-badge-requester-resolved {
+  gap: 0.3rem;
+  background: var(--zg-pale);
+  border: 1px dashed var(--zg-secondary);
+  color: #14532d;
+}
+
+.zg-page-head-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.zg-page-head-actions .zg-btn {
+  white-space: nowrap;
+}
+
+/* ---------- Public Comments panel (Lab 3 ui-spec §2 "Public vs Internal", §3.3) ---------- */
+
+.zg-comment-composer {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--zg-border);
+}
+
+.zg-comment-composer .zg-textarea {
+  min-height: 5rem;
+}
+
+.zg-comment-composer-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.zg-char-counter {
+  display: block;
+  margin-top: 0.35rem;
+  margin-left: auto;
+  font-size: 0.8rem;
+  color: var(--zg-text-muted);
+  white-space: nowrap;
+}
+
+.zg-char-counter-over {
+  color: var(--zg-error);
+  font-weight: 600;
+}
+
+.zg-comment-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.zg-comment {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-border);
+  border-left: 4px solid var(--zg-border);
+  border-radius: 6px;
+}
+
+.zg-comment-avatar {
+  flex-shrink: 0;
+  background: var(--zg-pale);
+  border-color: var(--zg-secondary);
+  color: #14532d;
+}
+
+.zg-comment-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.zg-comment-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.zg-comment-author {
+  font-weight: 600;
+}
+
+.zg-comment-time {
+  color: var(--zg-text-muted);
+  font-size: 0.8rem;
+}
+
+/* Text node, never HTML (AD-09); pre-wrap keeps the author's line breaks. */
+.zg-comment-body {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
