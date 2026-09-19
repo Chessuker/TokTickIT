@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { apiFetch } from '../apiClient'
 import { useAuth } from '../context/auth'
 import { useMediaQuery } from '../useMediaQuery'
+import { ItPriorityBadge, OwnerName, PriorityBadge, StatusBadge } from './Badges'
 
 /**
  * My Tickets list (ui-spec.md §3.3, api-spec.md §3.5 — FR-03, AC-04, AC-10, AC-15).
@@ -38,6 +39,9 @@ export interface TicketListItem {
   summary: string
   status: string
   priority: string
+  itPriority: string
+  owner: { id: string; name: string; role: string } | null
+  requesterResolvedAt: string | null
   category: Option | null
   relatedSystem: Option | null
   attachmentCount: number
@@ -82,29 +86,6 @@ function formatDate(value: string): string {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return '—'
   return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' })
-}
-
-function StatusBadge({ status }: { status: string }) {
-  return <span className={`zg-badge zg-badge-status-${status.toLowerCase()}`}>{status}</span>
-}
-
-function PriorityBadge({ priority }: { priority: string }) {
-  return <span className={`zg-badge zg-badge-priority-${priority.toLowerCase()}`}>{priority}</span>
-}
-
-/**
- * IT Priority and Ticket Owner are triage fields owned by the IT side of the
- * workflow, which is not in the Lab 2 schema — the requester-facing sprint
- * stops at the requested priority. The columns are rendered now, as Issue #5
- * asks, with an explicit "not yet assigned" placeholder rather than a blank
- * cell, so "no value yet" cannot be misread as missing data.
- */
-function NotAssigned({ label }: { label: string }) {
-  return (
-    <span className="zg-not-assigned" title={`${label} is assigned during IT triage`}>
-      Unassigned
-    </span>
-  )
 }
 
 function MyTickets() {
@@ -425,13 +406,13 @@ function MyTickets() {
                       <div>
                         <dt>IT Priority</dt>
                         <dd>
-                          <NotAssigned label="IT Priority" />
+                          <ItPriorityBadge priority={ticket.itPriority ?? ticket.priority} />
                         </dd>
                       </div>
                       <div>
                         <dt>Ticket Owner</dt>
                         <dd>
-                          <NotAssigned label="Ticket Owner" />
+                          <OwnerName owner={ticket.owner ?? null} />
                         </dd>
                       </div>
                     </dl>
@@ -494,13 +475,13 @@ function MyTickets() {
                         <PriorityBadge priority={ticket.priority} />
                       </td>
                       <td className="zg-cell-tight">
-                        <NotAssigned label="IT Priority" />
+                        <ItPriorityBadge priority={ticket.itPriority ?? ticket.priority} />
                       </td>
                       <td className="zg-cell-tight">
                         <StatusBadge status={ticket.status} />
                       </td>
                       <td className="zg-cell-tight">
-                        <NotAssigned label="Ticket Owner" />
+                        <OwnerName owner={ticket.owner ?? null} />
                       </td>
                       <td className="zg-cell-tight zg-cell-date">{formatDate(ticket.updatedAt)}</td>
                       <td className="zg-cell-tight">

@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { apiFetch, apiJson } from '../apiClient'
+import { apiFetch, apiJson, readApiError } from '../apiClient'
 import { useAuth } from '../context/auth'
+import {
+  ItPriorityBadge,
+  OwnerName,
+  PriorityBadge,
+  RequesterResolvedBadge,
+  StatusBadge,
+} from './Badges'
+import CommentsPanel from './lab-03/CommentsPanel'
 import {
   ALLOWED_MIME_TYPES,
   ALLOWED_TYPES_LABEL,
@@ -11,8 +19,9 @@ import {
 } from '../attachments'
 
 /**
- * Requester Ticket Detail (ui-spec.md §3.4, api-spec.md §3.6 — FR-04, FR-05,
- * AC-03, AC-05, AC-09).
+ * Requester Ticket Detail (Lab 2 ui-spec.md §3.4, api-spec.md §3.6 — FR-04,
+ * FR-05, AC-03, AC-05, AC-09; Lab 3 ui-spec.md §3.3 — FR-06, FR-07, AC-14,
+ * AC-15).
  *
  * Three rules shape this screen:
  *
@@ -26,6 +35,13 @@ import {
  * 3. A removed attachment keeps its metadata and loses its file (BR-09, BR-10).
  *    The Download button is driven by `downloadUrl` being null rather than by a
  *    rule restated on the client, so the two can never disagree.
+ *
+ * Lab 3 adds two things a Requester may *say* without changing the ticket:
+ * a Public Comment (the panel at the bottom) and "Problem appears resolved",
+ * which sets `requesterResolvedAt` and nothing else (BR-05, BR-21). Status,
+ * owner and IT priority stay read-only badges here; the controls that change
+ * them exist only on the staff screens, and the API refuses a Requester
+ * anyway.
  */
 
 interface Attachment {
@@ -52,6 +68,9 @@ interface TicketDetailData {
   description: string
   status: string
   priority: string
+  itPriority: string
+  owner: { id: string; name: string; role: string } | null
+  requesterResolvedAt: string | null
   category: Option | null
   relatedSystem: Option | null
   requester: { id: string; name: string; email: string; department: string | null }
@@ -80,22 +99,8 @@ function formatDateTime(value: string | null): string {
   })
 }
 
-function StatusBadge({ status }: { status: string }) {
-  return <span className={`zg-badge zg-badge-status-${status.toLowerCase()}`}>{status}</span>
-}
-
-function PriorityBadge({ priority }: { priority: string }) {
-  return <span className={`zg-badge zg-badge-priority-${priority.toLowerCase()}`}>{priority}</span>
-}
-
-/** Matches the My Tickets list: IT triage fields have no column this sprint. */
-function NotAssigned({ label }: { label: string }) {
-  return (
-    <span className="zg-not-assigned" title={`${label} is assigned during IT triage`}>
-      Unassigned
-    </span>
-  )
-}
+/** Statuses in which the ticket is finished; the indication is no longer offered (BR-21). */
+const TERMINAL_STATUSES = new Set(['Resolved', 'Closed', 'Cancelled'])
 
 /** One read-only row of the ticket. No input, no edit affordance (AC-05). */
 function ReadOnlyField({
@@ -136,6 +141,10 @@ function TicketDetail() {
   const [reason, setReason] = useState('')
   const [removing, setRemoving] = useState(false)
   const [removeError, setRemoveError] = useState<string | null>(null)
+
+  const [resolveOpen, setResolveOpen] = useState(false)
+  const [resolving, setResolving] = useState(false)
+  const [resolveError, setResolveError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -325,6 +334,37 @@ function TicketDetail() {
     }
   }
 
+  /**
+   * "Problem appears resolved" (AC-15). The server answers with the whole
+   * TicketDetail, which replaces the one on screen: the button disappears
+   * because `requesterResolvedAt` is now set, not because a flag was flipped
+   * here. A `409` (the ticket was closed meanwhile) is shown inside the dialog
+   * and the ticket is re-read so the header catches up.
+   */
+  const confirmResolved = async () => {
+    setResolving(true)
+    setResolveError(null)
+
+    try {
+      const res = await apiJson(`/api/tickets/${id}/resolution-indication`, 'POST')
+
+      if (res.ok) {
+        const updated = (await res.json()) as TicketDetailData
+        setTicket(updated)
+        setResolveOpen(false)
+        return
+      }
+
+      const error = await readApiError(res)
+      setResolveError(error?.message ?? 'The indication could not be saved. Please try again.')
+      if (res.status === 409) reload()
+    } catch {
+      setResolveError('Could not reach the server. Please try again.')
+    } finally {
+      setResolving(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="zg-loading" role="status">
@@ -397,9 +437,34 @@ function TicketDetail() {
             <span className="zg-ticket-number">{ticket.ticketNumber}</span>
             <StatusBadge status={ticket.status} />
             <PriorityBadge priority={ticket.priority} />
+            <ItPriorityBadge priority={ticket.itPriority ?? ticket.priority} />
+            <span className="zg-muted">
+              Owner: <OwnerName owner={ticket.owner ?? null} />
+            </span>
+            {ticket.requesterResolvedAt && <RequesterResolvedBadge at={ticket.requesterResolvedAt} />}
             <span className="zg-muted">Created {formatDateTime(ticket.createdAt)}</span>
           </div>
         </div>
+
+        {/*
+         * Offered only while it can still be acted on: not once it has been
+         * said, and not on a finished ticket (BR-21). The indication is the
+         * Requester's one word on the outcome; changing the status is not.
+         */}
+        {!ticket.requesterResolvedAt && !TERMINAL_STATUSES.has(ticket.status) && (
+          <div className="zg-page-head-actions">
+            <button
+              type="button"
+              className="zg-btn zg-btn-secondary"
+              onClick={() => {
+                setResolveError(null)
+                setResolveOpen(true)
+              }}
+            >
+              <i className="bi bi-check2-circle" aria-hidden="true" /> Problem appears resolved
+            </button>
+          </div>
+        )}
       </div>
 
       {/*
@@ -430,13 +495,13 @@ function TicketDetail() {
             <PriorityBadge priority={ticket.priority} />
           </ReadOnlyField>
           <ReadOnlyField label="IT Priority">
-            <NotAssigned label="IT Priority" />
+            <ItPriorityBadge priority={ticket.itPriority ?? ticket.priority} />
           </ReadOnlyField>
           <ReadOnlyField label="Current Status">
             <StatusBadge status={ticket.status} />
           </ReadOnlyField>
           <ReadOnlyField label="Ticket Owner">
-            <NotAssigned label="Ticket Owner" />
+            <OwnerName owner={ticket.owner ?? null} />
           </ReadOnlyField>
           <ReadOnlyField label="Last Updated">{formatDateTime(ticket.updatedAt)}</ReadOnlyField>
           <ReadOnlyField label="Summary" wide>
@@ -577,6 +642,63 @@ function TicketDetail() {
           )}
         </div>
       </div>
+
+      <CommentsPanel ticketId={ticket.id} canComment={user?.role !== 'Administrator'} />
+
+      {/*
+       * Confirmation for "Problem appears resolved" (ui-spec.md §2
+       * "Confirmation dialog", AC-15). Stays open on failure with the error
+       * inside it.
+       */}
+      {resolveOpen && (
+        <div className="zg-modal-backdrop" role="presentation">
+          <div
+            className="zg-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="resolve-modal-title"
+          >
+            <h2 className="zg-section-title" id="resolve-modal-title">
+              Tell IT Staff this looks fixed?
+            </h2>
+            <p className="zg-hint">
+              IT Staff will see that you consider the problem resolved. The ticket stays{' '}
+              <strong>{ticket.status}</strong> until they close it.
+            </p>
+
+            {resolveError && (
+              <p className="zg-field-error" role="alert">
+                {resolveError}
+              </p>
+            )}
+
+            <div className="zg-actions">
+              <button
+                type="button"
+                className="zg-btn zg-btn-primary"
+                onClick={() => void confirmResolved()}
+                disabled={resolving}
+              >
+                {resolving ? (
+                  <>
+                    <span className="zg-spinner-sm" aria-hidden="true" /> Saving...
+                  </>
+                ) : (
+                  'Confirm'
+                )}
+              </button>
+              <button
+                type="button"
+                className="zg-btn zg-btn-secondary"
+                onClick={() => setResolveOpen(false)}
+                disabled={resolving}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/*
        * Soft-removal modal (AC-09, BR-09). Confirm stays disabled until a

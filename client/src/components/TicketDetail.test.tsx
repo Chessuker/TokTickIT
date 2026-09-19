@@ -3,10 +3,11 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import TicketDetail from './TicketDetail'
-import { AuthStub, JENNIFER as SESSION_JENNIFER } from '../test/auth'
+import { AuthStub, JENNIFER as SESSION_JENNIFER, PRIYA as SESSION_PRIYA } from '../test/auth'
 
 /**
- * UI-05 (AC-05) and UI-06 (AC-09) — the Requester Ticket Detail screen.
+ * UI-05 (AC-05), UI-06 (AC-09) and UI-19 (AC-14, AC-15) — the Requester Ticket
+ * Detail screen.
  *
  * The stub below is a small fake of the four detail-screen endpoints rather
  * than a canned response: uploading and removing mutate the fake's attachment
@@ -56,11 +57,35 @@ const TICKET = {
   description: 'The battery drops from 100% to 20% within an hour of unplugging.',
   status: 'New',
   priority: 'High',
+  itPriority: 'Medium',
+  owner: null as { id: string; name: string; role: string } | null,
+  requesterResolvedAt: null as string | null,
   category: { id: 'cat-1', name: 'Hardware' },
   relatedSystem: { id: 'sys-1', name: 'Corporate Laptop' },
   requester: JENNIFER,
   createdAt: '2026-08-23T04:15:00.000Z',
   updatedAt: '2026-08-24T09:30:00.000Z',
+}
+
+interface StubComment {
+  id: string
+  body: string
+  author: { id: string; name: string; role: 'Requester' | 'ITStaff' | 'Administrator' }
+  createdAt: string
+}
+
+const STAFF_COMMENT: StubComment = {
+  id: 'cmt-1',
+  body: 'We are investigating the issue on your device.',
+  author: { id: SESSION_PRIYA.id, name: SESSION_PRIYA.name, role: 'ITStaff' },
+  createdAt: '2026-08-24T09:30:00.000Z',
+}
+
+const REQUESTER_COMMENT: StubComment = {
+  id: 'cmt-2',
+  body: 'Still happening after the update.',
+  author: { id: SESSION_JENNIFER.id, name: SESSION_JENNIFER.name, role: 'Requester' },
+  createdAt: '2026-08-24T10:00:00.000Z',
 }
 
 interface StubOptions {
@@ -72,13 +97,23 @@ interface StubOptions {
   uploadMessage?: string
   /** Status for `GET /api/attachments/:id/download`. */
   downloadStatus?: number
+  /** Overrides on the ticket itself (status, owner, requesterResolvedAt). */
+  ticket?: Partial<typeof TICKET>
+  /** Thread returned by `GET /api/tickets/:id/comments`, in server order (newest first). */
+  comments?: StubComment[]
+  /** Status for `POST /api/tickets/:id/comments`. */
+  commentStatus?: number
+  /** Status for `POST /api/tickets/:id/resolution-indication`. */
+  resolutionStatus?: number
 }
 
 function stubApi(options: StubOptions = {}) {
   const files = [...(options.attachments ?? [])]
+  const thread = [...(options.comments ?? [])]
+  const ticketState = { ...TICKET, ...(options.ticket ?? {}) }
 
   const detailBody = () => ({
-    ...TICKET,
+    ...ticketState,
     attachmentCount: files.filter((file) => !file.isRemoved).length,
     attachments: [...files]
       .sort((a, b) => Number(a.isRemoved) - Number(b.isRemoved))
@@ -137,6 +172,60 @@ function stubApi(options: StubOptions = {}) {
         }),
       )
       return new Response(JSON.stringify({ ok: true }), { status: 201 })
+    }
+
+    if (url.pathname === `/api/tickets/${TICKET_ID}/comments` && method === 'GET') {
+      return new Response(JSON.stringify({ data: [...thread] }), { status: 200 })
+    }
+
+    if (url.pathname === `/api/tickets/${TICKET_ID}/comments` && method === 'POST') {
+      const status = options.commentStatus ?? 201
+
+      if (status !== 201) {
+        return new Response(
+          JSON.stringify({ error: { code: 'INTERNAL_ERROR', message: 'Something went wrong.' } }),
+          { status },
+        )
+      }
+
+      const { body } = JSON.parse(String(init?.body ?? '{}')) as { body?: string }
+      if (!body || body.trim().length === 0) {
+        return new Response(
+          JSON.stringify({
+            error: { code: 'VALIDATION_FAILED', fields: { body: 'Comment cannot be empty.' } },
+          }),
+          { status: 400 },
+        )
+      }
+
+      const created: StubComment = {
+        id: `cmt-${thread.length + 10}`,
+        body,
+        author: { id: SESSION_JENNIFER.id, name: SESSION_JENNIFER.name, role: 'Requester' },
+        createdAt: '2026-08-25T11:00:00.000Z',
+      }
+      // Newest first, as the server orders it.
+      thread.unshift(created)
+      return new Response(JSON.stringify(created), { status: 201 })
+    }
+
+    if (url.pathname === `/api/tickets/${TICKET_ID}/resolution-indication` && method === 'POST') {
+      const status = options.resolutionStatus ?? 200
+
+      if (status !== 200) {
+        return new Response(
+          JSON.stringify({
+            error: {
+              code: 'INVALID_TRANSITION',
+              message: 'This ticket is already resolved, closed or cancelled.',
+            },
+          }),
+          { status },
+        )
+      }
+
+      ticketState.requesterResolvedAt ??= '2026-08-25T12:00:00.000Z'
+      return new Response(JSON.stringify(detailBody()), { status: 200 })
     }
 
     const removeMatch = url.pathname.match(/^\/api\/attachments\/([^/]+)\/remove$/)
@@ -249,21 +338,33 @@ describe('TicketDetail — read-only presentation (UI-05, AC-05)', () => {
     expect(fields.querySelectorAll('input, textarea, select')).toHaveLength(0)
   })
 
-  it('offers no edit, save or status-change affordance anywhere on the screen', async () => {
+  it('offers no edit, save, status, owner or IT-priority control anywhere on the screen', async () => {
     renderDetail()
     await screen.findByTestId('ticket-fields')
 
-    for (const label of [/^edit/i, /^save/i, /change status/i, /assign/i, /add comment/i]) {
+    for (const label of [/^edit/i, /^save/i, /change status/i, /assign/i, /claim/i, /it priority/i]) {
       expect(screen.queryByRole('button', { name: label })).toBeNull()
     }
+    expect(screen.queryByRole('combobox')).toBeNull()
   })
 
-  it('shows the IT triage fields as an explicit Unassigned placeholder', async () => {
+  it('shows IT Priority as a badge and an unassigned owner as an explicit placeholder', async () => {
     renderDetail()
 
     const fields = await screen.findByTestId('ticket-fields')
 
-    expect(within(fields).getAllByText('Unassigned')).toHaveLength(2)
+    expect(within(fields).getByText('IT Medium')).toBeInTheDocument()
+    expect(within(fields).getByText('Unassigned')).toBeInTheDocument()
+  })
+
+  it("shows the owner's name once IT Staff have claimed the ticket", async () => {
+    renderDetail({ ticket: { owner: { id: 's-1', name: 'Priya Raman', role: 'ITStaff' }, itPriority: 'High' } })
+
+    const fields = await screen.findByTestId('ticket-fields')
+
+    expect(within(fields).getByText('Priya Raman')).toBeInTheDocument()
+    expect(within(fields).queryByText('Unassigned')).toBeNull()
+    expect(within(fields).getByText('IT High')).toBeInTheDocument()
   })
 })
 
@@ -502,5 +603,178 @@ describe('TicketDetail — ownership guard (AC-03, BR-04)', () => {
     expect(call?.[1]?.credentials).toBe('include')
     const sent = (call?.[1]?.headers ?? {}) as Record<string, string>
     expect(sent['X-Requester-Id']).toBeUndefined()
+  })
+})
+
+describe('TicketDetail — Public Comments (UI-19, AC-14, BR-22)', () => {
+  it('lists the thread newest-first with author name, role badge and time', async () => {
+    renderDetail({ comments: [REQUESTER_COMMENT, STAFF_COMMENT] })
+
+    const list = await screen.findByTestId('comment-list')
+    const items = within(list).getAllByRole('listitem')
+
+    expect(items).toHaveLength(2)
+    expect(items[0]).toHaveTextContent('Jennifer Anderson')
+    expect(items[0]).toHaveTextContent('Requester')
+    expect(items[0]).toHaveTextContent('Still happening after the update.')
+    expect(items[1]).toHaveTextContent('Priya Raman')
+    expect(items[1]).toHaveTextContent('IT Staff')
+    expect(within(items[0]).getByRole('time')).toHaveAttribute('title')
+  })
+
+  it('shows "No comments yet." for an empty thread', async () => {
+    renderDetail()
+
+    expect(await screen.findByTestId('no-comments')).toHaveTextContent('No comments yet.')
+  })
+
+  it('renders a comment body as text, never as HTML', async () => {
+    const markup = '<b>bold</b> <img src=x onerror="alert(1)">'
+    renderDetail({ comments: [{ ...STAFF_COMMENT, body: markup }] })
+
+    const list = await screen.findByTestId('comment-list')
+
+    expect(within(list).getByText(markup)).toBeInTheDocument()
+    expect(list.querySelector('b')).toBeNull()
+    expect(list.querySelector('img')).toBeNull()
+  })
+
+  it('posts a comment with the session cookie and re-reads the thread', async () => {
+    const user = userEvent.setup()
+    const fetchMock = renderDetail({ comments: [STAFF_COMMENT] })
+
+    await screen.findByTestId('comment-list')
+    await user.type(screen.getByLabelText(/add public comment/i), '  The fix worked, thank you.  ')
+    await user.click(screen.getByRole('button', { name: /post comment/i }))
+
+    const list = await screen.findByTestId('comment-list')
+    await waitFor(() => expect(within(list).getAllByRole('listitem')).toHaveLength(2))
+
+    const items = within(list).getAllByRole('listitem')
+    expect(items[0]).toHaveTextContent('The fix worked, thank you.')
+    expect(items[0]).toHaveTextContent('Jennifer Anderson')
+    expect(screen.getByLabelText(/add public comment/i)).toHaveValue('')
+
+    const post = fetchMock.mock.calls.find(
+      ([input, init]) =>
+        String(input).endsWith(`/api/tickets/${TICKET_ID}/comments`) && init?.method === 'POST',
+    )
+    expect(post?.[1]?.credentials).toBe('include')
+    expect(JSON.parse(String(post?.[1]?.body))).toEqual({ body: 'The fix worked, thank you.' })
+  })
+
+  it('refuses an empty or whitespace comment under the textarea without calling the API', async () => {
+    const user = userEvent.setup()
+    const fetchMock = renderDetail()
+
+    await screen.findByTestId('no-comments')
+    const before = fetchMock.mock.calls.length
+
+    await user.click(screen.getByRole('button', { name: /post comment/i }))
+    expect(await screen.findByText('Comment cannot be empty.')).toBeInTheDocument()
+
+    await user.type(screen.getByLabelText(/add public comment/i), '   ')
+    await user.click(screen.getByRole('button', { name: /post comment/i }))
+    expect(await screen.findByText('Comment cannot be empty.')).toBeInTheDocument()
+
+    const posts = fetchMock.mock.calls.slice(before).filter(([, init]) => init?.method === 'POST')
+    expect(posts).toHaveLength(0)
+  })
+
+  it('turns the counter red and disables Post Comment past 2000 characters', async () => {
+    const user = userEvent.setup()
+    renderDetail()
+
+    await screen.findByTestId('no-comments')
+    const textarea = screen.getByLabelText(/add public comment/i)
+
+    await user.click(textarea)
+    await user.paste('x'.repeat(2001))
+
+    expect(screen.getByText('2001 / 2000')).toHaveClass('zg-char-counter-over')
+    expect(screen.getByRole('button', { name: /post comment/i })).toBeDisabled()
+  })
+
+  it('keeps the typed text and shows the error when the server refuses the post', async () => {
+    const user = userEvent.setup()
+    renderDetail({ commentStatus: 500 })
+
+    await screen.findByTestId('no-comments')
+    await user.type(screen.getByLabelText(/add public comment/i), 'Any update?')
+    await user.click(screen.getByRole('button', { name: /post comment/i }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Something went wrong.')
+    expect(screen.getByLabelText(/add public comment/i)).toHaveValue('Any update?')
+  })
+})
+
+describe('TicketDetail — "Problem appears resolved" (UI-19, AC-15, BR-21)', () => {
+  it('offers the button on an open ticket and none of the staff controls', async () => {
+    renderDetail({ ticket: { status: 'InProgress' } })
+
+    expect(await screen.findByRole('button', { name: /problem appears resolved/i })).toBeInTheDocument()
+    expect(screen.queryByTestId('requester-resolved')).toBeNull()
+  })
+
+  it('confirms in a dialog, posts the indication and swaps the button for the indicator', async () => {
+    const user = userEvent.setup()
+    const fetchMock = renderDetail({ ticket: { status: 'InProgress' } })
+
+    await user.click(await screen.findByRole('button', { name: /problem appears resolved/i }))
+
+    const dialog = screen.getByRole('dialog', { name: /tell it staff this looks fixed/i })
+    await user.click(within(dialog).getByRole('button', { name: /^confirm$/i }))
+
+    expect(await screen.findByTestId('requester-resolved')).toHaveTextContent('Requester reports resolved')
+    expect(screen.queryByRole('button', { name: /problem appears resolved/i })).toBeNull()
+    expect(screen.queryByRole('dialog')).toBeNull()
+
+    // The status is untouched: only the indication moved (BR-05).
+    expect(screen.getAllByText('In Progress').length).toBeGreaterThan(0)
+
+    const post = fetchMock.mock.calls.find(([input]) =>
+      String(input).endsWith(`/api/tickets/${TICKET_ID}/resolution-indication`),
+    )
+    expect(post?.[1]?.method).toBe('POST')
+    expect(post?.[1]?.credentials).toBe('include')
+  })
+
+  it('closes the dialog without posting when Cancel is pressed', async () => {
+    const user = userEvent.setup()
+    const fetchMock = renderDetail({ ticket: { status: 'Open' } })
+
+    await user.click(await screen.findByRole('button', { name: /problem appears resolved/i }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: /cancel/i }))
+
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(
+      fetchMock.mock.calls.some(([input]) => String(input).includes('resolution-indication')),
+    ).toBe(false)
+    expect(screen.getByRole('button', { name: /problem appears resolved/i })).toBeInTheDocument()
+  })
+
+  it('shows the indicator instead of the button once the ticket already carries the indication', async () => {
+    renderDetail({ ticket: { status: 'Open', requesterResolvedAt: '2026-08-25T12:00:00.000Z' } })
+
+    expect(await screen.findByTestId('requester-resolved')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /problem appears resolved/i })).toBeNull()
+  })
+
+  it.each(['Resolved', 'Closed', 'Cancelled'])('does not offer the button on a %s ticket', async (status) => {
+    renderDetail({ ticket: { status } })
+
+    await screen.findByTestId('ticket-fields')
+    expect(screen.queryByRole('button', { name: /problem appears resolved/i })).toBeNull()
+  })
+
+  it('keeps the dialog open and shows the server error on a 409', async () => {
+    const user = userEvent.setup()
+    renderDetail({ ticket: { status: 'Open' }, resolutionStatus: 409 })
+
+    await user.click(await screen.findByRole('button', { name: /problem appears resolved/i }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^confirm$/i }))
+
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByRole('alert')).toHaveTextContent(/already resolved, closed or cancelled/i)
   })
 })

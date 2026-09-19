@@ -41,7 +41,10 @@ const PROTECTED_ROUTES: { method: 'get' | 'post' | 'patch'; path: string }[] = [
   { method: 'post', path: `/api/tickets/${TICKET_ID}/attachments` },
   { method: 'get', path: `/api/attachments/${ATTACHMENT_ID}` },
   { method: 'get', path: `/api/attachments/${ATTACHMENT_ID}/download` },
-  { method: 'patch', path: `/api/attachments/${ATTACHMENT_ID}/remove` }
+  { method: 'patch', path: `/api/attachments/${ATTACHMENT_ID}/remove` },
+  { method: 'get', path: `/api/tickets/${TICKET_ID}/comments` },
+  { method: 'post', path: `/api/tickets/${TICKET_ID}/comments` },
+  { method: 'post', path: `/api/tickets/${TICKET_ID}/resolution-indication` }
 ];
 
 function ticketRow(requesterId: string) {
