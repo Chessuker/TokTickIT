@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { prisma } from './db.js';
 import { BCRYPT_COST } from './passwordPolicy.js';
-import { CATEGORIES, RELATED_SYSTEMS, USERS } from './seedData.js';
+import { CATEGORIES, RELATED_SYSTEMS, TICKETS, USERS } from './seedData.js';
 
 export interface SeedOptions {
   /**
@@ -26,39 +26,88 @@ export interface SeedOptions {
 export async function seed(client: typeof prisma = prisma, options: SeedOptions = {}): Promise<void> {
   const hashPassword = options.hashPassword ?? ((password: string) => bcrypt.hash(password, BCRYPT_COST));
 
+  // The ids the tickets reference are taken from the upserts' return values,
+  // so the seed never has to look anything up and works against a fresh or a
+  // migrated database alike.
+  const categoryIds = new Map<string, string>();
+  const systemIds = new Map<string, string>();
+  const userIds = new Map<string, string>();
+
   for (const category of CATEGORIES) {
-    await client.category.upsert({
+    const row = await client.category.upsert({
       where: { name: category.name },
       update: { description: category.description, isActive: true },
       create: { ...category, isActive: true },
     });
+    categoryIds.set(category.name, row.id);
   }
 
   for (const system of RELATED_SYSTEMS) {
-    await client.relatedSystem.upsert({
+    const row = await client.relatedSystem.upsert({
       where: { name: system.name },
       update: { isActive: true },
       create: { ...system, isActive: true },
     });
+    systemIds.set(system.name, row.id);
   }
 
   for (const user of USERS) {
     const { password, ...fields } = user;
     const passwordHash = await hashPassword(password);
 
-    await client.user.upsert({
+    const row = await client.user.upsert({
       where: { email: fields.email },
       update: { ...fields, passwordHash },
       create: { ...fields, passwordHash },
     });
+    userIds.set(fields.email, row.id);
   }
+
+  // Tickets are keyed on the reserved `TKT-2026-9000xx` numbers, so a re-run
+  // resets each seeded ticket to its documented state and never touches a
+  // ticket a user created. Timestamps are fixed for the same reason: the
+  // queue's default order is stable across runs.
+  for (const ticket of TICKETS) {
+    const fields = {
+      summary: ticket.summary,
+      description: ticket.description,
+      status: ticket.status,
+      priority: ticket.priority,
+      itPriority: ticket.itPriority,
+      requesterId: lookup(userIds, ticket.requesterEmail, 'user'),
+      ownerId: ticket.ownerEmail ? lookup(userIds, ticket.ownerEmail, 'user') : null,
+      categoryId: lookup(categoryIds, ticket.category, 'category'),
+      relatedSystemId: lookup(systemIds, ticket.relatedSystem, 'related system'),
+      requesterResolvedAt: ticket.requesterResolvedAt ? new Date(ticket.requesterResolvedAt) : null,
+      // BR-20: Resolved carries resolvedAt; Closed carries both.
+      resolvedAt: ticket.status === 'Resolved' || ticket.status === 'Closed' ? new Date(ticket.updatedAt) : null,
+      closedAt: ticket.status === 'Closed' ? new Date(ticket.updatedAt) : null,
+      createdAt: new Date(ticket.createdAt),
+      updatedAt: new Date(ticket.updatedAt),
+    };
+
+    await client.ticket.upsert({
+      where: { ticketNumber: ticket.ticketNumber },
+      update: fields,
+      create: { ticketNumber: ticket.ticketNumber, ...fields },
+    });
+  }
+}
+
+/** A seeded ticket naming a category, system or user the seed did not create is a bug in the data. */
+function lookup(ids: Map<string, string>, key: string, kind: string): string {
+  const id = ids.get(key);
+  if (id === undefined) {
+    throw new Error(`Seed ticket references an unknown ${kind}: ${key}`);
+  }
+  return id;
 }
 
 /** Entry point used by `prisma db seed` / `npm run prisma:seed`. */
 async function main(): Promise<void> {
   await seed();
 
-  const [categories, relatedSystems, requesters, itStaff, administrators, inactiveUsers] =
+  const [categories, relatedSystems, requesters, itStaff, administrators, inactiveUsers, seededTickets] =
     await Promise.all([
       prisma.category.count(),
       prisma.relatedSystem.count(),
@@ -66,6 +115,7 @@ async function main(): Promise<void> {
       prisma.user.count({ where: { role: 'ITStaff' } }),
       prisma.user.count({ where: { role: 'Administrator' } }),
       prisma.user.count({ where: { isActive: false } }),
+      prisma.ticket.count({ where: { ticketNumber: { startsWith: 'TKT-2026-9000' } } }),
     ]);
 
   // Counts only — never an email, password or hash (BR-09, BR-29).
@@ -76,6 +126,7 @@ async function main(): Promise<void> {
     itStaff,
     administrators,
     inactiveUsers,
+    seededTickets,
   });
 }
 

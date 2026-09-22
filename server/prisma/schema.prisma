@@ -85,14 +85,16 @@ model RelatedSystem {
 
 /// The full workflow (BR-18). Which pairs are reachable from which is decided
 /// by the transition matrix on the server, never by the enum.
+/// Declared in workflow order (api-spec.md §3.9): Postgres sorts an enum by
+/// declaration order, which is what `GET /api/staff/tickets?sort=status` uses.
 enum TicketStatus {
   New
   Open
   InProgress
   WaitingForRequester
+  Reopened
   Resolved
   Closed
-  Reopened
   Cancelled
 }
 

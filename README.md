@@ -22,6 +22,7 @@ TokTickIT is a full-stack IT ticketing portal built with a React + Express + Pos
 - **Roles** — Requester, IT Staff and Administrator, each with its own navigation and home screen; the wrong role gets a Forbidden state in the UI and a `403` from the API.
 - **Requester ticketing (Lab 2)** — create tickets, list and search your own tickets, open a read-only detail view, and attach, download or soft-remove files. Ownership is enforced from the session identity.
 - **Public Comments and "Problem appears resolved" (Lab 3)** — a Requester comments on their own ticket and IT Staff on any ticket; the thread is readable by all three roles, newest first, and bodies are stored and rendered as plain text. A Requester can flag an open ticket as "appears resolved" (`requesterResolvedAt`) without touching its status.
+- **IT Staff Ticket Queue (Lab 3)** — every ticket in the system with search, status / IT priority / owner / category filters, sortable columns and pagination, all done server-side (`GET /api/staff/tickets`). The queue state lives in the URL so a filtered view can be shared or returned to. Administrators see the same list read-only.
 - **Live health check** — `GET /api/health` runs `SELECT 1` against Postgres and returns `200`/`ok` or `503`/`error` based on real DB connectivity.
 
 ## Tech stack
@@ -133,6 +134,8 @@ The seed creates these accounts for local development only (never use them anywh
 | System Administrator | `admin@toktickit.xyz` | `Admin1!pass` | Administrator | ready |
 
 Requesters migrated from a Lab 2 database receive `Welcome123!` as their initial password once the seed has run, and must change it at first login.
+
+The seed also creates 24 sample tickets numbered `TKT-2026-900001` … `TKT-2026-900024` across the four active Requesters, covering every status and priority, about a third unassigned and the rest owned by the three active IT Staff. That range is reserved: user-created tickets keep counting from `TKT-2026-000001`, and re-running the seed resets the sample tickets without touching anything else.
 
 ### Upgrading a Lab 2 database
 

@@ -3,6 +3,7 @@ import AppShell from './components/AppShell'
 import ChangePassword from './components/lab-03/ChangePassword'
 import Login from './components/lab-03/Login'
 import RequireAuth from './components/lab-03/RequireAuth'
+import StaffTicketQueue from './components/lab-03/StaffTicketQueue'
 import { useAuth } from './context/auth'
 import CreateTicket from './pages/CreateTicket'
 import MyTickets from './pages/MyTickets'
@@ -25,7 +26,8 @@ function Home() {
  * pending password change to `/change-password`; the role-restricted groups
  * render the Forbidden state for the wrong role (AC-11). The staff and admin
  * homes are placeholders until their issues land, so the role redirects and
- * guards can already be exercised end to end.
+ * guards can already be exercised end to end; the staff Ticket Detail
+ * placeholder is replaced by Issue #40.
  */
 function App() {
   return (
@@ -48,7 +50,8 @@ function App() {
 
       <Route element={<RequireAuth roles={['ITStaff', 'Administrator']} />}>
         <Route element={<AppShell />}>
-          <Route path="/staff/queue" element={<Placeholder title="Ticket Queue" />} />
+          <Route path="/staff/queue" element={<StaffTicketQueue />} />
+          <Route path="/staff/tickets/:id" element={<Placeholder title="Ticket Detail" />} />
         </Route>
       </Route>
 
