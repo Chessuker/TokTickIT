@@ -2159,3 +2159,119 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- Administrator User Management (Lab 3 ui-spec §3.6) ---------- */
+
+/*
+ * Desktop: list and side panel share the row, 60/40 as the spec asks. Tablet
+ * and mobile collapse to one column and the panel becomes a sheet below the
+ * toolbar, which keeps it in the document order a screen reader follows.
+ */
+.zg-users-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.zg-users-layout.has-panel {
+  grid-template-columns: 6fr 4fr;
+}
+
+.zg-users-list {
+  min-width: 0;
+}
+
+.zg-users-panel {
+  position: sticky;
+  top: 1rem;
+  padding: 1.25rem;
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-border);
+  border-radius: 10px;
+  box-shadow: var(--zg-shadow);
+}
+
+.zg-users-panel .zg-field:last-of-type {
+  margin-bottom: 1rem;
+}
+
+.zg-panel-section {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--zg-border);
+}
+
+.zg-btn-outline {
+  background: transparent;
+  border: 1px solid var(--zg-primary);
+  color: var(--zg-primary);
+  font-weight: 600;
+}
+
+.zg-btn-outline:hover:not(:disabled) {
+  background: var(--zg-pale);
+}
+
+/* Mobile list: one card per user, same information as the table row. */
+.zg-user-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.zg-user-card {
+  padding: 0.9rem 1rem;
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-border);
+  border-radius: 10px;
+  box-shadow: var(--zg-shadow);
+}
+
+.zg-user-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.zg-user-name {
+  font-weight: 600;
+}
+
+.zg-user-email {
+  margin: 0.25rem 0 0.6rem;
+  color: var(--zg-text-muted);
+  font-size: 0.88rem;
+  overflow-wrap: anywhere;
+}
+
+.zg-user-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+/* Five columns fit the container without the wrapper needing to scroll. */
+.zg-users-table {
+  min-width: 0;
+}
+
+.zg-users-table td {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 991.98px) {
+  .zg-users-layout.has-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .zg-users-panel {
+    position: static;
+    order: -1;
+  }
+}

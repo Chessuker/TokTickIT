@@ -5,10 +5,10 @@ import Login from './components/lab-03/Login'
 import RequireAuth from './components/lab-03/RequireAuth'
 import StaffTicketDetail from './components/lab-03/StaffTicketDetail'
 import StaffTicketQueue from './components/lab-03/StaffTicketQueue'
+import UserManagement from './components/lab-03/UserManagement'
 import { useAuth } from './context/auth'
 import CreateTicket from './pages/CreateTicket'
 import MyTickets from './pages/MyTickets'
-import Placeholder from './pages/Placeholder'
 import TicketDetail from './pages/TicketDetail'
 import { ROLE_HOMES } from './roles'
 
@@ -25,9 +25,7 @@ function Home() {
  * Login is the only screen outside the guard. Everything else sits behind
  * `RequireAuth`, which sends anonymous visitors to Login and users with a
  * pending password change to `/change-password`; the role-restricted groups
- * render the Forbidden state for the wrong role (AC-11). The staff and admin
- * homes are placeholders until their issues land, so the role redirects and
- * guards can already be exercised end to end.
+ * render the Forbidden state for the wrong role (AC-11).
  */
 function App() {
   return (
@@ -57,7 +55,7 @@ function App() {
 
       <Route element={<RequireAuth roles={['Administrator']} />}>
         <Route element={<AppShell />}>
-          <Route path="/admin/users" element={<Placeholder title="Users" />} />
+          <Route path="/admin/users" element={<UserManagement />} />
         </Route>
       </Route>
 
