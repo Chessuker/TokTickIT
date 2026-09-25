@@ -2028,3 +2028,134 @@ body {
     flex: 1;
   }
 }
+
+/* ---------- IT Staff Ticket Detail (Lab 3 ui-spec §3.5) ---------- */
+
+/* Three operational controls side by side at desktop, stacked on mobile. */
+.zg-ops-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.zg-ops-grid .zg-field {
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+.zg-ops-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.zg-ops-control .zg-select {
+  flex: 1;
+  min-width: 0;
+}
+
+.zg-ops-control .zg-btn {
+  flex-shrink: 0;
+}
+
+.zg-btn-danger {
+  background: var(--zg-error);
+  border-color: var(--zg-error);
+  color: #ffffff;
+}
+
+.zg-btn-danger:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+/* Tabs (WAI-ARIA tabs; arrow keys move, only the selected one is tabbable). */
+.zg-tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--zg-border);
+  margin-bottom: 1rem;
+  overflow-x: auto;
+}
+
+.zg-tab {
+  flex-shrink: 0;
+  padding: 0.6rem 1rem;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--zg-text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.zg-tab:hover {
+  color: var(--zg-text);
+}
+
+.zg-tab:focus-visible {
+  outline: 2px solid var(--zg-secondary);
+  outline-offset: -2px;
+  border-radius: 4px 4px 0 0;
+}
+
+.zg-tab.is-active {
+  color: var(--zg-primary);
+  border-bottom-color: var(--zg-primary);
+}
+
+/*
+ * The thread panels sit inside a card (the tab panel) rather than being cards
+ * themselves, so they carry no border of their own; the internal variant is
+ * the one exception, because its amber field is the whole signal.
+ */
+.zg-thread {
+  display: block;
+}
+
+.zg-thread-note {
+  padding: 1rem;
+  background: var(--zg-warning-bg);
+  border: 1px solid var(--zg-warning);
+  border-left-width: 4px;
+  border-radius: 8px;
+}
+
+.zg-hint-internal {
+  color: #92400e;
+  font-weight: 600;
+}
+
+.zg-textarea-internal {
+  border-color: var(--zg-warning);
+}
+
+.zg-textarea-internal:focus {
+  outline-color: var(--zg-warning);
+}
+
+/* Outlined amber, so the two composers' buttons can never be mistaken. */
+.zg-btn-internal {
+  background: transparent;
+  border: 1px solid var(--zg-warning);
+  color: #92400e;
+  font-weight: 600;
+}
+
+.zg-btn-internal:hover:not(:disabled) {
+  background: #fef3c7;
+}
+
+.zg-comment-internal {
+  background: #fffdf5;
+  border-left: 4px solid var(--zg-warning);
+}
+
+@media (max-width: 991.98px) {
+  .zg-ops-grid {
+    grid-template-columns: 1fr;
+  }
+}

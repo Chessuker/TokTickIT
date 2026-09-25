@@ -1,7 +1,15 @@
 import bcrypt from 'bcryptjs';
 import { prisma } from './db.js';
 import { BCRYPT_COST } from './passwordPolicy.js';
-import { CATEGORIES, RELATED_SYSTEMS, TICKETS, USERS } from './seedData.js';
+import {
+  CATEGORIES,
+  RELATED_SYSTEMS,
+  TICKETS,
+  TICKET_COMMENTS,
+  TICKET_INTERNAL_NOTES,
+  USERS,
+} from './seedData.js';
+import type { ThreadSeed } from './seedData.js';
 
 export interface SeedOptions {
   /**
@@ -67,6 +75,8 @@ export async function seed(client: typeof prisma = prisma, options: SeedOptions 
   // resets each seeded ticket to its documented state and never touches a
   // ticket a user created. Timestamps are fixed for the same reason: the
   // queue's default order is stable across runs.
+  const ticketIds = new Map<string, string>();
+
   for (const ticket of TICKETS) {
     const fields = {
       summary: ticket.summary,
@@ -86,10 +96,39 @@ export async function seed(client: typeof prisma = prisma, options: SeedOptions 
       updatedAt: new Date(ticket.updatedAt),
     };
 
-    await client.ticket.upsert({
+    const row = await client.ticket.upsert({
       where: { ticketNumber: ticket.ticketNumber },
       update: fields,
       create: { ticketNumber: ticket.ticketNumber, ...fields },
+    });
+    ticketIds.set(ticket.ticketNumber, row.id);
+  }
+
+  // Comments and notes have no natural unique key, so they are keyed on the
+  // deterministic ids in seedData: a re-run rewrites the same rows instead of
+  // appending a second copy of every thread (BR-29).
+  const threadFields = (entry: ThreadSeed) => ({
+    ticketId: lookup(ticketIds, entry.ticketNumber, 'ticket'),
+    authorId: lookup(userIds, entry.authorEmail, 'user'),
+    body: entry.body,
+    createdAt: new Date(entry.createdAt),
+  });
+
+  for (const comment of TICKET_COMMENTS) {
+    const fields = threadFields(comment);
+    await client.ticketComment.upsert({
+      where: { id: comment.id },
+      update: fields,
+      create: { id: comment.id, ...fields },
+    });
+  }
+
+  for (const note of TICKET_INTERNAL_NOTES) {
+    const fields = threadFields(note);
+    await client.ticketInternalNote.upsert({
+      where: { id: note.id },
+      update: fields,
+      create: { id: note.id, ...fields },
     });
   }
 }
@@ -107,7 +146,17 @@ function lookup(ids: Map<string, string>, key: string, kind: string): string {
 async function main(): Promise<void> {
   await seed();
 
-  const [categories, relatedSystems, requesters, itStaff, administrators, inactiveUsers, seededTickets] =
+  const [
+    categories,
+    relatedSystems,
+    requesters,
+    itStaff,
+    administrators,
+    inactiveUsers,
+    seededTickets,
+    comments,
+    internalNotes,
+  ] =
     await Promise.all([
       prisma.category.count(),
       prisma.relatedSystem.count(),
@@ -116,6 +165,8 @@ async function main(): Promise<void> {
       prisma.user.count({ where: { role: 'Administrator' } }),
       prisma.user.count({ where: { isActive: false } }),
       prisma.ticket.count({ where: { ticketNumber: { startsWith: 'TKT-2026-9000' } } }),
+      prisma.ticketComment.count(),
+      prisma.ticketInternalNote.count(),
     ]);
 
   // Counts only — never an email, password or hash (BR-09, BR-29).
@@ -127,6 +178,8 @@ async function main(): Promise<void> {
     administrators,
     inactiveUsers,
     seededTickets,
+    comments,
+    internalNotes,
   });
 }
 

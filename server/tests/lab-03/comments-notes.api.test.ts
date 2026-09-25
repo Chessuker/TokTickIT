@@ -5,6 +5,7 @@ vi.mock('../../src/db.js', () => ({
     session: { findUnique: vi.fn(), delete: vi.fn() },
     ticket: { findFirst: vi.fn(), update: vi.fn() },
     ticketComment: { findMany: vi.fn(), create: vi.fn() },
+    ticketInternalNote: { findMany: vi.fn(), create: vi.fn() },
     $transaction: vi.fn()
   }
 }));
@@ -15,11 +16,13 @@ import { prisma } from '../../src/db.js';
 import { ADMIN, JENNIFER, PRIYA, cookieHeader, mockSessionFor } from './sessionMock.js';
 
 /**
- * API-22 … API-25 — Public Comments and the resolution indication
- * (FR-06, FR-07, BR-04, BR-05, BR-21 … BR-23, AC-14, AC-15).
+ * API-08, API-22 … API-25, API-38, API-39 — Public Comments, the resolution
+ * indication and Internal Notes (FR-06, FR-07, FR-12, BR-04, BR-05,
+ * BR-21 … BR-23, AC-04, AC-14, AC-15, AC-23).
  *
- * Internal Notes (API-08, API-38, API-39) are added to this file by Issue #40
- * together with their routes.
+ * The two threads are tested in one file because the interesting property is
+ * the boundary between them: same body rule, same shape, different tables and
+ * different audiences (AD-03).
  */
 
 const TICKET_ID = 'c3d4e5f6-1111-4222-8333-444455556666';
@@ -47,6 +50,36 @@ function ticketRow(overrides: Record<string, unknown> = {}) {
   };
 }
 
+/** The staff detail's select, which the internal-note routes load. */
+function staffTicketRow(overrides: Record<string, unknown> = {}) {
+  return {
+    ...ticketRow(),
+    ownerId: PRIYA.id,
+    resolvedAt: null,
+    closedAt: null,
+    _count: { comments: 2, internalNotes: 2 },
+    ...overrides
+  };
+}
+
+/** The requester-facing detail row, used to prove no note leaks into it. */
+const requesterTicketRow = ticketRow;
+
+const NOTES = [
+  {
+    id: 'note-2',
+    body: 'Battery reported faulty to the vendor; RMA opened.',
+    author: { id: PRIYA.id, name: PRIYA.name, role: 'ITStaff' },
+    createdAt: new Date('2026-09-14T10:30:00.000Z')
+  },
+  {
+    id: 'note-1',
+    body: 'Ran a diagnostic; cycle count is over 900.',
+    author: { id: PRIYA.id, name: PRIYA.name, role: 'ITStaff' },
+    createdAt: new Date('2026-09-14T09:45:00.000Z')
+  }
+];
+
 const COMMENTS = [
   {
     id: 'cmt-2',
@@ -69,8 +102,9 @@ beforeEach(() => {
       ? Promise.resolve((operations as (tx: unknown) => unknown)(prisma))
       : Promise.all(operations as Promise<unknown>[])) as never
   );
-  vi.mocked(prisma.ticket.findFirst).mockResolvedValue(ticketRow() as never);
+  vi.mocked(prisma.ticket.findFirst).mockResolvedValue(staffTicketRow() as never);
   vi.mocked(prisma.ticketComment.findMany).mockResolvedValue(COMMENTS as never);
+  vi.mocked(prisma.ticketInternalNote.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.ticket.update).mockResolvedValue({ id: TICKET_ID } as never);
 });
 
@@ -428,5 +462,202 @@ describe('POST /api/tickets/:id/resolution-indication (API-25, BR-05, BR-21, AC-
 
     expect(res.status).toBe(404);
     expect(prisma.ticket.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('Internal Notes — create (API-38, AC-23, BR-22, BR-23)', () => {
+  beforeEach(() => {
+    vi.mocked(prisma.ticketInternalNote.create).mockImplementation(
+      ({ data }: { data: { body: string; authorId: string } }) =>
+        Promise.resolve({
+          id: 'note-1',
+          body: data.body,
+          author: { id: data.authorId, name: PRIYA.name, role: 'ITStaff' },
+          createdAt: new Date('2026-09-14T11:00:00.000Z')
+        }) as never
+    );
+  });
+
+  it('creates a trimmed note with server-set author and time as IT Staff', async () => {
+    mockSessionFor(vi.mocked(prisma.session.findUnique), PRIYA);
+
+    const res = await request(app)
+      .post(`/api/staff/tickets/${TICKET_ID}/internal-notes`)
+      .set('Cookie', cookieHeader())
+      .send({ body: '  Swapped the battery; monitoring overnight.  ' });
+
+    expect(res.status).toBe(201);
+    expect(res.body).toEqual({
+      id: 'note-1',
+      body: 'Swapped the battery; monitoring overnight.',
+      author: { id: PRIYA.id, name: PRIYA.name, role: 'ITStaff' },
+      createdAt: '2026-09-14T11:00:00.000Z'
+    });
+
+    const data = vi.mocked(prisma.ticketInternalNote.create).mock.calls[0][0].data as Record<string, unknown>;
+    expect(data).toEqual({
+      ticketId: TICKET_ID,
+      authorId: PRIYA.id,
+      body: 'Swapped the battery; monitoring overnight.'
+    });
+  });
+
+  it('writes to TicketInternalNote and never to TicketComment (AD-03)', async () => {
+    mockSessionFor(vi.mocked(prisma.session.findUnique), PRIYA);
+
+    await request(app)
+      .post(`/api/staff/tickets/${TICKET_ID}/internal-notes`)
+      .set('Cookie', cookieHeader())
+      .send({ body: 'Private note.' });
+
+    expect(prisma.ticketInternalNote.create).toHaveBeenCalledTimes(1);
+    expect(prisma.ticketComment.create).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['empty', { body: '' }],
+    ['whitespace', { body: '   ' }],
+    ['missing', {}]
+  ])('answers 400 with fields.body for a %s body', async (_label, payload) => {
+    mockSessionFor(vi.mocked(prisma.session.findUnique), PRIYA);
+
+    const res = await request(app)
+      .post(`/api/staff/tickets/${TICKET_ID}/internal-notes`)
+      .set('Cookie', cookieHeader())
+      .send(payload);
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.fields).toEqual({ body: 'Comment cannot be empty.' });
+    expect(prisma.ticketInternalNote.create).not.toHaveBeenCalled();
+  });
+
+  it('answers 400 for 2001 characters and accepts exactly 2000 (BR-22)', async () => {
+    mockSessionFor(vi.mocked(prisma.session.findUnique), PRIYA);
+
+    const tooLong = await request(app)
+      .post(`/api/staff/tickets/${TICKET_ID}/internal-notes`)
+      .set('Cookie', cookieHeader())
+      .send({ body: 'x'.repeat(2001) });
+    expect(tooLong.status).toBe(400);
+
+    const atLimit = await request(app)
+      .post(`/api/staff/tickets/${TICKET_ID}/internal-notes`)
+      .set('Cookie', cookieHeader())
+      .send({ body: 'x'.repeat(2000) });
+    expect(atLimit.status).toBe(201);
+  });
+
+  it('refuses an Administrator with 403 and writes nothing (BR-17, BR-23)', async () => {
+    mockSessionFor(vi.mocked(prisma.session.findUnique), ADMIN);
+
+    const res = await request(app)
+      .post(`/api/staff/tickets/${TICKET_ID}/internal-notes`)
+      .set('Cookie', cookieHeader())
+      .send({ body: 'Administrators only read.' });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('FORBIDDEN');
+    expect(prisma.ticketInternalNote.create).not.toHaveBeenCalled();
+  });
+
+  it('answers 404 for a ticket that does not exist', async () => {
+    mockSessionFor(vi.mocked(prisma.session.findUnique), PRIYA);
+    vi.mocked(prisma.ticket.findFirst).mockResolvedValue(null);
+
+    const res = await request(app)
+      .post(`/api/staff/tickets/${TICKET_ID}/internal-notes`)
+      .set('Cookie', cookieHeader())
+      .send({ body: 'Where is it?' });
+
+    expect(res.status).toBe(404);
+  });
+});
+
+describe('Internal Notes — read (API-39, AC-23, BR-04)', () => {
+  beforeEach(() => {
+    vi.mocked(prisma.ticketInternalNote.findMany).mockResolvedValue(NOTES as never);
+  });
+
+  it.each([
+    ['IT Staff', PRIYA],
+    ['Administrator', ADMIN]
+  ])('returns the newest-first thread to the %s', async (_label, user) => {
+    mockSessionFor(vi.mocked(prisma.session.findUnique), user);
+
+    const res = await request(app)
+      .get(`/api/staff/tickets/${TICKET_ID}/internal-notes`)
+      .set('Cookie', cookieHeader());
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.map((note: { id: string }) => note.id)).toEqual(['note-2', 'note-1']);
+
+    const query = vi.mocked(prisma.ticketInternalNote.findMany).mock.calls[0][0] as {
+      where: unknown;
+      orderBy: unknown;
+      select: { author: { select: unknown } };
+    };
+    expect(query.where).toEqual({ ticketId: TICKET_ID });
+    expect(query.orderBy).toEqual({ createdAt: 'desc' });
+    expect(query.select.author.select).toEqual({ id: true, name: true, role: true });
+  });
+
+  it('reads TicketInternalNote, never TicketComment (AD-03)', async () => {
+    mockSessionFor(vi.mocked(prisma.session.findUnique), PRIYA);
+
+    await request(app)
+      .get(`/api/staff/tickets/${TICKET_ID}/internal-notes`)
+      .set('Cookie', cookieHeader());
+
+    expect(prisma.ticketComment.findMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('Internal Notes are invisible to a Requester (API-08, AC-04, BR-23)', () => {
+  const NOTE_ROUTES: { method: 'get' | 'post'; path: string; body?: object }[] = [
+    { method: 'get', path: `/api/staff/tickets/${TICKET_ID}/internal-notes` },
+    { method: 'post', path: `/api/staff/tickets/${TICKET_ID}/internal-notes`, body: { body: 'peek' } }
+  ];
+
+  it.each(NOTE_ROUTES)('$method $path answers 403 with no note data and no lookup', async ({ method, path, body }) => {
+    mockSessionFor(vi.mocked(prisma.session.findUnique), JENNIFER);
+
+    const res = await request(app)[method](path).set('Cookie', cookieHeader()).send(body ?? {});
+
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({
+      error: { code: 'FORBIDDEN', message: 'You do not have access to this resource.' }
+    });
+    // No count, no body, not even whether the ticket exists (BR-23).
+    expect(JSON.stringify(res.body)).not.toContain('Battery');
+    expect(prisma.ticket.findFirst).not.toHaveBeenCalled();
+    expect(prisma.ticketInternalNote.findMany).not.toHaveBeenCalled();
+    expect(prisma.ticketInternalNote.create).not.toHaveBeenCalled();
+  });
+
+  it('the requester-facing ticket detail carries no note text or count (AC-23)', async () => {
+    mockSessionFor(vi.mocked(prisma.session.findUnique), JENNIFER);
+    vi.mocked(prisma.ticket.findFirst).mockResolvedValue(requesterTicketRow() as never);
+
+    const res = await request(app).get(`/api/tickets/${TICKET_ID}`).set('Cookie', cookieHeader());
+
+    expect(res.status).toBe(200);
+    const body = JSON.stringify(res.body);
+    expect(body).not.toContain('Battery reported faulty');
+    expect(body).not.toContain('internalNote');
+    expect(res.body).not.toHaveProperty('counts');
+    expect(prisma.ticketInternalNote.findMany).not.toHaveBeenCalled();
+  });
+
+  it('the requester-facing comment thread returns comments only (AD-03)', async () => {
+    mockSessionFor(vi.mocked(prisma.session.findUnique), JENNIFER);
+    vi.mocked(prisma.ticket.findFirst).mockResolvedValue(requesterTicketRow() as never);
+
+    const res = await request(app)
+      .get(`/api/tickets/${TICKET_ID}/comments`)
+      .set('Cookie', cookieHeader());
+
+    expect(res.status).toBe(200);
+    expect(JSON.stringify(res.body)).not.toContain('Battery reported faulty');
+    expect(prisma.ticketInternalNote.findMany).not.toHaveBeenCalled();
   });
 });
