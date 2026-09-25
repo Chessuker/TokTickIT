@@ -158,3 +158,115 @@ export const TICKETS: TicketSeed[] = [
   { ticketNumber: seedTicketNumber(23), summary: 'Email signature not applied on mobile', description: 'The corporate signature shows on desktop but not when sending from the phone app.', status: 'Open', priority: 'Low', itPriority: 'Low', requesterEmail: DAVID, ownerEmail: null, category: 'Software', relatedSystem: 'Email', createdAt: '2026-09-16T05:05:00.000Z', updatedAt: '2026-09-16T12:30:00.000Z' },
   { ticketNumber: seedTicketNumber(24), summary: 'Projector in room 402 shows a pink tint', description: 'The projector output is tinted pink from the HDMI input; VGA looks fine.', status: 'InProgress', priority: 'Medium', itPriority: 'Medium', requesterEmail: MICHAEL, ownerEmail: NATTAPONG, category: 'Hardware', relatedSystem: 'Printer', createdAt: '2026-09-13T09:25:00.000Z', updatedAt: '2026-09-17T06:10:00.000Z' },
 ];
+
+/**
+ * One Public Comment or Internal Note on a seeded ticket (specification.md §7).
+ *
+ * Both carry a deterministic id so the seed can upsert them: the tables have
+ * no natural unique key (a thread may legitimately hold two identical
+ * sentences), and a random id would create a fresh row on every run. The id
+ * encodes the ticket's sequence and the position in its thread, so a re-run
+ * rewrites the same rows and nothing accumulates (BR-29).
+ */
+export interface ThreadSeed {
+  id: string;
+  ticketNumber: string;
+  /** Email of the author; a Requester or the ticket's owner. */
+  authorEmail: string;
+  body: string;
+  createdAt: string;
+}
+
+/**
+ * `00000000-0000-4000-8000-c000000000NN` for comments and `…-n000000000NN`
+ * for notes: uuid-shaped, obviously synthetic, and stable across runs.
+ */
+function threadId(kind: 'c' | 'n', sequence: number): string {
+  return `00000000-0000-4000-8000-${kind}${String(sequence).padStart(11, '0')}`;
+}
+
+/** Minutes after the ticket's creation, so a thread always follows its ticket. */
+function afterCreation(ticket: TicketSeed, minutes: number): string {
+  return new Date(new Date(ticket.createdAt).getTime() + minutes * 60_000).toISOString();
+}
+
+const REQUESTER_LINES = [
+  'Is there any update on this? It is still happening today.',
+  'Thanks for looking into it — let me know if you need anything from my side.'
+];
+
+const STAFF_LINES = [
+  'Thanks for reporting this. We have picked it up and are investigating.',
+  'We have made a change on our side; please tell us whether it helps.'
+];
+
+/**
+ * Public Comments: about two per non-`New` ticket, alternating Requester and
+ * owner (specification.md §7). A ticket nobody has looked at yet has no thread,
+ * which is what makes the `New` rows in the queue look like real new work.
+ */
+export const TICKET_COMMENTS: ThreadSeed[] = TICKETS.filter(
+  (ticket) => ticket.status !== 'New'
+).flatMap((ticket, index) => {
+  const sequence = index * 2 + 1;
+  const staffAuthor = ticket.ownerEmail ?? IT_STAFF[index % 3].email;
+
+  return [
+    {
+      id: threadId('c', sequence),
+      ticketNumber: ticket.ticketNumber,
+      authorEmail: ticket.requesterEmail,
+      body: REQUESTER_LINES[index % REQUESTER_LINES.length],
+      createdAt: afterCreation(ticket, 90)
+    },
+    {
+      id: threadId('c', sequence + 1),
+      ticketNumber: ticket.ticketNumber,
+      authorEmail: staffAuthor,
+      body: STAFF_LINES[index % STAFF_LINES.length],
+      createdAt: afterCreation(ticket, 180)
+    }
+  ];
+});
+
+const NOTE_LINES = [
+  'Checked the logs; nothing unusual around the reported time.',
+  'Vendor case opened, reference pending. Do not share with the requester.',
+  'Waiting on the hardware swap before we move this any further.'
+];
+
+/**
+ * Internal Notes: one or two on the tickets that are actually being worked —
+ * `InProgress`, `WaitingForRequester` and `Resolved` (specification.md §7).
+ * Authored by the owner, or by an IT Staff member when the ticket has none.
+ */
+export const TICKET_INTERNAL_NOTES: ThreadSeed[] = TICKETS.filter((ticket) =>
+  ['InProgress', 'WaitingForRequester', 'Resolved'].includes(ticket.status)
+).flatMap((ticket, index) => {
+  const sequence = index * 2 + 1;
+  const author = ticket.ownerEmail ?? IT_STAFF[index % 3].email;
+
+  const notes: ThreadSeed[] = [
+    {
+      id: threadId('n', sequence),
+      ticketNumber: ticket.ticketNumber,
+      authorEmail: author,
+      body: NOTE_LINES[index % NOTE_LINES.length],
+      createdAt: afterCreation(ticket, 200)
+    }
+  ];
+
+  // Every other ticket gets a second note, so the panel is exercised with both
+  // a single entry and a short thread.
+  if (index % 2 === 1) {
+    notes.push({
+      id: threadId('n', sequence + 1),
+      ticketNumber: ticket.ticketNumber,
+      authorEmail: author,
+      body: NOTE_LINES[(index + 1) % NOTE_LINES.length],
+      createdAt: afterCreation(ticket, 320)
+    });
+  }
+
+  return notes;
+});

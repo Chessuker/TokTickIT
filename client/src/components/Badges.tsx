@@ -1,5 +1,6 @@
 import type { Role } from '../context/auth'
 import { ROLE_LABELS } from '../roles'
+import { STATUS_PRESENTATION } from '../ticketStatus'
 
 /**
  * Shared badge components (Lab 3 ui-spec.md §2 "Badges").
@@ -8,18 +9,6 @@ import { ROLE_LABELS } from '../roles'
  * signal. Extracted here once and used by every screen; the Lab 2 copies in
  * `MyTickets.tsx` and `TicketDetail.tsx` are gone.
  */
-
-/** The eight `TicketStatus` values, their labels and their class suffixes. */
-const STATUS_PRESENTATION: Record<string, { label: string; className: string }> = {
-  New: { label: 'New', className: 'new' },
-  Open: { label: 'Open', className: 'open' },
-  InProgress: { label: 'In Progress', className: 'in-progress' },
-  WaitingForRequester: { label: 'Waiting for Requester', className: 'waiting' },
-  Resolved: { label: 'Resolved', className: 'resolved' },
-  Closed: { label: 'Closed', className: 'closed' },
-  Reopened: { label: 'Reopened', className: 'reopened' },
-  Cancelled: { label: 'Cancelled', className: 'cancelled' },
-}
 
 export function StatusBadge({ status }: { status: string }) {
   const presentation = STATUS_PRESENTATION[status] ?? { label: status, className: status.toLowerCase() }

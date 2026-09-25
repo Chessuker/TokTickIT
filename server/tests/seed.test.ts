@@ -1,7 +1,17 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { prisma } from '../src/db.js';
 import { seed } from '../src/seed.js';
-import { ADMINISTRATORS, CATEGORIES, IT_STAFF, RELATED_SYSTEMS, REQUESTERS, TICKETS, USERS } from '../src/seedData.js';
+import {
+  ADMINISTRATORS,
+  CATEGORIES,
+  IT_STAFF,
+  RELATED_SYSTEMS,
+  REQUESTERS,
+  TICKETS,
+  TICKET_COMMENTS,
+  TICKET_INTERNAL_NOTES,
+  USERS,
+} from '../src/seedData.js';
 
 type Row = Record<string, unknown>;
 
@@ -38,6 +48,8 @@ function createFakeClient(uniqueFields: Record<string, string>) {
     category: delegate('category'),
     relatedSystem: delegate('relatedSystem'),
     ticket: delegate('ticket'),
+    ticketComment: delegate('ticketComment'),
+    ticketInternalNote: delegate('ticketInternalNote'),
   };
 
   return {
@@ -53,6 +65,8 @@ const UNIQUE_FIELDS = {
   category: 'name',
   relatedSystem: 'name',
   ticket: 'ticketNumber',
+  ticketComment: 'id',
+  ticketInternalNote: 'id',
 };
 
 /** A cheap, recognisable stand-in for bcrypt so the suite stays fast. */
@@ -74,6 +88,8 @@ describe('seed', () => {
     expect(fake.count('user')).toBe(USERS.length);
     expect(fake.count('ticket')).toBe(TICKETS.length);
     expect(TICKETS).toHaveLength(24);
+    expect(fake.count('ticketComment')).toBe(TICKET_COMMENTS.length);
+    expect(fake.count('ticketInternalNote')).toBe(TICKET_INTERNAL_NOTES.length);
   });
 
   it('seeds 5 requesters, 4 IT Staff and 1 Administrator', async () => {
@@ -95,6 +111,8 @@ describe('seed', () => {
       category: fake.count('category'),
       relatedSystem: fake.count('relatedSystem'),
       ticket: fake.count('ticket'),
+      ticketComment: fake.count('ticketComment'),
+      ticketInternalNote: fake.count('ticketInternalNote'),
     };
 
     await expect(seed(fake.client, { hashPassword: fakeHash })).resolves.toBeUndefined();
@@ -105,6 +123,8 @@ describe('seed', () => {
       category: fake.count('category'),
       relatedSystem: fake.count('relatedSystem'),
       ticket: fake.count('ticket'),
+      ticketComment: fake.count('ticketComment'),
+      ticketInternalNote: fake.count('ticketInternalNote'),
     }).toEqual(afterFirstRun);
   });
 
@@ -115,7 +135,14 @@ describe('seed', () => {
     await seed(fake.client, { hashPassword: fakeHash });
 
     expect(fake.calls.every((call) => call.endsWith('.upsert'))).toBe(true);
-    expect(firstRun).toHaveLength(CATEGORIES.length + RELATED_SYSTEMS.length + USERS.length + TICKETS.length);
+    expect(firstRun).toHaveLength(
+      CATEGORIES.length +
+        RELATED_SYSTEMS.length +
+        USERS.length +
+        TICKETS.length +
+        TICKET_COMMENTS.length +
+        TICKET_INTERNAL_NOTES.length,
+    );
     expect(fake.calls.slice(firstRun.length)).toEqual(firstRun);
   });
 
@@ -127,11 +154,13 @@ describe('seed', () => {
     const categoryNames = fake.rows('category').map((row) => row.name);
     const systemNames = fake.rows('relatedSystem').map((row) => row.name);
     const ticketNumbers = fake.rows('ticket').map((row) => row.ticketNumber);
+    const threadIds = [...fake.rows('ticketComment'), ...fake.rows('ticketInternalNote')].map((row) => row.id);
 
     expect(new Set(emails).size).toBe(emails.length);
     expect(new Set(categoryNames).size).toBe(categoryNames.length);
     expect(new Set(systemNames).size).toBe(systemNames.length);
     expect(new Set(ticketNumbers).size).toBe(ticketNumbers.length);
+    expect(new Set(threadIds).size).toBe(threadIds.length);
   });
 
   /** FR-14, BR-09: credentials are hashed before they are written, never stored as typed. */
@@ -283,6 +312,90 @@ describe('seed', () => {
         expect(row.closedAt instanceof Date).toBe(status === 'Closed');
         expect(row.createdAt).toBeInstanceOf(Date);
         expect(row.updatedAt).toBeInstanceOf(Date);
+      }
+    });
+  });
+
+  /** Lab 3 specification.md §7 "Public Comments" / "Internal Notes" (Issue #40). */
+  describe('comments and internal notes', () => {
+    it('puts about two comments on every non-New ticket and none on a New one', () => {
+      const worked = TICKETS.filter((ticket) => ticket.status !== 'New');
+      expect(TICKET_COMMENTS).toHaveLength(worked.length * 2);
+
+      for (const ticket of TICKETS) {
+        const thread = TICKET_COMMENTS.filter((comment) => comment.ticketNumber === ticket.ticketNumber);
+        expect(thread).toHaveLength(ticket.status === 'New' ? 0 : 2);
+      }
+    });
+
+    it('alternates requester and staff authors on each comment thread', () => {
+      const staffEmails = IT_STAFF.map((user) => user.email);
+
+      for (const ticket of TICKETS.filter((entry) => entry.status !== 'New')) {
+        const thread = TICKET_COMMENTS.filter((comment) => comment.ticketNumber === ticket.ticketNumber);
+        expect(thread[0].authorEmail).toBe(ticket.requesterEmail);
+        expect(staffEmails).toContain(thread[1].authorEmail);
+        if (ticket.ownerEmail) expect(thread[1].authorEmail).toBe(ticket.ownerEmail);
+      }
+    });
+
+    it('puts one or two internal notes on worked tickets only, authored by IT Staff', () => {
+      const workedStatuses = ['InProgress', 'WaitingForRequester', 'Resolved'];
+      const staffEmails = IT_STAFF.map((user) => user.email);
+
+      for (const ticket of TICKETS) {
+        const notes = TICKET_INTERNAL_NOTES.filter((note) => note.ticketNumber === ticket.ticketNumber);
+        if (!workedStatuses.includes(ticket.status)) {
+          expect(notes).toHaveLength(0);
+          continue;
+        }
+        expect(notes.length).toBeGreaterThanOrEqual(1);
+        expect(notes.length).toBeLessThanOrEqual(2);
+        for (const note of notes) expect(staffEmails).toContain(note.authorEmail);
+      }
+    });
+
+    it('gives every entry a stable id, a body within BR-22 and a time after its ticket', () => {
+      const ticketsByNumber = Object.fromEntries(TICKETS.map((ticket) => [ticket.ticketNumber, ticket]));
+
+      for (const entry of [...TICKET_COMMENTS, ...TICKET_INTERNAL_NOTES]) {
+        expect(entry.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[cn][0-9]{11}$/);
+        expect(entry.body.trim().length).toBeGreaterThan(0);
+        expect(entry.body.length).toBeLessThanOrEqual(2000);
+        expect(new Date(entry.createdAt).getTime()).toBeGreaterThan(
+          new Date(ticketsByNumber[entry.ticketNumber].createdAt).getTime(),
+        );
+      }
+    });
+
+    it('writes ticket and author ids, keyed on the seeded id', async () => {
+      await seed(fake.client, { hashPassword: fakeHash });
+
+      const tickets = Object.fromEntries(fake.rows('ticket').map((row) => [row.ticketNumber, row.id]));
+      const users = Object.fromEntries(fake.rows('user').map((row) => [row.email, row.id]));
+
+      for (const [index, comment] of TICKET_COMMENTS.entries()) {
+        const row = fake.rows('ticketComment')[index];
+        expect(row.id).toBe(comment.id);
+        expect(row.ticketId).toBe(tickets[comment.ticketNumber]);
+        expect(row.authorId).toBe(users[comment.authorEmail]);
+        expect(row.createdAt).toBeInstanceOf(Date);
+        expect(row).not.toHaveProperty('authorEmail');
+      }
+      for (const [index, note] of TICKET_INTERNAL_NOTES.entries()) {
+        const row = fake.rows('ticketInternalNote')[index];
+        expect(row.id).toBe(note.id);
+        expect(row.ticketId).toBe(tickets[note.ticketNumber]);
+        expect(row.authorId).toBe(users[note.authorEmail]);
+      }
+    });
+
+    it('never puts a note body into the comment table (AD-03)', async () => {
+      await seed(fake.client, { hashPassword: fakeHash });
+
+      const commentBodies = fake.rows('ticketComment').map((row) => row.body);
+      for (const note of TICKET_INTERNAL_NOTES) {
+        expect(commentBodies).not.toContain(note.body);
       }
     });
   });

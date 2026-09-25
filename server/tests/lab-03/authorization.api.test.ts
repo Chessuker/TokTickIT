@@ -46,13 +46,24 @@ const PROTECTED_ROUTES: { method: 'get' | 'post' | 'patch'; path: string }[] = [
   { method: 'post', path: `/api/tickets/${TICKET_ID}/comments` },
   { method: 'post', path: `/api/tickets/${TICKET_ID}/resolution-indication` },
   { method: 'get', path: '/api/staff/tickets' },
-  { method: 'get', path: '/api/staff/assignees' }
+  { method: 'get', path: '/api/staff/assignees' },
+  { method: 'get', path: `/api/staff/tickets/${TICKET_ID}` },
+  { method: 'post', path: `/api/staff/tickets/${TICKET_ID}/claim` },
+  { method: 'patch', path: `/api/staff/tickets/${TICKET_ID}/status` },
+  { method: 'get', path: `/api/staff/tickets/${TICKET_ID}/internal-notes` }
 ];
 
 /** Staff-only route families a Requester is refused on before any lookup (API-14). */
-const STAFF_ROUTES: { method: 'get'; path: string }[] = [
+const STAFF_ROUTES: { method: 'get' | 'post' | 'patch'; path: string }[] = [
   { method: 'get', path: '/api/staff/tickets' },
-  { method: 'get', path: '/api/staff/assignees' }
+  { method: 'get', path: '/api/staff/assignees' },
+  { method: 'get', path: `/api/staff/tickets/${TICKET_ID}` },
+  { method: 'post', path: `/api/staff/tickets/${TICKET_ID}/claim` },
+  { method: 'patch', path: `/api/staff/tickets/${TICKET_ID}/owner` },
+  { method: 'patch', path: `/api/staff/tickets/${TICKET_ID}/it-priority` },
+  { method: 'patch', path: `/api/staff/tickets/${TICKET_ID}/status` },
+  { method: 'get', path: `/api/staff/tickets/${TICKET_ID}/internal-notes` },
+  { method: 'post', path: `/api/staff/tickets/${TICKET_ID}/internal-notes` }
 ];
 
 function ticketRow(requesterId: string) {
@@ -116,7 +127,7 @@ describe('Requester on staff routes (API-14, AC-04, AC-12)', () => {
   it.each(STAFF_ROUTES)('$method $path answers 403 FORBIDDEN with no lookup', async ({ method, path }) => {
     mockSessionFor(vi.mocked(prisma.session.findUnique), JENNIFER);
 
-    const res = await request(app)[method](path).set('Cookie', cookieHeader());
+    const res = await request(app)[method](path).set('Cookie', cookieHeader()).send({});
 
     expect(res.status).toBe(403);
     expect(res.body).toEqual({
