@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../src/db.js', () => ({
   prisma: {
-    requesterUser: { findFirst: vi.fn() },
+    session: { findUnique: vi.fn() },
     category: { findFirst: vi.fn() },
     relatedSystem: { findFirst: vi.fn(), findMany: vi.fn() },
     ticket: { findFirst: vi.fn(), findMany: vi.fn(), count: vi.fn(), create: vi.fn() },
@@ -13,13 +13,18 @@ vi.mock('../src/db.js', () => ({
 import request from 'supertest';
 import { app } from '../src/app.js';
 import { prisma } from '../src/db.js';
+import { JENNIFER, cookieHeader, mockSessionFor } from './lab-03/sessionMock.js';
 
 /**
- * API-01 / API-02 / API-03 — POST /api/tickets (AC-01, BR-01, BR-02).
+ * API-01 / API-02 / API-03 — POST /api/tickets (Lab 2 AC-01, BR-01, BR-02).
  *
  * The suite runs without PostgreSQL: `src/db.js` is mocked, and `$transaction`
  * hands the callback the same mock client so the route's read-then-insert path
  * is exercised exactly as it runs in production.
+ *
+ * Lab 3 (API-19, AC-13): the caller is identified by the session cookie
+ * instead of `X-Requester-Id`. `withSession` sends the test cookie, which the
+ * mocked `session.findUnique` resolves to Jennifer; `null` sends nothing.
  */
 
 const REQUESTER_ID = '6f1b7c58-6c2a-4f5f-9b31-2c1f0a9d77e2';
@@ -59,15 +64,15 @@ function createdTicket(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function post(body: unknown, requesterId: string | null = REQUESTER_ID) {
+function post(body: unknown, withSession: boolean | null = true) {
   const pending = request(app).post('/api/tickets');
-  return requesterId === null ? pending.send(body) : pending.set('X-Requester-Id', requesterId).send(body);
+  return withSession ? pending.set('Cookie', cookieHeader()).send(body) : pending.send(body);
 }
 
 beforeEach(() => {
   vi.resetAllMocks();
 
-  vi.mocked(prisma.requesterUser.findFirst).mockResolvedValue(REQUESTER);
+  mockSessionFor(vi.mocked(prisma.session.findUnique), JENNIFER);
   vi.mocked(prisma.category.findFirst).mockResolvedValue({ id: CATEGORY_ID });
   vi.mocked(prisma.relatedSystem.findFirst).mockResolvedValue({ id: RELATED_SYSTEM_ID });
   // No ticket exists yet, so the generator starts the year at sequence 1.
@@ -104,7 +109,7 @@ describe('POST /api/tickets — valid create (API-01, AC-01)', () => {
     expect(data.priority).toBe('Medium');
   });
 
-  it('associates the ticket with the requester from X-Requester-Id, not the body', async () => {
+  it('associates the ticket with the session user, not the body (AC-03)', async () => {
     await post({ ...VALID_BODY, requesterId: OTHER_REQUESTER_ID });
 
     const data = vi.mocked(prisma.ticket.create).mock.calls[0][0].data;
@@ -239,40 +244,39 @@ describe('POST /api/tickets — validation (API-03, AC-01)', () => {
   });
 });
 
-describe('POST /api/tickets — requester context (api-spec §1.1)', () => {
-  it('returns 400 REQUESTER_REQUIRED when the header is absent', async () => {
+describe('POST /api/tickets — session identity (Lab 3 api-spec §1.1, API-19)', () => {
+  it('returns 401 UNAUTHORIZED when there is no session cookie', async () => {
     const res = await post(VALID_BODY, null);
 
-    expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('REQUESTER_REQUIRED');
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('UNAUTHORIZED');
     expect(prisma.ticket.create).not.toHaveBeenCalled();
   });
 
-  it('returns 400 REQUESTER_REQUIRED when the header is malformed', async () => {
-    const res = await post(VALID_BODY, 'not-a-uuid');
+  it('returns 401 UNAUTHORIZED when the cookie resolves to no session', async () => {
+    vi.mocked(prisma.session.findUnique).mockResolvedValueOnce(null);
 
-    expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('REQUESTER_REQUIRED');
-    expect(prisma.requesterUser.findFirst).not.toHaveBeenCalled();
-  });
+    const res = await post(VALID_BODY);
 
-  it('returns 403 FORBIDDEN when the header names an unknown or inactive requester', async () => {
-    vi.mocked(prisma.requesterUser.findFirst).mockResolvedValueOnce(null);
-
-    const res = await post(VALID_BODY, OTHER_REQUESTER_ID);
-
-    expect(res.status).toBe(403);
-    expect(res.body.error.code).toBe('FORBIDDEN');
+    expect(res.status).toBe(401);
     expect(prisma.ticket.create).not.toHaveBeenCalled();
   });
 
-  it('resolves the requester with an active-only lookup (BR-11)', async () => {
-    await post(VALID_BODY);
+  it('returns 401 UNAUTHORIZED when the session user has been deactivated', async () => {
+    mockSessionFor(vi.mocked(prisma.session.findUnique), { ...JENNIFER, isActive: false });
 
-    expect(prisma.requesterUser.findFirst).toHaveBeenCalledWith({
-      where: { id: REQUESTER_ID, isActive: true },
-      select: { id: true, name: true, email: true, department: true }
-    });
+    const res = await post(VALID_BODY);
+
+    expect(res.status).toBe(401);
+    expect(prisma.ticket.create).not.toHaveBeenCalled();
+  });
+
+  it('copies the requested priority into itPriority (API-20, BR-16)', async () => {
+    await post({ ...VALID_BODY, priority: 'High' });
+
+    const data = vi.mocked(prisma.ticket.create).mock.calls[0][0].data;
+    expect(data.priority).toBe('High');
+    expect(data.itPriority).toBe('High');
   });
 });
 
@@ -310,7 +314,7 @@ describe('GET /api/related-systems (api-spec §3.3)', () => {
     ];
     vi.mocked(prisma.relatedSystem.findMany).mockResolvedValue(relatedSystems);
 
-    const res = await request(app).get('/api/related-systems');
+    const res = await request(app).get('/api/related-systems').set('Cookie', cookieHeader());
 
     expect(res.status).toBe(200);
     expect(res.body.data).toEqual(relatedSystems);
@@ -351,9 +355,9 @@ function ticketRow(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function listTickets(queryString = '', requesterId: string | null = REQUESTER_ID) {
+function listTickets(queryString = '', withSession: boolean | null = true) {
   const pending = request(app).get('/api/tickets' + queryString);
-  return requesterId === null ? pending : pending.set('X-Requester-Id', requesterId);
+  return withSession ? pending.set('Cookie', cookieHeader()) : pending;
 }
 
 /** The arguments the route handed to `findMany` on its most recent call. */
@@ -386,7 +390,7 @@ describe('GET /api/tickets — ownership scoping (API-04, AC-04, BR-04)', () => 
     });
   });
 
-  it('scopes both the page and the count to the requester from X-Requester-Id', async () => {
+  it('scopes both the page and the count to the session user', async () => {
     givenTickets([]);
 
     await listTickets();
@@ -415,21 +419,20 @@ describe('GET /api/tickets — ownership scoping (API-04, AC-04, BR-04)', () => 
     expect(res.body.data[0]).not.toHaveProperty('attachments');
   });
 
-  it('returns 400 REQUESTER_REQUIRED without the header', async () => {
+  it('returns 401 UNAUTHORIZED without a session cookie', async () => {
     const res = await listTickets('', null);
 
-    expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('REQUESTER_REQUIRED');
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('UNAUTHORIZED');
     expect(prisma.ticket.findMany).not.toHaveBeenCalled();
   });
 
-  it('returns 403 FORBIDDEN when the header names an unknown or inactive requester', async () => {
-    vi.mocked(prisma.requesterUser.findFirst).mockResolvedValueOnce(null);
+  it('returns 401 UNAUTHORIZED when the cookie resolves to no session', async () => {
+    vi.mocked(prisma.session.findUnique).mockResolvedValueOnce(null);
 
-    const res = await listTickets('', OTHER_REQUESTER_ID);
+    const res = await listTickets();
 
-    expect(res.status).toBe(403);
-    expect(res.body.error.code).toBe('FORBIDDEN');
+    expect(res.status).toBe(401);
     expect(prisma.ticket.findMany).not.toHaveBeenCalled();
   });
 });
@@ -532,7 +535,8 @@ describe('GET /api/tickets — search, filter, sort, pagination (API-06, AC-10)'
 
   it.each([
     ['category=not-a-uuid', 'category'],
-    ['status=Closed', 'status'],
+    // Lab 3 opened `status` to all eight workflow values; only unknown ones fail.
+    ['status=Archived', 'status'],
     ['sort=summary:asc', 'sort'],
     ['page=0', 'page'],
     ['page=abc', 'page'],
@@ -597,7 +601,7 @@ describe('GET /api/tickets — filter that matches nothing (API-13, AC-15)', () 
  * API-05 — GET /api/tickets/:id (AC-03, AC-05, BR-04).
  *
  * The detail route reads one row and compares its `requesterId` with the
- * resolved header. The assertions below pin both halves of that: the owner sees
+ * session user. The assertions below pin both halves of that: the owner sees
  * the ticket, and Requester B gets `403` with no ticket data in the body.
  */
 describe('GET /api/tickets/:id — ownership (API-05, AC-03, BR-04)', () => {
@@ -612,9 +616,9 @@ describe('GET /api/tickets/:id — ownership (API-05, AC-03, BR-04)', () => {
     };
   }
 
-  function getDetail(requesterId: string | null = REQUESTER_ID) {
+  function getDetail(withSession: boolean | null = true) {
     const pending = request(app).get(`/api/tickets/${TICKET_ID}`);
-    return requesterId === null ? pending : pending.set('X-Requester-Id', requesterId);
+    return withSession ? pending.set('Cookie', cookieHeader()) : pending;
   }
 
   it('returns the ticket to the requester who owns it', async () => {
@@ -671,11 +675,11 @@ describe('GET /api/tickets/:id — ownership (API-05, AC-03, BR-04)', () => {
     expect(res.body.error.code).toBe('NOT_FOUND');
   });
 
-  it('requires a selected requester before reading anything', async () => {
+  it('requires a session before reading anything', async () => {
     const res = await getDetail(null);
 
-    expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('REQUESTER_REQUIRED');
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('UNAUTHORIZED');
     expect(prisma.ticket.findFirst).not.toHaveBeenCalled();
   });
 

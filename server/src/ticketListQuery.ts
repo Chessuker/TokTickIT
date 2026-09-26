@@ -10,12 +10,22 @@
  * the requester a result set that does not match the controls on screen, which
  * reads as a data bug rather than as a mistake in the request.
  *
- * Note what is *not* here: `requesterId`. Ownership comes from the resolved
- * `X-Requester-Id` and is applied by the route on top of whatever this returns
- * (BR-04), so no query parameter can widen the scope.
+ * Note what is *not* here: `requesterId`. Ownership comes from the session
+ * user and is applied by the route on top of whatever this returns (BR-03),
+ * so no query parameter can widen the scope.
  */
 
-export const TICKET_STATUSES = ['New'] as const;
+/** All eight workflow statuses (Lab 3 BR-18); any of them may be filtered on. */
+export const TICKET_STATUSES = [
+  'New',
+  'Open',
+  'InProgress',
+  'WaitingForRequester',
+  'Reopened',
+  'Resolved',
+  'Closed',
+  'Cancelled'
+] as const;
 export type TicketStatusValue = (typeof TICKET_STATUSES)[number];
 
 export const SORT_OPTIONS = [

@@ -9,7 +9,7 @@ function CreateTicket() {
     <section>
       <h1 className="zg-title">Create Ticket</h1>
       <p className="zg-subtitle">
-        Raise a new ticket as the selected requester. The ticket number and status are assigned by the server.
+        Raise a new ticket in your name. The ticket number and status are assigned by the server.
       </p>
       <CreateTicketForm />
     </section>

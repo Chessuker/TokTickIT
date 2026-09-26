@@ -344,6 +344,17 @@ body {
     display: inline-flex;
   }
 
+  /* The open menu takes a row of its own under the brand and the toggle;
+     without wrapping it sat beside them and ran off the right edge (V-03). */
+  .zg-header-bar {
+    flex-wrap: wrap;
+  }
+
+  .zg-header-menu {
+    flex-basis: 100%;
+    min-width: 0;
+  }
+
   .zg-header-menu {
     display: none;
     width: 100%;
@@ -675,7 +686,15 @@ body {
  * V-03: the table scrolls inside its own container so a wide row can never
  * push the page body sideways.
  */
+/*
+ * `position: relative` makes the wrapper the containing block for anything
+ * absolutely positioned inside the table — notably the `.visually-hidden`
+ * column labels ("Open", "Actions", "Edit"). Without it those spans are
+ * positioned against the page, escape the wrapper's scroll clipping, and
+ * stretch the document sideways at tablet width (V-03).
+ */
 .zg-table-wrap {
+  position: relative;
   overflow-x: auto;
   background: var(--zg-surface);
   border: 1px solid var(--zg-border);
@@ -1335,5 +1354,946 @@ body {
     order: 4;
     flex: 1 1 100%;
     text-align: center;
+  }
+}
+
+/* ======================================================================
+   Lab 3 — authentication shell, Login / Change Password, role badges
+   (Lab 3 ui-spec.md §2, §3.0 – §3.2)
+   ====================================================================== */
+
+/* ---------- Header profile menu (ui-spec §3.0) ---------- */
+
+.zg-header-identity {
+  position: relative;
+}
+
+.zg-profile-button,
+.zg-profile-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 44px;
+  padding: 0.3rem 0.5rem;
+  border-radius: 6px;
+  color: var(--zg-on-primary);
+  background: transparent;
+  border: 1px solid transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.zg-profile-summary {
+  cursor: default;
+}
+
+.zg-profile-button:hover,
+.zg-profile-button[aria-expanded='true'] {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.zg-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.zg-profile-name {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.zg-profile-menu {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.35rem);
+  min-width: 12rem;
+  padding: 0.35rem;
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-border);
+  border-radius: 8px;
+  box-shadow: var(--zg-shadow);
+  z-index: 30;
+}
+
+.zg-profile-menu.is-open {
+  display: flex;
+  flex-direction: column;
+}
+
+.zg-profile-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--zg-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.zg-profile-item:hover,
+.zg-profile-item:focus-visible {
+  background: var(--zg-pale);
+}
+
+/* Role badge on the primary header: outline variant so it reads on green. */
+.zg-badge-on-primary {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.7);
+  color: var(--zg-on-primary);
+}
+
+/* ---------- Role and account badges (ui-spec §2) ---------- */
+
+.zg-badge-role-requester {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+.zg-badge-role-it-staff {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1e40af;
+}
+
+.zg-badge-role-administrator {
+  background: var(--zg-pale);
+  border-color: var(--zg-primary);
+  color: #14532d;
+}
+
+.zg-badge-active {
+  background: var(--zg-pale);
+  border-color: var(--zg-secondary);
+  color: #14532d;
+}
+
+.zg-badge-inactive {
+  background: #fef2f2;
+  border-color: var(--zg-error);
+  color: #991b1b;
+}
+
+/* ---------- Login / Change Password card (ui-spec §3.1, §3.2) ---------- */
+
+.zg-auth-page {
+  min-height: 100vh;
+  background: var(--zg-bg);
+}
+
+.zg-auth-card {
+  max-width: 420px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.zg-auth-card > :not(.zg-auth-band) {
+  margin-left: 1.75rem;
+  margin-right: 1.75rem;
+}
+
+.zg-auth-card > .zg-title {
+  margin-top: 1.5rem;
+}
+
+.zg-auth-card > form {
+  margin-bottom: 1.5rem;
+}
+
+.zg-auth-band {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 1.1rem 1.5rem;
+  background: var(--zg-primary);
+  color: var(--zg-on-primary);
+  font-size: 1.25rem;
+}
+
+.zg-auth-brand {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.zg-auth-footnote {
+  margin: 0 1.75rem 1.5rem;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.zg-btn-block {
+  width: 100%;
+}
+
+.zg-auth-card .zg-callout {
+  margin-bottom: 1rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Password input with the show/hide toggle inside the field. */
+.zg-password-wrap {
+  position: relative;
+}
+
+.zg-password-wrap .zg-input {
+  padding-right: 3rem;
+}
+
+.zg-password-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  min-width: 44px;
+  padding: 0 0.6rem;
+  border: 0;
+  background: transparent;
+  color: var(--zg-text-muted);
+  cursor: pointer;
+}
+
+.zg-password-toggle:hover,
+.zg-password-toggle:focus-visible,
+.zg-password-toggle[aria-pressed='true'] {
+  color: var(--zg-primary);
+}
+
+/* Live rules panel (ui-spec §3.2). */
+.zg-rules-panel {
+  list-style: none;
+  margin: -0.5rem 0 1.25rem;
+  padding: 0.75rem 1rem;
+  background: var(--zg-pale);
+  border: 1px solid var(--zg-border);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.zg-rule {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--zg-text-muted);
+}
+
+.zg-rule.is-met {
+  color: #14532d;
+}
+
+.zg-rule .bi-check-circle-fill {
+  color: var(--zg-primary);
+}
+
+@media (max-width: 767.98px) {
+  .zg-auth-card > :not(.zg-auth-band) {
+    margin-left: 1.25rem;
+    margin-right: 1.25rem;
+  }
+
+  .zg-auth-footnote {
+    margin-left: 1.25rem;
+    margin-right: 1.25rem;
+  }
+
+  /* The profile menu becomes a full-width sheet inside the collapsed header. */
+  .zg-header-menu .zg-profile-button,
+  .zg-header-menu .zg-profile-summary {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .zg-header-menu .zg-profile-menu {
+    position: static;
+    width: 100%;
+  }
+
+  .zg-header-menu .zg-btn-outline-light {
+    width: 100%;
+  }
+}
+
+/* ---------- Status and IT priority badges (Lab 3 ui-spec §2) ---------- */
+
+.zg-badge-status-open {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1e40af;
+}
+
+.zg-badge-status-in-progress {
+  background: var(--zg-warning-bg);
+  border-color: var(--zg-warning);
+  color: #92400e;
+}
+
+.zg-badge-status-waiting {
+  background: #f5f3ff;
+  border-color: #c4b5fd;
+  color: #5b21b6;
+}
+
+.zg-badge-status-resolved {
+  background: var(--zg-pale);
+  border-color: var(--zg-secondary);
+  color: #14532d;
+}
+
+.zg-badge-status-closed {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+.zg-badge-status-reopened {
+  background: #fff7ed;
+  border-color: #fdba74;
+  color: #9a3412;
+}
+
+/* #4b5563, not the spec's first-draft #6b7280: that one measured 4.39:1 on this
+   fill, under V-07's 4.5:1. The strike-through, not a paler grey, is what
+   says "cancelled". */
+.zg-badge-status-cancelled {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  color: #4b5563;
+  text-decoration: line-through;
+}
+
+/* Same fills as Requested Priority; the "IT" prefix in the label tells them apart. */
+.zg-badge-it-priority-low {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1e40af;
+}
+
+.zg-badge-it-priority-medium {
+  background: var(--zg-warning-bg);
+  border-color: var(--zg-warning);
+  color: #92400e;
+}
+
+.zg-badge-it-priority-high {
+  background: #fef2f2;
+  border-color: var(--zg-error);
+  color: #991b1b;
+}
+
+.zg-owner {
+  font-weight: 500;
+}
+
+.zg-owner-unassigned {
+  color: var(--zg-text-muted);
+  font-style: italic;
+  font-weight: 400;
+}
+
+.zg-badge-requester-resolved {
+  gap: 0.3rem;
+  background: var(--zg-pale);
+  border: 1px dashed var(--zg-secondary);
+  color: #14532d;
+}
+
+.zg-page-head-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.zg-page-head-actions .zg-btn {
+  white-space: nowrap;
+}
+
+/* ---------- Public Comments panel (Lab 3 ui-spec §2 "Public vs Internal", §3.3) ---------- */
+
+.zg-comment-composer {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--zg-border);
+}
+
+.zg-comment-composer .zg-textarea {
+  min-height: 5rem;
+}
+
+.zg-comment-composer-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.zg-char-counter {
+  display: block;
+  margin-top: 0.35rem;
+  margin-left: auto;
+  font-size: 0.8rem;
+  color: var(--zg-text-muted);
+  white-space: nowrap;
+}
+
+.zg-char-counter-over {
+  color: var(--zg-error);
+  font-weight: 600;
+}
+
+.zg-comment-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.zg-comment {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-border);
+  border-left: 4px solid var(--zg-border);
+  border-radius: 6px;
+}
+
+.zg-comment-avatar {
+  flex-shrink: 0;
+  background: var(--zg-pale);
+  border-color: var(--zg-secondary);
+  color: #14532d;
+}
+
+.zg-comment-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.zg-comment-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.zg-comment-author {
+  font-weight: 600;
+}
+
+.zg-comment-time {
+  color: var(--zg-text-muted);
+  font-size: 0.8rem;
+}
+
+/* Text node, never HTML (AD-09); pre-wrap keeps the author's line breaks. */
+.zg-comment-body {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- IT Staff Ticket Queue (Lab 3 ui-spec §3.4) ---------- */
+
+/* Toolbar: same surface as the Lab 2 filter bar; the filters panel sits under it. */
+.zg-queue-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-border);
+  border-radius: 10px;
+  box-shadow: var(--zg-shadow);
+}
+
+.zg-queue-toolbar .zg-filter-action {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.zg-queue-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75rem 1rem;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  background: var(--zg-pale);
+  border: 1px solid var(--zg-border);
+  border-radius: 10px;
+}
+
+.zg-queue-filters fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.zg-queue-filters legend {
+  padding: 0;
+}
+
+.zg-filter-wide {
+  flex: 1 1 100%;
+}
+
+.zg-btn.is-active {
+  background: var(--zg-pale);
+  border-color: var(--zg-secondary);
+}
+
+.zg-filter-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-left: 0.4rem;
+  border-radius: 999px;
+  background: var(--zg-secondary);
+  vertical-align: middle;
+}
+
+/* Status chips: a pressed chip is filled, the level is always written. */
+.zg-chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.zg-chip-toggle {
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0.3rem 0.8rem;
+  background: var(--zg-surface);
+  color: var(--zg-text);
+}
+
+.zg-chip-toggle:hover {
+  border-color: var(--zg-secondary);
+}
+
+.zg-chip-toggle:focus-visible {
+  outline: 2px solid var(--zg-secondary);
+  outline-offset: 2px;
+}
+
+.zg-chip-toggle.is-selected {
+  background: var(--zg-primary);
+  border-color: var(--zg-primary);
+  color: var(--zg-on-primary);
+}
+
+/* Sortable headers: the whole header is the button; the icon shows direction. */
+.zg-sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.zg-sort-button:focus-visible {
+  outline: 2px solid var(--zg-secondary);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+.zg-sort-icon {
+  font-size: 0.8rem;
+  opacity: 0.45;
+}
+
+.zg-sort-icon.is-active {
+  opacity: 1;
+  color: var(--zg-primary);
+}
+
+/* Summary clamps to two lines; the full text is on the cell's title and on focus. */
+.zg-clamp-2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.zg-clamp-2:focus-visible {
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  outline: 2px solid var(--zg-secondary);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+.zg-status-cell,
+.zg-owner-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+/* The Open column is the narrowest; the button gives up its side padding there. */
+.zg-queue-table td:last-child {
+  padding-inline: 0.35rem;
+}
+
+.zg-queue-table td:last-child .zg-btn-sm {
+  padding-inline: 0.55rem;
+}
+
+.zg-resolved-icon {
+  color: var(--zg-secondary);
+  font-size: 0.95rem;
+}
+
+.zg-you-tag {
+  display: inline-block;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: var(--zg-pale);
+  border: 1px solid var(--zg-secondary);
+  color: #14532d;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Loading: skeleton rows in place of the table (ui-spec §3.4 "States"). */
+.zg-skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.zg-skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.zg-skeleton {
+  display: block;
+  height: 0.9rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+  background-size: 200% 100%;
+  animation: zg-shimmer 1.4s ease-in-out infinite;
+}
+
+.zg-skeleton-short {
+  width: 7rem;
+}
+
+.zg-skeleton-long {
+  flex: 1;
+}
+
+.zg-skeleton-badge {
+  width: 4.5rem;
+}
+
+@keyframes zg-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zg-skeleton {
+    animation: none;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .zg-queue-toolbar .zg-filter-action {
+    width: 100%;
+  }
+
+  .zg-queue-toolbar .zg-filter-action .zg-btn {
+    flex: 1;
+  }
+}
+
+/* ---------- IT Staff Ticket Detail (Lab 3 ui-spec §3.5) ---------- */
+
+/* Three operational controls side by side at desktop, stacked on mobile. */
+.zg-ops-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.zg-ops-grid .zg-field {
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+.zg-ops-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.zg-ops-control .zg-select {
+  flex: 1;
+  min-width: 0;
+}
+
+.zg-ops-control .zg-btn {
+  flex-shrink: 0;
+}
+
+.zg-btn-danger {
+  background: var(--zg-error);
+  border-color: var(--zg-error);
+  color: #ffffff;
+}
+
+.zg-btn-danger:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+/* Tabs (WAI-ARIA tabs; arrow keys move, only the selected one is tabbable). */
+.zg-tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--zg-border);
+  margin-bottom: 1rem;
+  overflow-x: auto;
+}
+
+.zg-tab {
+  flex-shrink: 0;
+  padding: 0.6rem 1rem;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--zg-text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.zg-tab:hover {
+  color: var(--zg-text);
+}
+
+.zg-tab:focus-visible {
+  outline: 2px solid var(--zg-secondary);
+  outline-offset: -2px;
+  border-radius: 4px 4px 0 0;
+}
+
+.zg-tab.is-active {
+  color: var(--zg-primary);
+  border-bottom-color: var(--zg-primary);
+}
+
+/*
+ * The thread panels sit inside a card (the tab panel) rather than being cards
+ * themselves, so they carry no border of their own; the internal variant is
+ * the one exception, because its amber field is the whole signal.
+ */
+.zg-thread {
+  display: block;
+}
+
+.zg-thread-note {
+  padding: 1rem;
+  background: var(--zg-warning-bg);
+  border: 1px solid var(--zg-warning);
+  border-left-width: 4px;
+  border-radius: 8px;
+}
+
+.zg-hint-internal {
+  color: #92400e;
+  font-weight: 600;
+}
+
+.zg-textarea-internal {
+  border-color: var(--zg-warning);
+}
+
+.zg-textarea-internal:focus {
+  outline-color: var(--zg-warning);
+}
+
+/* Outlined amber, so the two composers' buttons can never be mistaken. */
+.zg-btn-internal {
+  background: transparent;
+  border: 1px solid var(--zg-warning);
+  color: #92400e;
+  font-weight: 600;
+}
+
+.zg-btn-internal:hover:not(:disabled) {
+  background: #fef3c7;
+}
+
+.zg-comment-internal {
+  background: #fffdf5;
+  border-left: 4px solid var(--zg-warning);
+}
+
+@media (max-width: 991.98px) {
+  .zg-ops-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Administrator User Management (Lab 3 ui-spec §3.6) ---------- */
+
+/*
+ * Desktop: list and side panel share the row, 60/40 as the spec asks. Tablet
+ * and mobile collapse to one column and the panel becomes a sheet below the
+ * toolbar, which keeps it in the document order a screen reader follows.
+ */
+.zg-users-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.zg-users-layout.has-panel {
+  grid-template-columns: 6fr 4fr;
+}
+
+.zg-users-list {
+  min-width: 0;
+}
+
+.zg-users-panel {
+  position: sticky;
+  top: 1rem;
+  padding: 1.25rem;
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-border);
+  border-radius: 10px;
+  box-shadow: var(--zg-shadow);
+}
+
+.zg-users-panel .zg-field:last-of-type {
+  margin-bottom: 1rem;
+}
+
+.zg-panel-section {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--zg-border);
+}
+
+.zg-btn-outline {
+  background: transparent;
+  border: 1px solid var(--zg-primary);
+  color: var(--zg-primary);
+  font-weight: 600;
+}
+
+.zg-btn-outline:hover:not(:disabled) {
+  background: var(--zg-pale);
+}
+
+/* Mobile list: one card per user, same information as the table row. */
+.zg-user-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.zg-user-card {
+  padding: 0.9rem 1rem;
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-border);
+  border-radius: 10px;
+  box-shadow: var(--zg-shadow);
+}
+
+.zg-user-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.zg-user-name {
+  font-weight: 600;
+}
+
+.zg-user-email {
+  margin: 0.25rem 0 0.6rem;
+  color: var(--zg-text-muted);
+  font-size: 0.88rem;
+  overflow-wrap: anywhere;
+}
+
+.zg-user-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+/* Five columns fit the container without the wrapper needing to scroll. */
+.zg-users-table {
+  min-width: 0;
+}
+
+.zg-users-table td {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 991.98px) {
+  .zg-users-layout.has-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .zg-users-panel {
+    position: static;
+    order: -1;
   }
 }
