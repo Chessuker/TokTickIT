@@ -135,10 +135,10 @@ The three example rows from the handout (API-01, API-08, E2E-02) keep their ids.
 | E2E-01 | E2E | AC-01, AC-05, AC-06, AC-08 | Invalid login, inactive login, valid login as Jennifer, shell shows name and role, logout, Back button, direct URL after logout | Error callouts; My Tickets shown; after logout every app URL lands on `/login` | `e2e/lab-03/authentication.spec.ts` | Pass |
 | E2E-02 | E2E | AC-02 | Initial password login and change | Normal app opens only after valid change | `e2e/lab-03/authentication.spec.ts` | Pass |
 | E2E-03 | E2E | AC-11, AC-12 | Role navigation and forbidden pages: Requester → `/staff/queue`, `/admin/users`; IT Staff → `/admin/users`; direct `fetch` from the page to `/api/staff/tickets` as Requester | Forbidden state; `403` | `e2e/lab-03/authentication.spec.ts` | Pass |
-| E2E-04 | E2E | AC-13, AC-14, AC-15 | Requester regression: create ticket with attachment → My Tickets → detail → download → post comment → "Problem appears resolved" | Lab 2 flow intact; comment and indicator visible | `e2e/*.spec.ts` (updated helpers) + `e2e/lab-03/requester-comments.spec.ts` (Requester half: Pass) + `e2e/lab-03/staff-ticket-flow.spec.ts` (staff sees comment and indicator) | Partial |
+| E2E-04 | E2E | AC-13, AC-14, AC-15 | Requester regression: create ticket with attachment → My Tickets → detail → download → post comment → "Problem appears resolved"; IT Staff then see the comment and the indicator | Lab 2 flow intact; comment and indicator visible to the requester and to IT Staff (queue icon + detail badge) | `e2e/*.spec.ts` (updated helpers), `e2e/lab-03/requester-comments.spec.ts`, `e2e/lab-03/staff-ticket-flow.spec.ts` | Pass |
 | E2E-05 | E2E | AC-16 … AC-23 | IT Staff: queue search/filter/sort/paginate → open → claim → set IT priority → In Progress → post comment → add Internal Note → Resolved (confirm) → Closed; then log in as the Requester and verify comment visible, note absent, statuses shown | As stated | `e2e/lab-03/staff-ticket-flow.spec.ts` | Pass |
 | E2E-06 | E2E | AC-25 … AC-30 | Administrator: search, filter, create user (IT Staff) → log out → log in as new user → forced change → log back in as admin → edit role → self-deactivate blocked → set initial password → new user forced to change again | As stated | `e2e/lab-03/user-administration.spec.ts` | Pass |
-| E2E-07 | E2E | AC-33, AC-34 | Screenshot capture at 1280 / 820 / 375 for Login, Change Password, Queue, Staff Detail, Users; `scrollWidth` check; backend stopped for one failure capture | Files in `artifacts/lab-03/screenshots/*`; no overflow | `e2e/lab-03/visual.spec.ts` | Planned |
+| E2E-07 | E2E | AC-33, AC-34 | Login, Change Password, Queue, Staff Detail, Users, My Tickets and Requester Detail at 1280 / 820 / 375 with a `scrollWidth` check; backend stopped for one failure capture; focus, label and contrast measured (V-05 … V-07) | No overflow; safe failure with Retry; every check passes; screenshots written with `CAPTURE=1` | `e2e/lab-03/visual.spec.ts` | Pass |
 
 ---
 
@@ -185,32 +185,36 @@ The three example rows from the handout (API-01, API-08, E2E-02) keep their ids.
 
 ## 4. Responsive and Visual Checklist
 
-Filled in during Issue 7. Screenshot paths are under `artifacts/lab-03/screenshots/`.
+Captured on 2026-09-26 by `CAPTURE=1 npx playwright test e2e/lab-03/visual.spec.ts` (E2E-07) on a freshly reset and seeded database; every row also passed the horizontal-overflow assertion (V-03) in the same run. Paths are under `artifacts/lab-03/screenshots/`. Each row is checked against V-01 … V-14 in [ui-spec.md](ui-spec.md) §5.
 
 | # | Screen | Viewport | Result | Screenshot |
 | --- | --- | --- | --- | --- |
-| R-01 | Login | Desktop 1280 | | `authentication/login-desktop.png` |
-| R-02 | Login | Tablet 820 | | `authentication/login-tablet.png` |
-| R-03 | Login | Mobile 375 | | `authentication/login-mobile.png` |
-| R-04 | Change Password (forced) | Desktop | | `authentication/change-password-desktop.png` |
-| R-05 | Change Password (forced) | Mobile | | `authentication/change-password-mobile.png` |
-| R-06 | Shell + profile menu (each role) | Desktop | | `authentication/shell-{requester,staff,admin}-desktop.png` |
-| R-07 | Shell + profile sheet | Mobile | | `authentication/shell-mobile.png` |
-| R-08 | Queue (table) | Desktop | | `staff-queue/queue-desktop.png` |
-| R-09 | Queue (table, scrolling wrapper) | Tablet | | `staff-queue/queue-tablet.png` |
-| R-10 | Queue (cards, filter sheet) | Mobile | | `staff-queue/queue-mobile.png` |
-| R-11 | Queue no-results / failure | Desktop | | `staff-queue/queue-no-results.png`, `queue-failure.png` |
-| R-12 | Staff Ticket Detail | Desktop | | `staff-ticket-detail/detail-desktop.png` |
-| R-13 | Staff Ticket Detail | Tablet | | `staff-ticket-detail/detail-tablet.png` |
-| R-14 | Staff Ticket Detail (tabs strip) | Mobile | | `staff-ticket-detail/detail-mobile.png` |
-| R-15 | Internal Notes tab vs Public Comments tab | Desktop | | `staff-ticket-detail/notes-vs-comments.png` |
-| R-16 | Confirm dialog (Resolved) | Mobile | | `staff-ticket-detail/confirm-mobile.png` |
-| R-17 | Users (list + panel) | Desktop | | `user-management/users-desktop.png` |
-| R-18 | Users (panel as sheet) | Tablet | | `user-management/users-tablet.png` |
-| R-19 | Users (cards, full-screen panel) | Mobile | | `user-management/users-mobile.png` |
-| R-20 | Users validation + `409` under Email | Desktop | | `user-management/users-conflict.png` |
+| R-01 | Login | Desktop 1280 | Pass | `authentication/login-desktop.png` |
+| R-02 | Login | Tablet 820 | Pass | `authentication/login-tablet.png` |
+| R-03 | Login | Mobile 375 | Pass | `authentication/login-mobile.png` |
+| R-04 | Change Password (forced) | Desktop / Tablet | Pass | `authentication/change-password-desktop.png`, `change-password-tablet.png` |
+| R-05 | Change Password (forced) | Mobile | Pass | `authentication/change-password-mobile.png` |
+| R-06 | Shell + profile menu (each role) | Desktop | Pass | `authentication/shell-{requester,staff,admin}-desktop.png` |
+| R-07 | Shell + profile sheet | Mobile | Pass — fixed in this pass (sheet overflowed to 466 px) | `authentication/shell-mobile.png` |
+| R-08 | Queue (table) | Desktop | Pass | `staff-queue/queue-desktop.png` |
+| R-09 | Queue (table, scrolling wrapper) | Tablet | Pass — fixed in this pass (page overflowed to 1009 px) | `staff-queue/queue-tablet.png` |
+| R-10 | Queue (cards, filter sheet) | Mobile | Pass | `staff-queue/queue-mobile.png` |
+| R-11 | Queue no-results / failure | Desktop | Pass | `staff-queue/queue-no-results.png`, `queue-failure.png` |
+| R-12 | Staff Ticket Detail | Desktop | Pass | `staff-ticket-detail/detail-desktop.png` |
+| R-13 | Staff Ticket Detail | Tablet | Pass | `staff-ticket-detail/detail-tablet.png` |
+| R-14 | Staff Ticket Detail (tabs strip) | Mobile | Pass | `staff-ticket-detail/detail-mobile.png` |
+| R-15 | Internal Notes tab vs Public Comments tab | Desktop | Pass | `staff-ticket-detail/notes-vs-comments.png` |
+| R-16 | Confirm dialog (Resolved) | Mobile | Pass | `staff-ticket-detail/confirm-mobile.png` |
+| R-17 | Users (list + panel) | Desktop | Pass | `user-management/users-desktop.png` |
+| R-18 | Users (panel as sheet) | Tablet | Pass | `user-management/users-tablet.png` |
+| R-19 | Users (cards, full-screen panel) | Mobile | Pass | `user-management/users-mobile.png` |
+| R-20 | Users validation + `409` under Email | Desktop | Pass | `user-management/users-conflict.png` |
+| R-21 | My Tickets (Requester, Lab 3 badges) | All three | Pass | `requester/my-tickets-{desktop,tablet,mobile}.png` |
+| R-22 | Requester Ticket Detail with Public Comments | All three | Pass | `requester/ticket-detail-{desktop,tablet,mobile}.png` |
 
-Each row is checked against V-01 … V-14 in [ui-spec.md](ui-spec.md) §5.
+R-21 and R-22 were added in this pass: both Requester screens changed in Lab 3 (shared badges, comments, "Problem appears resolved") and belong in the same responsive check.
+
+The demonstration screenshots for Answer Parts 5 – 8 (`p5-*`, `p6-*`, `p7-*`, `p8-*` in the same folders) are captured by `docs/lab-03/scripts/capture-evidence.mjs`.
 
 ---
 
@@ -219,7 +223,8 @@ Each row is checked against V-01 … V-14 in [ui-spec.md](ui-spec.md) §5.
 ```bash
 # database (from repo root)
 docker compose up -d
-npm run prisma:migrate          # applies 20260915000000_lab03_users_roles_workflow
+npm run prisma:migrate          # applies 20260915000000_lab03_users_roles_workflow and
+                                #         20260919000000_lab03_status_workflow_order
 npm run prisma:seed             # idempotent; safe to re-run
 
 # suites
@@ -316,9 +321,70 @@ Turned to Pass: MIG-01, MIG-02, E2E-01, E2E-02, E2E-03; the Lab 2 E2E flows (cre
 
 Found only by the E2E run and fixed: (1) after logout the route guard could redirect before the shell's own navigate and leave `?from=` on `/login`; (2) after login the "already signed in" redirect could override the `from` destination. Both now go through one decision (`loggedOut` flag on the auth context; `destinationFor` shared by both paths in Login). (3) The suite's fixed unknown email tripped BR-07's throttle after five runs in fifteen minutes — proof the throttle works, and the test now uses a fresh address per run.
 
-### Final run on `main`
+#### Issue #38 — Requester comments and resolution (2026-09-19)
 
-Full output of the three commands on the release commit, pasted at submission.
+```
+$ npm run test:server     Tests  242 passed (242)
+$ npm run test:client     Tests  139 passed (139)
+$ npm run test:e2e        26 passed
+```
+
+Turned to Pass: API-22 … API-25, UI-19; the Requester half of E2E-04.
+
+#### Issue #39 — IT Staff Ticket Queue (2026-09-19)
+
+```
+$ npm run test:server     Tests  317 passed (317)
+$ npm run test:client     Tests  179 passed (179)
+$ npm run test:e2e        32 passed
+```
+
+Turned to Pass: UNIT-04, API-26 … API-30, UI-10 … UI-13, UI-25; the `/api/staff` half of API-14. A migration reorders `TicketStatus` into workflow order so `sort=status` is a plain `ORDER BY`; the seed gains the 24 tickets of specification.md §7.
+
+#### Issue #40 — IT Staff ticket operations (2026-09-25)
+
+```
+$ npm run test:server     Tests  573 passed (573)
+$ npm run test:client     Tests  203 passed (203)
+$ npm run test:e2e        37 passed
+```
+
+Turned to Pass: UNIT-02, UNIT-03, API-08, API-16, API-31 … API-39, UI-14 … UI-18, E2E-05. The seed gains the Public Comments and Internal Notes of §7, keyed on deterministic ids so it stays idempotent.
+
+#### Issue #41 — Administrator user management (2026-09-26)
+
+```
+$ npm run test:server     Tests  654 passed (654)
+$ npm run test:client     Tests  225 passed (225)
+$ npm run test:e2e        43 passed
+```
+
+Turned to Pass: API-14 (complete), API-15, API-40 … API-48, UI-21 … UI-24, E2E-06.
+
+#### Issue #42 — E2E, visual inspection, release (2026-09-26)
+
+Turned to Pass: E2E-04 (IT Staff half added), E2E-07. The new `visual.spec.ts` found three defects on its first run, all fixed here: horizontal overflow on the queue at 820 px and on the open mobile header sheet, and the Cancelled badge at 4.39:1 contrast. Building the direct-API evidence found a fourth: a malformed JSON body answered with Express's HTML page, stack trace included — now a JSON `400` with a test. A fifth came from a flaky-looking E2E failure: typing into the queue search just after "Clear filters" could be wiped by the delayed URL update; fixed, with a component test.
+
+### Final run
+
+On a database reset with `prisma migrate reset` and re-seeded, all three suites from the repository root. The complete, verbatim output of each is in [`test-runs/`](test-runs/) (`server.txt`, `client.txt`, `e2e.txt`); each file's second line names the branch and commit it ran against.
+
+```
+$ npm run test:server
+ Test Files  16 passed (16)
+      Tests  656 passed (656)
+
+$ npm --prefix client run test -- --reporter=verbose
+ Test Files  12 passed (12)
+      Tests  231 passed (231)
+
+$ npx playwright test
+  83 passed
+
+970 tests, 970 passing, 0 failed, 0 skipped.
+```
+
+Recorded on `feature/42-e2e-release` — `lab3-staging` plus this issue's changes. After the release pull request merges, the same command sequence (`node docs/lab-03/scripts/capture-test-runs.mjs`) is re-run on `main` and the logs replaced, so the evidence names the release commit.
 
 ---
 

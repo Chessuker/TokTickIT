@@ -219,3 +219,19 @@ describe('ChangePassword — voluntary mode', () => {
     expect(screen.getByLabelText(/^new password/i)).toHaveValue('Stronger1!')
   })
 })
+
+describe('ChangePassword — busy state (V-09)', () => {
+  it('shows Saving… and disables Continue while the request is in flight', async () => {
+    let release: (value: unknown) => void = () => undefined
+    vi.mocked(fetch).mockReturnValue(new Promise((resolve) => (release = resolve)) as never)
+    renderScreen(SARAH)
+
+    const user = await fill({ current: 'Welcome123!', next: 'Changed123!pass', confirm: 'Changed123!pass' })
+    await user.click(screen.getByRole('button', { name: /continue/i }))
+
+    const busy = await screen.findByRole('button', { name: /saving/i })
+    expect(busy).toBeDisabled()
+    release(jsonResponse(200, { ...SARAH, mustChangePassword: false }))
+  })
+})
+

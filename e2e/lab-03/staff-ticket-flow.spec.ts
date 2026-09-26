@@ -210,4 +210,33 @@ test.describe('IT Staff ticket operations (E2E-05)', () => {
     )
     expect(removal.status()).toBe(403)
   })
+
+  test('IT Staff see the requester’s comment and "appears resolved" indicator (E2E-04, AC-14, AC-15)', async ({ page }) => {
+    // --- The requester comments and says it looks fixed --------------------
+    await loginAs(page, REQUESTER_A)
+    const ticket = await createTicket(page, 'E2E requester signal to staff')
+
+    await page.getByLabel('Add public comment').fill('The laptop has been fine since yesterday.')
+    await page.getByRole('button', { name: 'Post Comment' }).click()
+    await expect(page.getByTestId('comment-list')).toContainText('fine since yesterday')
+
+    await page.getByRole('button', { name: /problem appears resolved/i }).click()
+    await page.getByRole('dialog').getByRole('button', { name: /^confirm$/i }).click()
+    await expect(page.getByTestId('requester-resolved')).toBeVisible()
+
+    // --- IT Staff see both, in the queue and in the detail -----------------
+    await switchUser(page, IT_STAFF)
+    await page.goto(`/staff/queue?search=${ticket.ticketNumber}`)
+    const row = page.getByTestId('queue-table').getByRole('row').nth(1)
+    await expect(row).toContainText(ticket.ticketNumber)
+    await expect(row.getByLabel('Requester reports resolved')).toBeVisible()
+    // The status is unchanged: the requester indicated, IT Staff decide (BR-05).
+    await expect(row).toContainText('New')
+
+    await row.getByRole('link', { name: /open ticket/i }).click()
+    await expect(page.getByTestId('ticket-fields')).toBeVisible()
+    await expect(page.getByTestId('requester-resolved')).toContainText('Requester reports resolved')
+    await expect(page.getByTestId('comment-list')).toContainText('The laptop has been fine since yesterday.')
+    await expect(page.getByTestId('comment-list')).toContainText(REQUESTER_A.name)
+  })
 })

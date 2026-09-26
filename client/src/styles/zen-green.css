@@ -344,6 +344,17 @@ body {
     display: inline-flex;
   }
 
+  /* The open menu takes a row of its own under the brand and the toggle;
+     without wrapping it sat beside them and ran off the right edge (V-03). */
+  .zg-header-bar {
+    flex-wrap: wrap;
+  }
+
+  .zg-header-menu {
+    flex-basis: 100%;
+    min-width: 0;
+  }
+
   .zg-header-menu {
     display: none;
     width: 100%;
@@ -675,7 +686,15 @@ body {
  * V-03: the table scrolls inside its own container so a wide row can never
  * push the page body sideways.
  */
+/*
+ * `position: relative` makes the wrapper the containing block for anything
+ * absolutely positioned inside the table — notably the `.visually-hidden`
+ * column labels ("Open", "Actions", "Edit"). Without it those spans are
+ * positioned against the page, escape the wrapper's scroll clipping, and
+ * stretch the document sideways at tablet width (V-03).
+ */
 .zg-table-wrap {
+  position: relative;
   overflow-x: auto;
   background: var(--zg-surface);
   border: 1px solid var(--zg-border);
@@ -1652,10 +1671,13 @@ body {
   color: #9a3412;
 }
 
+/* #4b5563, not the spec's first-draft #6b7280: that one measured 4.39:1 on this
+   fill, under V-07's 4.5:1. The strike-through, not a paler grey, is what
+   says "cancelled". */
 .zg-badge-status-cancelled {
   background: #f3f4f6;
   border-color: #d1d5db;
-  color: #6b7280;
+  color: #4b5563;
   text-decoration: line-through;
 }
 

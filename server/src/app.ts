@@ -1,5 +1,5 @@
 import express from 'express';
-import type { Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { prisma } from './db.js';
@@ -820,3 +820,40 @@ app.post(
     }
   }
 );
+
+// ---------------------------------------------------------------------------
+// The last two handlers: every non-2xx leaves in the error envelope
+// (api-spec.md §1.2, BR-30, AC-34).
+// ---------------------------------------------------------------------------
+
+// An `/api` path nothing above matched — a removed Lab 2 route, a typo, a
+// method the resource does not support. Express's default answer is an HTML
+// page; a client that parses the envelope would choke on it.
+app.use('/api', (_req, res) => {
+  sendError(res, 404, 'NOT_FOUND', 'No such endpoint.');
+});
+
+// Errors thrown outside a route's own try/catch. The one a client can cause is
+// a body that is not valid JSON, which `express.json()` rejects before any
+// route runs; left to Express, that answer is an HTML page carrying the stack
+// trace and the server's file paths. Everything else is a 500 with the generic
+// message and a correlation id, the cause logged server-side only.
+app.use((error: unknown, _req: Request, res: Response, next: NextFunction) => {
+  if (res.headersSent) {
+    next(error);
+    return;
+  }
+
+  const type = (error as { type?: unknown } | null)?.type;
+  if (type === 'entity.parse.failed') {
+    sendError(res, 400, 'VALIDATION_FAILED', 'The request body is not valid JSON.');
+    return;
+  }
+  if (type === 'entity.too.large') {
+    sendError(res, 413, 'VALIDATION_FAILED', 'The request body is too large.');
+    return;
+  }
+
+  sendInternalError(res, 'unhandled', error);
+});
+

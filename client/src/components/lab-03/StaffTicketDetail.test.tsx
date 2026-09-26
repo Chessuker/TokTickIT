@@ -625,3 +625,55 @@ describe('StaffTicketDetail — Administrator (UI-14, BR-17)', () => {
     expect(screen.queryByRole('button', { name: 'Add Internal Note' })).toBeNull()
   })
 })
+
+describe('StaffTicketDetail — busy states (V-09)', () => {
+  function holdWrites(fetchMock: ReturnType<typeof stubApi>) {
+    const real = fetchMock.getMockImplementation()!
+    let release: () => void = () => undefined
+    const gate = new Promise<void>((resolve) => (release = resolve))
+    fetchMock.mockImplementation(async (input, init) => {
+      if (init?.method && init.method !== 'GET') await gate
+      return real(input, init)
+    })
+    return () => release()
+  }
+
+  it('shows Posting… on Post Comment and on Add Internal Note', async () => {
+    const user = userEvent.setup()
+    const fetchMock = renderDetail()
+    await screen.findAllByRole('tab')
+    let release = holdWrites(fetchMock)
+
+    await user.type(screen.getByLabelText('Add public comment'), 'On it.')
+    await user.click(screen.getByRole('button', { name: 'Post Comment' }))
+    expect(await screen.findByRole('button', { name: /posting/i })).toBeDisabled()
+    release()
+    await waitFor(() => expect(screen.getByLabelText('Add public comment')).toHaveValue(''))
+
+    release = holdWrites(fetchMock)
+    await user.click(screen.getByRole('tab', { name: /internal notes/i }))
+    await user.type(await screen.findByLabelText('Add internal note'), 'Checked.')
+    await user.click(screen.getByRole('button', { name: 'Add Internal Note' }))
+    expect(await screen.findByRole('button', { name: /posting/i })).toBeDisabled()
+    release()
+  })
+
+  it('shows Saving… on Confirm and on the control while a change is in flight', async () => {
+    const user = userEvent.setup()
+    const fetchMock = renderDetail({ ticket: { status: 'Open', owner: PRIYA_REF } })
+    await screen.findByTestId('operational-group')
+    const release = holdWrites(fetchMock)
+
+    await user.selectOptions(screen.getByLabelText('Current Status'), 'Resolved')
+    const dialog = await screen.findByRole('dialog')
+    await user.click(within(dialog).getByRole('button', { name: /^confirm$/i }))
+
+    expect(await within(dialog).findByRole('button', { name: /saving/i })).toBeDisabled()
+    // Every operational control is locked while one change is in flight.
+    expect(screen.getByLabelText('Current Status')).toBeDisabled()
+    expect(screen.getByLabelText('IT Priority')).toBeDisabled()
+    release()
+    await waitFor(() => expect(screen.getByLabelText('Current Status')).toHaveValue('Resolved'))
+  })
+})
+

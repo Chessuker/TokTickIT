@@ -6,7 +6,7 @@ Repository: <https://github.com/Chessuker/TokTickIT> · Sprint 3 branch flow: `f
 
 ## Submission map
 
-The lab sheet asks for one PDF with the headings **Answer Part 1** through **Answer Part 9** in that exact order. Each row names the file to render under that heading (the `answer-part*.md` files are written in Issue 7).
+The lab sheet asks for one PDF with the headings **Answer Part 1** through **Answer Part 9** in that exact order. Each row names the file rendered under that heading; `build-submission-pdf.mjs` assembles them into `CPE334-Lab3-67070501024-Thawat.pdf`.
 
 | Part | Points | Heading content | File |
 | --- | --- | --- | --- |
@@ -35,3 +35,23 @@ The lab sheet asks for one PDF with the headings **Answer Part 1** through **Ans
 | [ai-use.md](ai-use.md) | LLM, key prompts, reflection |
 
 Screenshots for Parts 5–9 live under `artifacts/lab-03/screenshots/{authentication,staff-queue,staff-ticket-detail,user-management}/`.
+
+---
+
+## Regenerating the evidence
+
+Everything in the answer pages is produced by a script, so it can be rebuilt from any commit — in particular on `main` after the release. From the repository root, with Docker up:
+
+```bash
+npm run prisma:migrate && npm run prisma:seed
+node docs/lab-03/scripts/capture-evidence.mjs            # Parts 5–8 demonstration screenshots
+npm run prisma:seed
+CAPTURE=1 npx playwright test e2e/lab-03/visual.spec.ts   # R-01 … R-22 responsive matrix (E2E-07)
+npm run prisma:seed
+node docs/lab-03/scripts/capture-api-authorization.mjs   # Part 7 direct-API transcript
+node docs/lab-03/scripts/capture-test-runs.mjs           # all three suites → test-runs/*.txt + images
+node docs/lab-03/build-submission-pdf.mjs                # the submission PDF
+```
+
+The seed runs between steps because the capture scripts change ticket and account state; the seed restores every seeded row (E2E-02 also changes Sarah's password). `capture-test-runs.mjs` accepts `--only=server|client|e2e` and `--render-only`.
+

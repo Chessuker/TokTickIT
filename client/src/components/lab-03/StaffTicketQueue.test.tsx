@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom'
 import StaffTicketQueue from './StaffTicketQueue'
 import { AuthStub, ADMIN, PRIYA } from '../../test/auth'
 import type { SessionUser } from '../../context/auth'
@@ -480,3 +480,51 @@ describe('StaffTicketQueue — mobile (UI-13, AC-33)', () => {
     expect(within(first).getByLabelText('Requester reports resolved')).toBeInTheDocument()
   })
 })
+
+describe('StaffTicketQueue — search box and history (UI-11)', () => {
+  function BackButton() {
+    const navigate = useNavigate()
+    return (
+      <button type="button" onClick={() => navigate(-1)}>
+        Browser back
+      </button>
+    )
+  }
+
+  it('follows Back to an earlier search, and keeps what is typed after Clear filters', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal('fetch', stubApi(TICKETS))
+
+    render(
+      <MemoryRouter initialEntries={['/staff/queue?search=printer', '/staff/queue?search=vpn']} initialIndex={1}>
+        <AuthStub user={PRIYA}>
+          <Routes>
+            <Route
+              path="/staff/queue"
+              element={
+                <>
+                  <BackButton />
+                  <StaffTicketQueue />
+                </>
+              }
+            />
+          </Routes>
+        </AuthStub>
+      </MemoryRouter>,
+    )
+
+    const search = screen.getByLabelText('Search')
+    expect(search).toHaveValue('vpn')
+
+    // A change from outside the screen is reflected in the box.
+    await user.click(screen.getByRole('button', { name: 'Browser back' }))
+    await waitFor(() => expect(search).toHaveValue('printer'))
+
+    // The screen's own write is not echoed back over new typing.
+    await user.click(screen.getByRole('button', { name: /clear filters/i }))
+    await user.type(search, 'battery')
+    await new Promise((resolve) => setTimeout(resolve, 400))
+    expect(search).toHaveValue('battery')
+  })
+})
+

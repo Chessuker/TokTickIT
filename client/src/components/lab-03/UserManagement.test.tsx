@@ -574,3 +574,52 @@ describe('UserManagement — initial password and access (UI-24, AC-28, AC-30)',
     expect(screen.queryByRole('button', { name: 'Create User' })).toBeNull()
   })
 })
+
+describe('UserManagement — busy states (V-09)', () => {
+  /** Holds every write open until the test releases it, so the busy label can be seen. */
+  function holdWrites(fetchMock: ReturnType<typeof stubApi>) {
+    const real = fetchMock.getMockImplementation()!
+    let release: () => void = () => undefined
+    const gate = new Promise<void>((resolve) => (release = resolve))
+    fetchMock.mockImplementation(async (input, init) => {
+      if (init?.method && init.method !== 'GET') await gate
+      return real(input, init)
+    })
+    return () => release()
+  }
+
+  it('shows Saving… on Save User while the create request is in flight', async () => {
+    const user = userEvent.setup()
+    const fetchMock = renderUsers()
+    await screen.findByTestId('user-table')
+    const release = holdWrites(fetchMock)
+
+    await user.click(screen.getByRole('button', { name: 'Create User' }))
+    const panel = screen.getByTestId('user-panel')
+    await user.type(within(panel).getByLabelText(/full name/i), 'Busy Person')
+    await user.type(within(panel).getByLabelText(/email address/i), 'busy.person@kmutt.ac.th')
+    await user.type(within(panel).getByLabelText(/^initial password/i), 'Welcome123!')
+    await user.click(within(panel).getByRole('button', { name: 'Save User' }))
+
+    expect(await within(panel).findByRole('button', { name: /saving/i })).toBeDisabled()
+    release()
+    await waitFor(() => expect(screen.queryByTestId('user-panel')).toBeNull())
+  })
+
+  it('shows Setting… on Set Initial Password while the request is in flight', async () => {
+    const user = userEvent.setup()
+    const fetchMock = renderUsers()
+    await screen.findByTestId('user-table')
+    const release = holdWrites(fetchMock)
+
+    await user.click(screen.getByRole('button', { name: 'Edit Jennifer Anderson' }))
+    const panel = screen.getByTestId('user-panel')
+    await user.type(within(panel).getByLabelText(/^new initial password/i), 'Reset123!pass')
+    await user.click(within(panel).getByRole('button', { name: 'Set Initial Password' }))
+
+    expect(await within(panel).findByRole('button', { name: /setting/i })).toBeDisabled()
+    release()
+    expect(await within(panel).findByRole('status')).toHaveTextContent(/must change it at next login/i)
+  })
+})
+

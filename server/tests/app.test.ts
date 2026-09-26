@@ -60,6 +60,30 @@ describe('Express API Endpoints', () => {
     expect(res.status).toBe(404);
   });
 
+  // BR-30, AC-34: every non-2xx is the JSON envelope — never Express's HTML page.
+  it('answers an unknown /api route with a JSON 404 envelope', async () => {
+    const res = await request(app).patch('/api/tickets/some-id/status').send({ status: 'Resolved' });
+
+    expect(res.status).toBe(404);
+    expect(res.headers['content-type']).toMatch(/application\/json/);
+    expect(res.body).toEqual({ error: { code: 'NOT_FOUND', message: 'No such endpoint.' } });
+  });
+
+  it('answers a malformed JSON body with a 400 envelope and no stack trace or file path', async () => {
+    const res = await request(app)
+      .post('/api/auth/login')
+      .set('Content-Type', 'application/json')
+      .send('{bad json');
+
+    expect(res.status).toBe(400);
+    expect(res.headers['content-type']).toMatch(/application\/json/);
+    expect(res.body).toEqual({
+      error: { code: 'VALIDATION_FAILED', message: 'The request body is not valid JSON.' }
+    });
+    const raw = JSON.stringify(res.body);
+    expect(raw).not.toMatch(/SyntaxError|node_modules|at JSON\.parse|[A-Z]:\\/);
+  });
+
   it('GET /api/categories returns active categories ordered by name under a data key', async () => {
     const res = await request(app).get('/api/categories').set('Cookie', cookieHeader());
     expect(res.status).toBe(200);

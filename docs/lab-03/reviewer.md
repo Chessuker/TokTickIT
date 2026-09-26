@@ -30,14 +30,14 @@ One row per pull request. Base branch is `lab3-staging` for feature PRs and `mai
 
 | # | Issue | PR | Branch | Base | Reviewed By | Merged | Outcome |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | #36 Sprint 3 engineering contract | | `feature/36-lab3-spec-docs` | `lab3-staging` | | | |
-| 2 | #37 Authentication foundation | | `feature/37-auth-foundation` | `lab3-staging` | | | |
-| 3 | #38 Requester regression, comments, resolution | | `feature/38-requester-comments` | `lab3-staging` | | | |
-| 4 | #39 IT Staff Ticket Queue | | `feature/39-staff-queue` | `lab3-staging` | | | |
-| 5 | #40 IT Staff Ticket operations | | `feature/40-staff-ticket-ops` | `lab3-staging` | | | |
-| 6 | #41 Administrator user management | | `feature/41-admin-users` | `lab3-staging` | | | |
-| 7 | #42 E2E, visual inspection, release | | `feature/42-e2e-release` | `lab3-staging` | | | |
-| 8 | Release Lab 3 | | `lab3-staging` | `main` | | | |
+| 1 | #36 Sprint 3 engineering contract | [#43](https://github.com/Chessuker/TokTickIT/pull/43) | `feature/36-lab3-spec-docs` | `lab3-staging` | _reviewer_ | 2026-09-18 (`4ad5d2e`) | |
+| 2 | #37 Authentication foundation | [#44](https://github.com/Chessuker/TokTickIT/pull/44) | `feature/37-auth-foundation` | `lab3-staging` | _reviewer_ | 2026-09-19 (`05f2133`) | |
+| 3 | #38 Requester regression, comments, resolution | [#45](https://github.com/Chessuker/TokTickIT/pull/45) | `feature/38-requester-comments` | `lab3-staging` | _reviewer_ | 2026-09-19 (`42e7ccf`) | |
+| 4 | #39 IT Staff Ticket Queue | [#46](https://github.com/Chessuker/TokTickIT/pull/46) | `feature/39-staff-queue` | `lab3-staging` | _reviewer_ | 2026-09-22 (`acd96bd`) | |
+| 5 | #40 IT Staff Ticket operations | [#47](https://github.com/Chessuker/TokTickIT/pull/47) | `feature/40-staff-ticket-ops` | `lab3-staging` | _reviewer_ | 2026-09-25 (`f835755`) | |
+| 6 | #41 Administrator user management | [#48](https://github.com/Chessuker/TokTickIT/pull/48) | `feature/41-admin-users` | `lab3-staging` | _reviewer_ | 2026-09-26 (`91e5178`) | |
+| 7 | #42 E2E, visual inspection, release | _PR link_ | `feature/42-e2e-release` | `lab3-staging` | _reviewer_ | | |
+| 8 | Release Lab 3 | _PR link_ | `lab3-staging` | `main` | _reviewer_ | | |
 
 ---
 
