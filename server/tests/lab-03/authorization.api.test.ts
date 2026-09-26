@@ -50,7 +50,9 @@ const PROTECTED_ROUTES: { method: 'get' | 'post' | 'patch'; path: string }[] = [
   { method: 'get', path: `/api/staff/tickets/${TICKET_ID}` },
   { method: 'post', path: `/api/staff/tickets/${TICKET_ID}/claim` },
   { method: 'patch', path: `/api/staff/tickets/${TICKET_ID}/status` },
-  { method: 'get', path: `/api/staff/tickets/${TICKET_ID}/internal-notes` }
+  { method: 'get', path: `/api/staff/tickets/${TICKET_ID}/internal-notes` },
+  { method: 'get', path: '/api/admin/users' },
+  { method: 'post', path: '/api/admin/users' }
 ];
 
 /** Staff-only route families a Requester is refused on before any lookup (API-14). */
@@ -64,6 +66,15 @@ const STAFF_ROUTES: { method: 'get' | 'post' | 'patch'; path: string }[] = [
   { method: 'patch', path: `/api/staff/tickets/${TICKET_ID}/status` },
   { method: 'get', path: `/api/staff/tickets/${TICKET_ID}/internal-notes` },
   { method: 'post', path: `/api/staff/tickets/${TICKET_ID}/internal-notes` }
+];
+
+/** Administrator-only routes; IT Staff and Requesters are both refused (API-14, API-15). */
+const ADMIN_ROUTES: { method: 'get' | 'post' | 'patch'; path: string }[] = [
+  { method: 'get', path: '/api/admin/users' },
+  { method: 'post', path: '/api/admin/users' },
+  { method: 'get', path: `/api/admin/users/${OTHER_REQUESTER_ID}` },
+  { method: 'patch', path: `/api/admin/users/${OTHER_REQUESTER_ID}` },
+  { method: 'post', path: `/api/admin/users/${OTHER_REQUESTER_ID}/initial-password` }
 ];
 
 function ticketRow(requesterId: string) {
@@ -135,6 +146,28 @@ describe('Requester on staff routes (API-14, AC-04, AC-12)', () => {
     });
     expect(prisma.ticket.findMany).not.toHaveBeenCalled();
     expect(prisma.ticket.count).not.toHaveBeenCalled();
+  });
+});
+
+describe('Admin routes are Administrator-only (API-14, API-15, AC-12, AC-30)', () => {
+  it.each(ADMIN_ROUTES)('a Requester is refused $method $path', async ({ method, path }) => {
+    mockSessionFor(vi.mocked(prisma.session.findUnique), JENNIFER);
+
+    const res = await request(app)[method](path).set('Cookie', cookieHeader()).send({});
+
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('FORBIDDEN');
+    expect(prisma.user.findMany).not.toHaveBeenCalled();
+  });
+
+  it.each(ADMIN_ROUTES)('IT Staff are refused $method $path', async ({ method, path }) => {
+    mockSessionFor(vi.mocked(prisma.session.findUnique), PRIYA);
+
+    const res = await request(app)[method](path).set('Cookie', cookieHeader()).send({});
+
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('FORBIDDEN');
+    expect(prisma.user.findMany).not.toHaveBeenCalled();
   });
 });
 

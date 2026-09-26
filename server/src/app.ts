@@ -8,6 +8,7 @@ import { validateCreateTicketInput } from './ticketValidation.js';
 import { getSessionUser, requireAuth, requireRole } from './auth.js';
 import { authRouter } from './authRoutes.js';
 import { staffRouter } from './staffRoutes.js';
+import { adminRouter } from './adminRoutes.js';
 import { parseTicketListQuery, toOrderBy } from './ticketListQuery.js';
 import { sendError, sendInternalError, sendValidationFailed } from './httpErrors.js';
 import {
@@ -44,9 +45,14 @@ app.use(express.json());
 // Authentication (api-spec.md §3.1 – §3.4).
 app.use('/api/auth', authRouter);
 
-// IT Staff queue and assignees (api-spec.md §3.9, §3.11). Role-gated inside
-// the router, so every `/api/staff/*` path refuses a Requester before lookup.
+// IT Staff queue, ticket detail and operations (api-spec.md §3.9 – §3.17).
+// Role-gated inside the router, so every `/api/staff/*` path refuses a
+// Requester before lookup.
 app.use('/api/staff', staffRouter);
+
+// Administrator user management (api-spec.md §3.18 – §3.22). Same shape:
+// anything but an Administrator is refused before a user is loaded (AC-30).
+app.use('/api/admin', adminRouter);
 
 // Health check endpoint
 app.get('/api/health', async (_req, res) => {

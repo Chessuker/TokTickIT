@@ -55,8 +55,8 @@ The three example rows from the handout (API-01, API-08, E2E-02) keep their ids.
 | API-11 | API | AC-09, BR-08, BR-11 | Change password: wrong current, weak new, same as current, mismatch | `400` with the correct `fields` key for each | `server/tests/lab-03/auth.api.test.ts` | Pass |
 | API-12 | API | AC-10, BR-11 | Change password: valid | `200`, `mustChangePassword: false`, same cookie still valid, other sessions deleted | `server/tests/lab-03/auth.api.test.ts` | Pass |
 | API-13 | API | AC-12, BR-30 | Unauthenticated call to every protected route | `401 UNAUTHORIZED`, empty of data | `server/tests/lab-03/authorization.api.test.ts` | Pass |
-| API-14 | API | AC-12 | Requester calls each `/api/staff/*` and `/api/admin/*` route | `403 FORBIDDEN` | `server/tests/lab-03/authorization.api.test.ts` | Partial (every `/api/staff/*` route; `/api/admin/*` with #41) |
-| API-15 | API | AC-12 | IT Staff calls each `/api/admin/*` route | `403 FORBIDDEN` | `server/tests/lab-03/authorization.api.test.ts` | Planned |
+| API-14 | API | AC-12 | Requester calls each `/api/staff/*` and `/api/admin/*` route | `403 FORBIDDEN` | `server/tests/lab-03/authorization.api.test.ts` | Pass |
+| API-15 | API | AC-12 | IT Staff calls each `/api/admin/*` route | `403 FORBIDDEN` | `server/tests/lab-03/authorization.api.test.ts` | Pass |
 | API-16 | API | AC-12, BR-17 | Administrator calls claim / owner / it-priority / status / internal-note create / comment create | `403 FORBIDDEN`; reads of the same ticket `200` | `server/tests/lab-03/authorization.api.test.ts` | Pass |
 | API-17 | API | AC-03, BR-03 | Requester sends `requesterId` of another user in body and query on create/list | Ignored; ticket owned by session user; list scoped to session user | `server/tests/lab-03/authorization.api.test.ts` | Pass |
 | API-18 | API | AC-27, BR-10, BR-27 | Deactivated user's existing session; role-changed user's session | Next request `401` | `server/tests/lab-03/authorization.api.test.ts` | Pass |
@@ -81,15 +81,15 @@ The three example rows from the handout (API-01, API-08, E2E-02) keep their ids.
 | API-37 | API | AC-21 | Status PATCH with unknown value; on Cancelled ticket | `400` / `409` | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Pass |
 | API-38 | API | AC-23, BR-22, BR-23 | Create Internal Note as IT Staff (valid, empty); as Administrator | `201` / `400` / `403` | `server/tests/lab-03/comments-notes.api.test.ts` | Pass |
 | API-39 | API | AC-23, BR-04 | List Internal Notes as IT Staff and Administrator; Requester-facing `GET /api/tickets/:id` | `200` both; ticket detail body contains no note text or count | `server/tests/lab-03/comments-notes.api.test.ts` | Pass |
-| API-40 | API | AC-25 | Users list: default, `search` on name and on email, `role` filter, invalid role | Sorted by name / subset / subset / `400` | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
-| API-41 | API | AC-26, BR-24 | Create user valid | `201`, `mustChangePassword: true`, no hash in body, hash verifies | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
-| API-42 | API | AC-26, BR-12, BR-13, BR-24 | Create user: duplicate email (different case), unknown role, weak initial password, missing name | `409 CONFLICT fields.email` / `400` / `400` / `400` | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
-| API-43 | API | AC-27, BR-25 | PATCH name/email/role/isActive; unknown fields ignored | `200` with changes; `passwordHash`/`department` in body ignored | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
-| API-44 | API | AC-29, BR-25 | Administrator deactivates own account | `409 CONFLICT` | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
-| API-45 | API | AC-29, BR-26 | Deactivate / change role of the last active Administrator; same when a second active Administrator exists | `409` / `409` / `200` | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
-| API-46 | API | AC-28, BR-27 | Set initial password: valid; weak; unknown user | `200` with `mustChangePassword: true` and sessions deleted / `400` / `404` | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
-| API-47 | API | AC-30 | Requester and IT Staff call every admin route | `403` with no user data | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
-| API-48 | API | AC-27, BR-10 | Deactivation and role change delete the target's sessions | `session.deleteMany` called with the user id | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
+| API-40 | API | AC-25 | Users list: default, `search` on name and on email, `role` filter, invalid role | Sorted by name / subset / subset / `400` | `server/tests/lab-03/users-admin.api.test.ts` | Pass |
+| API-41 | API | AC-26, BR-24 | Create user valid | `201`, `mustChangePassword: true`, no hash in body, hash verifies | `server/tests/lab-03/users-admin.api.test.ts` | Pass |
+| API-42 | API | AC-26, BR-12, BR-13, BR-24 | Create user: duplicate email (different case), unknown role, weak initial password, missing name | `409 CONFLICT fields.email` / `400` / `400` / `400` | `server/tests/lab-03/users-admin.api.test.ts` | Pass |
+| API-43 | API | AC-27, BR-25 | PATCH name/email/role/isActive; unknown fields ignored | `200` with changes; `passwordHash`/`department` in body ignored | `server/tests/lab-03/users-admin.api.test.ts` | Pass |
+| API-44 | API | AC-29, BR-25 | Administrator deactivates own account | `409 CONFLICT` | `server/tests/lab-03/users-admin.api.test.ts` | Pass |
+| API-45 | API | AC-29, BR-26 | Deactivate / change role of the last active Administrator; same when a second active Administrator exists | `409` / `409` / `200` | `server/tests/lab-03/users-admin.api.test.ts` | Pass |
+| API-46 | API | AC-28, BR-27 | Set initial password: valid; weak; unknown user | `200` with `mustChangePassword: true` and sessions deleted / `400` / `404` | `server/tests/lab-03/users-admin.api.test.ts` | Pass |
+| API-47 | API | AC-30 | Requester and IT Staff call every admin route | `403` with no user data | `server/tests/lab-03/users-admin.api.test.ts` | Pass |
+| API-48 | API | AC-27, BR-10 | Deactivation and role change delete the target's sessions | `session.deleteMany` called with the user id | `server/tests/lab-03/users-admin.api.test.ts` | Pass |
 
 ### UI component
 
@@ -115,10 +115,10 @@ The three example rows from the handout (API-01, API-08, E2E-02) keep their ids.
 | UI-18 | UI | AC-23, BR-04 | Internal Notes tab: amber styling, composer for IT Staff, read-only for Administrator; Public Comments composer | Visually distinct classes; composers per role | `client/src/components/lab-03/StaffTicketDetail.test.tsx` | Pass |
 | UI-19 | UI | AC-14, AC-15 | Requester detail: comments list and composer validation; "Problem appears resolved" button, confirm, indicator; no staff controls | As stated | `client/src/components/TicketDetail.test.tsx` (updated), `client/src/components/lab-03/CommentsPanel.test.tsx` | Pass |
 | UI-20 | UI | AC-13 | Lab 2 component suites with `AuthProvider` instead of `RequesterProvider`; no `X-Requester-Id` in any request | All Lab 2 assertions pass | `client/src/components/{CreateTicketForm,MyTickets,TicketDetail}.test.tsx` (updated) | Pass |
-| UI-21 | UI | AC-25 | Users list: columns, badges, "(you)", search and role filter query, no-results | As stated | `client/src/components/lab-03/UserManagement.test.tsx` | Planned |
-| UI-22 | UI | AC-26 | Create panel: required fields, rules panel, `409` shown under Email, success adds row | As stated | `client/src/components/lab-03/UserManagement.test.tsx` | Planned |
-| UI-23 | UI | AC-27, AC-29 | Edit panel: fields prefilled, deactivate confirm, self toggle disabled with hint, last-admin toggle/role disabled, inline `409` | As stated | `client/src/components/lab-03/UserManagement.test.tsx` | Planned |
-| UI-24 | UI | AC-28, AC-30 | Set initial password success callout; non-Administrator sees Forbidden | As stated | `client/src/components/lab-03/UserManagement.test.tsx` | Planned |
+| UI-21 | UI | AC-25 | Users list: columns, badges, "(you)", search and role filter query, no-results | As stated | `client/src/components/lab-03/UserManagement.test.tsx` | Pass |
+| UI-22 | UI | AC-26 | Create panel: required fields, rules panel, `409` shown under Email, success adds row | As stated | `client/src/components/lab-03/UserManagement.test.tsx` | Pass |
+| UI-23 | UI | AC-27, AC-29 | Edit panel: fields prefilled, deactivate confirm, self toggle disabled with hint, last-admin toggle/role disabled, inline `409` | As stated | `client/src/components/lab-03/UserManagement.test.tsx` | Pass |
+| UI-24 | UI | AC-28, AC-30 | Set initial password success callout; non-Administrator sees Forbidden | As stated | `client/src/components/lab-03/UserManagement.test.tsx` | Pass |
 | UI-25 | UI | V-13 | Shared `Badges.tsx` renders every status/priority/role/active value with its class and written label | Snapshot of classes and text | `client/src/components/lab-03/Badges.test.tsx` | Pass |
 
 ### Migration / regression
@@ -137,7 +137,7 @@ The three example rows from the handout (API-01, API-08, E2E-02) keep their ids.
 | E2E-03 | E2E | AC-11, AC-12 | Role navigation and forbidden pages: Requester → `/staff/queue`, `/admin/users`; IT Staff → `/admin/users`; direct `fetch` from the page to `/api/staff/tickets` as Requester | Forbidden state; `403` | `e2e/lab-03/authentication.spec.ts` | Pass |
 | E2E-04 | E2E | AC-13, AC-14, AC-15 | Requester regression: create ticket with attachment → My Tickets → detail → download → post comment → "Problem appears resolved" | Lab 2 flow intact; comment and indicator visible | `e2e/*.spec.ts` (updated helpers) + `e2e/lab-03/requester-comments.spec.ts` (Requester half: Pass) + `e2e/lab-03/staff-ticket-flow.spec.ts` (staff sees comment and indicator) | Partial |
 | E2E-05 | E2E | AC-16 … AC-23 | IT Staff: queue search/filter/sort/paginate → open → claim → set IT priority → In Progress → post comment → add Internal Note → Resolved (confirm) → Closed; then log in as the Requester and verify comment visible, note absent, statuses shown | As stated | `e2e/lab-03/staff-ticket-flow.spec.ts` | Pass |
-| E2E-06 | E2E | AC-25 … AC-30 | Administrator: search, filter, create user (IT Staff) → log out → log in as new user → forced change → log back in as admin → edit role → self-deactivate blocked → set initial password → new user forced to change again | As stated | `e2e/lab-03/user-administration.spec.ts` | Planned |
+| E2E-06 | E2E | AC-25 … AC-30 | Administrator: search, filter, create user (IT Staff) → log out → log in as new user → forced change → log back in as admin → edit role → self-deactivate blocked → set initial password → new user forced to change again | As stated | `e2e/lab-03/user-administration.spec.ts` | Pass |
 | E2E-07 | E2E | AC-33, AC-34 | Screenshot capture at 1280 / 820 / 375 for Login, Change Password, Queue, Staff Detail, Users; `scrollWidth` check; backend stopped for one failure capture | Files in `artifacts/lab-03/screenshots/*`; no overflow | `e2e/lab-03/visual.spec.ts` | Planned |
 
 ---
