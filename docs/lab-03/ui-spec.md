@@ -22,7 +22,7 @@ All Lab 2 rules apply (labels above inputs, asterisk on required, errors under t
 
 | Badge | Class | Values | Style |
 | --- | --- | --- | --- |
-| Status | `.zg-badge-status-{new,open,in-progress,waiting,resolved,closed,reopened,cancelled}` | the eight `TicketStatus` values, shown as "New", "Open", "In Progress", "Waiting for Requester", "Resolved", "Closed", "Reopened", "Cancelled" | New: pale fill / primary border (Lab 2). Open: `#EFF6FF` / `#93C5FD` / `#1E40AF`. In Progress: `--zg-warning-bg` / `--zg-warning` / `#92400E`. Waiting for Requester: `#F5F3FF` / `#C4B5FD` / `#5B21B6`. Resolved: `--zg-pale` / `--zg-secondary` / `#14532D`. Closed: `#F3F4F6` / `#9CA3AF` / `#374151`. Reopened: `#FFF7ED` / `#FDBA74` / `#9A3412`. Cancelled: `#F3F4F6` / `#D1D5DB` / `#6B7280` with strike-through label |
+| Status | `.zg-badge-status-{new,open,in-progress,waiting,resolved,closed,reopened,cancelled}` | the eight `TicketStatus` values, shown as "New", "Open", "In Progress", "Waiting for Requester", "Resolved", "Closed", "Reopened", "Cancelled" | New: pale fill / primary border (Lab 2). Open: `#EFF6FF` / `#93C5FD` / `#1E40AF`. In Progress: `--zg-warning-bg` / `--zg-warning` / `#92400E`. Waiting for Requester: `#F5F3FF` / `#C4B5FD` / `#5B21B6`. Resolved: `--zg-pale` / `--zg-secondary` / `#14532D`. Closed: `#F3F4F6` / `#9CA3AF` / `#374151`. Reopened: `#FFF7ED` / `#FDBA74` / `#9A3412`. Cancelled: `#F3F4F6` / `#D1D5DB` / `#4B5563` with strike-through label (text darkened from the first draft's `#6B7280`, which measured 4.39:1 — under V-07) |
 | Requested Priority | `.zg-badge-priority-{low,medium,high}` | Low / Medium / High | Unchanged from Lab 2 |
 | IT Priority | `.zg-badge-it-priority-{low,medium,high}` | Low / Medium / High | Same fills as Requested Priority, plus a leading "IT" prefix in the label ("IT High") so the two columns are never confused when they differ |
 | Role | `.zg-badge-role-{requester,it-staff,administrator}` | Requester / IT Staff / Administrator | Requester: `#F3F4F6` / `#9CA3AF` / `#374151`. IT Staff: `#EFF6FF` / `#93C5FD` / `#1E40AF`. Administrator: `--zg-pale` / `--zg-primary` / `#14532D` |
@@ -197,21 +197,21 @@ Lab 3 additions:
 
 ## 5. Visual Inspection Checklist
 
-To be checked at 1280 px, 820 px and 375 px against the running stack once Issues 2–6 are merged; evidence recorded in [tests.md](tests.md) §4 and `artifacts/lab-03/screenshots/`.
+Checked on 2026-09-26 against the running stack on a freshly reset and seeded database, at 1280 px, 820 px and 375 px. Every row names the evidence behind its ticks: an automated check in `e2e/lab-03/visual.spec.ts` (E2E-07) or a component test where one exists, otherwise the screenshots under `artifacts/lab-03/screenshots/` listed in [tests.md](tests.md) §4.
 
 | # | Item | Desktop | Tablet | Mobile | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| V-01 | Font family, sizes and weights match the theme on all new screens | ☐ | ☐ | ☐ | |
-| V-02 | Consistent card/table padding; new screens reuse `.zg-card` / `.zg-table` | ☐ | ☐ | ☐ | |
-| V-03 | No horizontal page overflow (`body.scrollWidth === innerWidth`) | ☐ | ☐ | ☐ | |
-| V-04 | No clipped or truncated badges, buttons, or the nine queue columns | ☐ | ☐ | ☐ | |
-| V-05 | Focus ring visible on every interactive element, including tabs and the profile menu | ☐ | ☐ | ☐ | |
-| V-06 | Every input has an accessible label; password toggles have `aria-pressed` | ☐ | ☐ | ☐ | |
-| V-07 | Contrast ≥ 4.5:1 for all new badge colours and the amber Internal Note panel | ☐ | ☐ | ☐ | |
-| V-08 | Validation messages sit under the correct field on Login, Change Password, Create/Edit User, comment and note composers | ☐ | ☐ | ☐ | |
-| V-09 | Busy state visible on Sign In, Continue, Post Comment, Add Internal Note, Save User, Set Initial Password, Confirm | ☐ | ☐ | ☐ | |
-| V-10 | Role navigation: only the current role's links and destinations are rendered | ☐ | ☐ | ☐ | |
-| V-11 | Editable vs read-only styling is unambiguous on the staff detail (three selects vs the rest) | ☐ | ☐ | ☐ | |
-| V-12 | Public Comments and Internal Notes are visibly distinct (heading, colour, composer) | ☐ | ☐ | ☐ | |
-| V-13 | Status, Requested Priority, IT Priority and Role badges are consistent across queue, detail, My Tickets and Users | ☐ | ☐ | ☐ | |
-| V-14 | No overlap between the sticky header, profile menu, modal sheets and page content | ☐ | ☐ | ☐ | |
+| V-01 | Font family, sizes and weights match the theme on all new screens | ☑ | ☑ | ☑ | One stylesheet (`zen-green.css`) for every screen; R-01 … R-20 screenshots |
+| V-02 | Consistent card/table padding; new screens reuse `.zg-card` / `.zg-table` | ☑ | ☑ | ☑ | Queue, staff detail and Users all use `.zg-card` / `.zg-table-wrap` / `.zg-table`; R-08, R-12, R-17 |
+| V-03 | No horizontal page overflow (`scrollWidth === innerWidth`) | ☑ | ☑ | ☑ | Asserted on every screen at all three widths by `visual.spec.ts`. **Found and fixed in this pass:** the queue at 820 px scrolled to 1009 px (a visually-hidden column label escaping the table wrapper) and the open mobile header sheet to 466 px (non-wrapping header row) |
+| V-04 | No clipped or truncated badges, buttons, or the nine queue columns | ☑ | ☑ | ☑ | R-08 (all ten columns inside 1066 px), R-09 (table scrolls inside its wrapper, not the page), R-10 (cards) |
+| V-05 | Focus ring visible on every interactive element, including tabs and the profile menu | ☑ | ☑ | ☑ | `visual.spec.ts` walks the first 25 tab stops on Login, Queue, staff detail and Users and asserts an outline or focus shadow on each; the tabs and profile button use `--zg-secondary` rings |
+| V-06 | Every input has an accessible label; password toggles have `aria-pressed` | ☑ | ☑ | ☑ | `visual.spec.ts` checks every `input`/`select`/`textarea` for a label and every password toggle for `aria-pressed` on the same four screens (Users with the create panel open) |
+| V-07 | Contrast ≥ 4.5:1 for all new badge colours and the amber Internal Note panel | ☑ | ☑ | ☑ | `visual.spec.ts` computes WCAG contrast for every badge on the queue (all eight statuses), staff detail, Internal Notes tab and Users. **Found and fixed:** Cancelled measured 4.39:1; its text is now `#4B5563` (§2) |
+| V-08 | Validation messages sit under the correct field on Login, Change Password, Create/Edit User, comment and note composers | ☑ | ☑ | ☑ | `p5-05-forced-change-validation`, `p8-04-invalid-input`, `users-conflict` (R-20), `p7-08-note-validation`; UI-03, UI-06, UI-19, UI-22 |
+| V-09 | Busy state visible on Sign In, Continue, Post Comment, Add Internal Note, Save User, Set Initial Password, Confirm | ☑ | ☑ | ☑ | Each button has a component test that holds the request open and asserts the busy label and disabled state (Login, ChangePassword, StaffTicketDetail, UserManagement suites); `p5-03-busy-signing-in` |
+| V-10 | Role navigation: only the current role's links and destinations are rendered | ☑ | ☑ | ☑ | `visual.spec.ts` asserts the exact link list per role (R-06); E2E-03; forbidden states `p7-14`, `p8-13` |
+| V-11 | Editable vs read-only styling is unambiguous on the staff detail (three selects vs the rest) | ☑ | ☑ | ☑ | R-12 … R-14: the three selects sit in their own "Ticket operations" card; the rest is a definition list; `p7-13` shows the Administrator's values-only version |
+| V-12 | Public Comments and Internal Notes are visibly distinct (heading, colour, composer) | ☑ | ☑ | ☑ | R-15 (`notes-vs-comments`); UI-18 asserts the amber classes and that the two composers are never on screen together |
+| V-13 | Status, Requested Priority, IT Priority and Role badges are consistent across queue, detail, My Tickets and Users | ☑ | ☑ | ☑ | One `Badges.tsx` for every screen (UI-25); `requester/my-tickets-*`, R-08, R-12, R-17 |
+| V-14 | No overlap between the sticky header, profile menu, modal sheets and page content | ☑ | ☑ | ☑ | R-06 (profile menu open), R-07 (mobile sheet), R-16 (dialog on mobile), R-18 (Users panel on tablet) |

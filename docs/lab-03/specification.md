@@ -374,27 +374,29 @@ Every AC maps to at least one planned test in [tests.md](tests.md) §3.
 
 ## 10. Definition of Done
 
+Status recorded on 2026-09-26 in Issue #42. A ticked box names its evidence; an unticked one says what completes it.
+
 ### 10.1 Product
 
-- [ ] FR-01 … FR-14 implemented; BR-01 … BR-31 enforced on the server.
-- [ ] AC-01 … AC-34 verified by the tests named in [tests.md](tests.md); every test passes on `main` from the documented commands; none skipped, disabled or commented out.
-- [ ] Authorization matrix and transition matrix implemented exactly as in §5; direct-API evidence captured for each refused row.
-- [ ] Migration applied to a database holding Lab 2 data with counts and ownership verified (AC-31); seed re-run twice with identical row counts (AC-32).
-- [ ] No plaintext password, hash or session token in any response, log or committed file; secrets only in `.env` (git-ignored) with `.env.example` updated.
-- [ ] Development Requester selector, `X-Requester-Id`, `/api/requesters`, `/api/users` and the sessionStorage requester key removed from client, server, tests and E2E helpers.
-- [ ] Every screen in ui-spec.md §3 shows its loading, validation, success, empty/no-results, forbidden, not-found, conflict and safe-failure feedback; V-01 … V-14 checked at the three viewports.
-- [ ] No console errors on the happy path of each role; no unhandled promise rejections in the server log.
-- [ ] `README.md` documents setup, migration, seed, local accounts and test commands for Lab 3.
+- [x] FR-01 … FR-14 implemented; BR-01 … BR-31 enforced on the server. — every FR row in [tests.md](tests.md) §3 traces to passing tests.
+- [ ] AC-01 … AC-34 verified by the tests named in [tests.md](tests.md); every test passes on `main` from the documented commands; none skipped, disabled or commented out. — all 109 test rows Pass on `feature/42-e2e-release` (= `lab3-staging` + #42), none skipped; **ticked once the same run is recorded on `main` after the release PR.**
+- [x] Authorization matrix and transition matrix implemented exactly as in §5; direct-API evidence captured for each refused row. — `ticketWorkflow.test.ts` compares every (from, to) pair with an independent copy of the matrix; `docs/lab-03/test-runs/api-authorization.txt`, 29 checks.
+- [x] Migration applied to a database holding Lab 2 data with counts and ownership verified (AC-31); seed re-run twice with identical row counts (AC-32). — tests.md §5 "Migration and regression evidence"; UNIT-07.
+- [x] No plaintext password, hash or session token in any response, log or committed file; secrets only in `.env` (git-ignored) with `.env.example` updated. — `.env` ignored and untracked; API tests assert no `passwordHash` in responses; seed prints counts only.
+- [x] Development Requester selector, `X-Requester-Id`, `/api/requesters`, `/api/users` and the sessionStorage requester key removed from client, server, tests and E2E helpers. — the only remaining mentions are tests asserting the header is absent; `/api/users` answers 404.
+- [x] Every screen in ui-spec.md §3 shows its loading, validation, success, empty/no-results, forbidden, not-found, conflict and safe-failure feedback; V-01 … V-14 checked at the three viewports. — ui-spec.md §5; `p5-*` … `p8-*` screenshots.
+- [x] No console errors on the happy path of each role; no unhandled promise rejections in the server log. — `visual.spec.ts` "Clean console" asserts it for all three roles; the server log shows no errors across the full E2E run.
+- [x] `README.md` documents setup, migration, seed, local accounts and test commands for Lab 3.
 
 ### 10.2 Course delivery
 
-- [ ] Sprint decomposed into GitHub Issues (see Appendix) tracked on the Kanban; all in Done at submission.
-- [ ] Every Issue delivered through `feature/<issue>-<slug>` → pull request → `lab3-staging`; one release pull request `lab3-staging` → `main`. No direct commits to `main` or `lab3-staging`.
-- [ ] Each pull request peer-reviewed; `reviewer.md` records reviewer identity, PR links, comments given and received, responses and approvals.
-- [ ] The contract (this file, api-spec.md, ui-spec.md, tests.md) merged before the first implementation PR; the merge is screenshotted as evidence for Answer Part 2.
-- [ ] `ai-use.md` names the LLM and lists 6–10 key prompts with a reflection.
-- [ ] Screenshots under `artifacts/lab-03/screenshots/{authentication,staff-queue,staff-ticket-detail,user-management}/` at desktop, tablet and mobile.
-- [ ] One PDF with "Answer Part 1" … "Answer Part 9" in order, built from `docs/lab-03/answer-part*.md`.
+- [ ] Sprint decomposed into GitHub Issues (see Appendix) tracked on the Kanban; all in Done at submission. — Issues #36 … #42 exist; **move #42 to Done after the release and capture the board for Answer Part 1.**
+- [x] Every Issue delivered through `feature/<issue>-<slug>` → pull request → `lab3-staging`; one release pull request `lab3-staging` → `main`. No direct commits to `main` or `lab3-staging`. — `git log --first-parent lab3-staging` shows only PR merges #43 … #48 (the release PR is the last step).
+- [ ] Each pull request peer-reviewed; `reviewer.md` records reviewer identity, PR links, comments given and received, responses and approvals. — PR links and merge commits filled; **reviewer identity and comments to be filled by the student.**
+- [x] The contract (this file, api-spec.md, ui-spec.md, tests.md) merged before the first implementation PR; the merge is screenshotted as evidence for Answer Part 2. — PR #43 merged 2026-09-18 (`4ad5d2e`), before #44 on 2026-09-19.
+- [x] `ai-use.md` names the LLM and lists 6–10 key prompts with a reflection. — 10 prompts.
+- [x] Screenshots under `artifacts/lab-03/screenshots/{authentication,staff-queue,staff-ticket-detail,user-management}/` at desktop, tablet and mobile. — 73 screenshots plus `requester/` and `evidence/`.
+- [x] One PDF with "Answer Part 1" … "Answer Part 9" in order, built from `docs/lab-03/answer-part*.md`. — `node docs/lab-03/build-submission-pdf.mjs`.
 
 ---
 

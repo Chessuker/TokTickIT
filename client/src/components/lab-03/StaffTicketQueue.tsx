@@ -187,8 +187,17 @@ function StaffTicketQueue() {
    * sends the reader back to page 1: staying on page 4 of a narrower result
    * set is how a filter comes to look like it matched nothing.
    */
+  /**
+   * The search this screen last wrote to the URL itself. The URL → input sync
+   * below compares against it, so the screen's own writes never echo back
+   * into the input — only a change from outside (Back, Forward, a shared link)
+   * does.
+   */
+  const ownSearchRef = useRef(params.search)
+
   const update = useCallback(
     (patch: Partial<QueueParams>) => {
+      if (patch.search !== undefined) ownSearchRef.current = patch.search
       // Functional form: two changes in the same tick (a fast double click on
       // two chips) both build on the latest URL rather than on a stale render.
       setSearchParams(
@@ -212,8 +221,13 @@ function StaffTicketQueue() {
     // `update` changes with params; re-arming the timer on that is intended.
   }, [searchInput, params.search, update])
 
-  // Back/forward or "Clear filters" changed the URL under the input: follow it.
+  // Back/forward or a shared link changed the URL under the input: follow it.
+  // The screen's own writes are skipped. Without that, the URL change from
+  // "Clear filters" could land after the user had already typed a new term,
+  // and this sync would wipe what they typed.
   useEffect(() => {
+    if (params.search === ownSearchRef.current) return
+    ownSearchRef.current = params.search
     setSearchInput(params.search)
   }, [params.search])
 
