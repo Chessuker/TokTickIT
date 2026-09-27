@@ -1,36 +1,42 @@
 $ git log --graph --oneline --decorate -n 60
-# feature/42-e2e-release @ 91e5178 + uncommitted changes
+# docs/lab-03-final-evidence @ 34eadf5 + uncommitted docs/artifacts only (code = this commit)
 
-*   91e5178 2026-09-26 Merge pull request #48 from Chessuker/feature/41-admin-users (HEAD -> feature/42-e2e-release, origin/lab3-staging, origin/feature/42-e2e-release, lab3-staging)
+*   34eadf5 2026-09-27 Merge pull request #50 from Chessuker/lab3-staging (HEAD -> docs/lab-03-final-evidence, origin/main, origin/HEAD)
 |\  
-| * 8a29f57 2026-09-25 feat(#41): Administrator user management (origin/feature/41-admin-users, feature/41-admin-users)
-|/  
-*   f835755 2026-09-25 Merge pull request #47 from Chessuker/feature/40-staff-ticket-ops
-|\  
-| * e22d9ae 2026-09-25 feat(#40): IT Staff ticket operations — workflow matrix, staff detail, internal notes (origin/feature/40-staff-ticket-ops, feature/40-staff-ticket-ops)
-|/  
-*   acd96bd 2026-09-22 Merge pull request #46 from Chessuker/feature/39-staff-queue
-|\  
-| * e565ad6 2026-09-19 feat(#39): IT Staff Ticket Queue — staff routes, queue query, seeded tickets, StaffTicketQueue (origin/feature/39-staff-queue, feature/39-staff-queue)
-|/  
-*   42e7ccf 2026-09-19 Merge pull request #45 from Chessuker/feature/38-requester-comments
-|\  
-| * 5af69f1 2026-09-19 docs(#38): requester ticket detail screenshots for the PR (origin/feature/38-requester-comments, feature/38-requester-comments)
-| * cf6a7df 2026-09-19 feat(#38): Public Comments and "Problem appears resolved" on the Requester Ticket Detail
-|/  
-*   05f2133 2026-09-19 Merge pull request #44 from Chessuker/feature/37-auth-foundation
-|\  
-| * 35986d0 2026-09-18 feat(#37): authentication foundation — sessions, roles, login/change-password, migration and seed (origin/feature/37-auth-foundation, feature/37-auth-foundation)
-|/  
-*   4ad5d2e 2026-09-18 Merge pull request #43 from Chessuker/feature/36-lab3-spec-docs
-|\  
+| *   ac1f845 2026-09-26 Merge pull request #49 from Chessuker/feature/42-e2e-release (origin/lab3-staging, lab3-staging)
+| |\  
+| | * 475900e 2026-09-26 feat(#42): E2E-07 visual pass, evidence capture, submission PDF (origin/feature/42-e2e-release, feature/42-e2e-release)
+| |/  
+| *   91e5178 2026-09-26 Merge pull request #48 from Chessuker/feature/41-admin-users
+| |\  
+| | * 8a29f57 2026-09-25 feat(#41): Administrator user management (origin/feature/41-admin-users, feature/41-admin-users)
+| |/  
+| *   f835755 2026-09-25 Merge pull request #47 from Chessuker/feature/40-staff-ticket-ops
+| |\  
+| | * e22d9ae 2026-09-25 feat(#40): IT Staff ticket operations — workflow matrix, staff detail, internal notes (origin/feature/40-staff-ticket-ops, feature/40-staff-ticket-ops)
+| |/  
+| *   acd96bd 2026-09-22 Merge pull request #46 from Chessuker/feature/39-staff-queue
+| |\  
+| | * e565ad6 2026-09-19 feat(#39): IT Staff Ticket Queue — staff routes, queue query, seeded tickets, StaffTicketQueue (origin/feature/39-staff-queue, feature/39-staff-queue)
+| |/  
+| *   42e7ccf 2026-09-19 Merge pull request #45 from Chessuker/feature/38-requester-comments
+| |\  
+| | * 5af69f1 2026-09-19 docs(#38): requester ticket detail screenshots for the PR (origin/feature/38-requester-comments, feature/38-requester-comments)
+| | * cf6a7df 2026-09-19 feat(#38): Public Comments and "Problem appears resolved" on the Requester Ticket Detail
+| |/  
+| *   05f2133 2026-09-19 Merge pull request #44 from Chessuker/feature/37-auth-foundation
+| |\  
+| | * 35986d0 2026-09-18 feat(#37): authentication foundation — sessions, roles, login/change-password, migration and seed (origin/feature/37-auth-foundation, feature/37-auth-foundation)
+| |/  
+| * 4ad5d2e 2026-09-18 Merge pull request #43 from Chessuker/feature/36-lab3-spec-docs
+|/| 
 | * 8921f2d 2026-09-18 chore: move lab-1 screenshots under docs/lab-01, untrack lab sheet and .claude tooling config (origin/feature/36-lab3-spec-docs, feature/36-lab3-spec-docs)
 | * e1f3aa2 2026-09-18 docs(lab-03): address review on #43 — auth matrix, BR-31, BR-07/10/11, AC-31
 | * 8c84d4c 2026-09-18 docs(lab-03): address review on #43 — auth matrix, BR-31, BR-07/10/11, AC-31
 | * 39cabce 2026-09-15 docs(lab-03): fill GitHub Issue numbers #36-#42
 | * 492dd30 2026-09-15 docs(lab-03): Sprint 3 engineering contract
 |/  
-*   ab23c4d 2026-09-05 Merge pull request #35 from Chessuker/docs/lab-02-final-evidence (origin/main, origin/HEAD, main)
+*   ab23c4d 2026-09-05 Merge pull request #35 from Chessuker/docs/lab-02-final-evidence (main)
 |\  
 | * 6a8b879 2026-09-05 docs(lab-02) (origin/docs/lab-02-final-evidence)
 * | d56579a 2026-09-05 Merge pull request #34 from Chessuker/docs/lab-02-final-evidence
@@ -102,9 +108,3 @@ $ git log --graph --oneline --decorate -n 60
 | |\  
 | | * c096b22 2026-08-09 initial feature 4 (origin/feature/4-category-list)
 | |/  
-| *   42c801f 2026-08-08 Merge pull request #10 from Chessuker/feature/3-category-seed
-| |\  
-| | * 2f3daed 2026-08-08 initial feature 3 (origin/feature/3-category-seed)
-| |/  
-| *   a22718b 2026-08-08 Merge pull request #9 from Chessuker/feature/2-health-check
-| |\  

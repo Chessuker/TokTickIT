@@ -16,8 +16,8 @@ Every Lab 3 change reached `lab3-staging` through a pull request from its own fe
 | #39 IT Staff Ticket Queue | [#46](https://github.com/Chessuker/TokTickIT/pull/46) | `feature/39-staff-queue` | 2026-09-22 22:44 · `acd96bd` |
 | #40 IT Staff Ticket operations | [#47](https://github.com/Chessuker/TokTickIT/pull/47) | `feature/40-staff-ticket-ops` | 2026-09-25 13:44 · `f835755` |
 | #41 Administrator user management | [#48](https://github.com/Chessuker/TokTickIT/pull/48) | `feature/41-admin-users` | 2026-09-26 · `91e5178` |
-| #42 E2E, visual inspection, release | _PR link_ | `feature/42-e2e-release` | |
-| Release Lab 3 | _PR link_ | `lab3-staging` → `main` | |
+| #42 E2E, visual inspection, release | [#49](https://github.com/Chessuker/TokTickIT/pull/49) | `feature/42-e2e-release` | 2026-09-26 21:34 · `ac1f845` |
+| Release Lab 3 | [#50](https://github.com/Chessuker/TokTickIT/pull/50) | `lab3-staging` → `main` | 2026-09-27 · `34eadf5` (into `main`) |
 
 ![git log --graph --oneline --decorate -n 60](../../artifacts/lab-03/screenshots/evidence/git-history.png)
 

@@ -13,7 +13,7 @@ Link: [`docs/lab-03/tests.md`](tests.md) — rendered in full after this page: t
 | End-to-end — Playwright | `npx playwright test` | 9 | 83 | 83 | 0 | 0 |
 | **Total** | | **37** | **970** | **970** | **0** | **0** |
 
-The verbatim output of each command is in [`test-runs/`](test-runs/) — `server.txt`, `client.txt`, `e2e.txt` — with terminal colour codes stripped and nothing else changed; each file's first two lines name the command, the branch and the commit it ran against. The images below are those files rendered by [`scripts/capture-test-runs.mjs`](scripts/capture-test-runs.mjs).
+The verbatim output of each command is in [`test-runs/`](test-runs/) — `server.txt`, `client.txt`, `e2e.txt` — with terminal colour codes stripped and nothing else changed; each file's first two lines name the command, the branch and the commit it ran against: `main` at the release merge `34eadf5` (PR #50), with only documentation uncommitted. The images below are those files rendered by [`scripts/capture-test-runs.mjs`](scripts/capture-test-runs.mjs).
 
 The end-to-end suite runs against the real stack (PostgreSQL migrated and seeded, the API on :5000, Vite on :5173):
 

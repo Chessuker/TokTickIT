@@ -379,7 +379,7 @@ Status recorded on 2026-09-26 in Issue #42. A ticked box names its evidence; an 
 ### 10.1 Product
 
 - [x] FR-01 … FR-14 implemented; BR-01 … BR-31 enforced on the server. — every FR row in [tests.md](tests.md) §3 traces to passing tests.
-- [ ] AC-01 … AC-34 verified by the tests named in [tests.md](tests.md); every test passes on `main` from the documented commands; none skipped, disabled or commented out. — all 109 test rows Pass on `feature/42-e2e-release` (= `lab3-staging` + #42), none skipped; **ticked once the same run is recorded on `main` after the release PR.**
+- [x] AC-01 … AC-34 verified by the tests named in [tests.md](tests.md); every test passes on `main` from the documented commands; none skipped, disabled or commented out. — all 109 test rows Pass; 970 / 970 tests, 0 skipped, on `main` at the release merge `34eadf5` (`docs/lab-03/test-runs/`, 2026-09-27).
 - [x] Authorization matrix and transition matrix implemented exactly as in §5; direct-API evidence captured for each refused row. — `ticketWorkflow.test.ts` compares every (from, to) pair with an independent copy of the matrix; `docs/lab-03/test-runs/api-authorization.txt`, 29 checks.
 - [x] Migration applied to a database holding Lab 2 data with counts and ownership verified (AC-31); seed re-run twice with identical row counts (AC-32). — tests.md §5 "Migration and regression evidence"; UNIT-07.
 - [x] No plaintext password, hash or session token in any response, log or committed file; secrets only in `.env` (git-ignored) with `.env.example` updated. — `.env` ignored and untracked; API tests assert no `passwordHash` in responses; seed prints counts only.
@@ -390,9 +390,9 @@ Status recorded on 2026-09-26 in Issue #42. A ticked box names its evidence; an 
 
 ### 10.2 Course delivery
 
-- [ ] Sprint decomposed into GitHub Issues (see Appendix) tracked on the Kanban; all in Done at submission. — Issues #36 … #42 exist; **move #42 to Done after the release and capture the board for Answer Part 1.**
-- [x] Every Issue delivered through `feature/<issue>-<slug>` → pull request → `lab3-staging`; one release pull request `lab3-staging` → `main`. No direct commits to `main` or `lab3-staging`. — `git log --first-parent lab3-staging` shows only PR merges #43 … #48 (the release PR is the last step).
-- [ ] Each pull request peer-reviewed; `reviewer.md` records reviewer identity, PR links, comments given and received, responses and approvals. — PR links and merge commits filled; **reviewer identity and comments to be filled by the student.**
+- [x] Sprint decomposed into GitHub Issues (see Appendix) tracked on the Kanban; all in Done at submission. — Issues #36 … #42 all in Done; board captured in `artifacts/lab-03/screenshots/evidence/kanban-final.png` (Answer Part 1).
+- [x] Every Issue delivered through `feature/<issue>-<slug>` → pull request → `lab3-staging`; one release pull request `lab3-staging` → `main`. No direct commits to `main` or `lab3-staging`. — `git log --first-parent lab3-staging` shows only PR merges #43 … #49; the release PR #50 merged `lab3-staging` into `main` (`34eadf5`).
+- [x] Each pull request peer-reviewed; `reviewer.md` records reviewer identity, PR links, comments given and received, responses and approvals. — all eight PRs (#43 … #50) reviewed and approved by TeekhathatTT; six of theirs reviewed in return, each row linked to its GitHub review.
 - [x] The contract (this file, api-spec.md, ui-spec.md, tests.md) merged before the first implementation PR; the merge is screenshotted as evidence for Answer Part 2. — PR #43 merged 2026-09-18 (`4ad5d2e`), before #44 on 2026-09-19.
 - [x] `ai-use.md` names the LLM and lists 6–10 key prompts with a reflection. — 10 prompts.
 - [x] Screenshots under `artifacts/lab-03/screenshots/{authentication,staff-queue,staff-ticket-detail,user-management}/` at desktop, tablet and mobile. — 73 screenshots plus `requester/` and `evidence/`.
