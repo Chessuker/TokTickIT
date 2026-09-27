@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { createTicket, REQUESTER_A, selectRequester } from './helpers'
+import { createTicket, REQUESTER_A, loginAs } from './helpers'
 
 /**
  * E2E-02 — the attachment lifecycle (AC-09, BR-06 … BR-10).
@@ -16,7 +16,7 @@ const PNG_BYTES = Buffer.concat([
 
 test.describe('Attachment lifecycle (E2E-02)', () => {
   test('upload, download, remove with a reason, then download is refused', async ({ page }) => {
-    await selectRequester(page, REQUESTER_A)
+    await loginAs(page, REQUESTER_A)
     await createTicket(page, 'E2E attachment lifecycle')
 
     // --- Upload -----------------------------------------------------------
@@ -55,11 +55,8 @@ test.describe('Attachment lifecycle (E2E-02)', () => {
     await expect(page.getByTestId('active-attachments')).toHaveCount(0)
   })
 
-  test('a removed attachment is refused by the API as well as hidden in the UI', async ({
-    page,
-    request,
-  }) => {
-    await selectRequester(page, REQUESTER_A)
+  test('a removed attachment is refused by the API as well as hidden in the UI', async ({ page }) => {
+    await loginAs(page, REQUESTER_A)
     await createTicket(page, 'E2E removed attachment stays unreachable')
 
     await page.getByLabel(/add a file/i).setInputFiles({
@@ -69,17 +66,11 @@ test.describe('Attachment lifecycle (E2E-02)', () => {
     })
     await expect(page.getByTestId('active-attachments')).toBeVisible()
 
-    // The requester id the app stored is also what the API expects, so the
-    // direct request below is exactly what the browser would have sent.
-    const requesterId = await page.evaluate(() => {
-      const raw = window.sessionStorage.getItem('toktickit.requester')
-      return raw ? (JSON.parse(raw) as { id: string }).id : ''
-    })
+    // `page.request` shares the browser's cookie jar, so the direct requests
+    // below carry the same session the screens use (Lab 3 api-spec.md §1.1).
     const ticketId = page.url().split('/').pop() as string
 
-    const before = await request.get(`http://localhost:5000/api/tickets/${ticketId}`, {
-      headers: { 'X-Requester-Id': requesterId },
-    })
+    const before = await page.request.get(`http://localhost:5000/api/tickets/${ticketId}`)
     const attachmentId = (await before.json()).attachments[0].id as string
 
     await page.getByRole('button', { name: /remove to-be-removed\.png/i }).click()
@@ -89,16 +80,13 @@ test.describe('Attachment lifecycle (E2E-02)', () => {
     await expect(page.getByTestId('removed-attachments')).toBeVisible()
 
     // BR-09 — the bytes are unreachable even by direct request (API-11).
-    const refused = await request.get(
+    const refused = await page.request.get(
       `http://localhost:5000/api/attachments/${attachmentId}/download`,
-      { headers: { 'X-Requester-Id': requesterId } },
     )
     expect(refused.status()).toBe(403)
 
     // BR-10 — the metadata is not: the record of the removal survives.
-    const metadata = await request.get(`http://localhost:5000/api/attachments/${attachmentId}`, {
-      headers: { 'X-Requester-Id': requesterId },
-    })
+    const metadata = await page.request.get(`http://localhost:5000/api/attachments/${attachmentId}`)
     expect(metadata.status()).toBe(200)
     const body = await metadata.json()
     expect(body.isRemoved).toBe(true)
@@ -107,7 +95,7 @@ test.describe('Attachment lifecycle (E2E-02)', () => {
   })
 
   test('rejects a disallowed file type without attaching it (AC-07)', async ({ page }) => {
-    await selectRequester(page, REQUESTER_A)
+    await loginAs(page, REQUESTER_A)
     await createTicket(page, 'E2E rejected file type')
 
     await page.getByLabel(/add a file/i).setInputFiles({

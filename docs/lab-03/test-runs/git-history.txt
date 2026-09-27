@@ -1,0 +1,110 @@
+$ git log --graph --oneline --decorate -n 60
+# feature/42-e2e-release @ 91e5178 + uncommitted changes
+
+*   91e5178 2026-09-26 Merge pull request #48 from Chessuker/feature/41-admin-users (HEAD -> feature/42-e2e-release, origin/lab3-staging, origin/feature/42-e2e-release, lab3-staging)
+|\  
+| * 8a29f57 2026-09-25 feat(#41): Administrator user management (origin/feature/41-admin-users, feature/41-admin-users)
+|/  
+*   f835755 2026-09-25 Merge pull request #47 from Chessuker/feature/40-staff-ticket-ops
+|\  
+| * e22d9ae 2026-09-25 feat(#40): IT Staff ticket operations — workflow matrix, staff detail, internal notes (origin/feature/40-staff-ticket-ops, feature/40-staff-ticket-ops)
+|/  
+*   acd96bd 2026-09-22 Merge pull request #46 from Chessuker/feature/39-staff-queue
+|\  
+| * e565ad6 2026-09-19 feat(#39): IT Staff Ticket Queue — staff routes, queue query, seeded tickets, StaffTicketQueue (origin/feature/39-staff-queue, feature/39-staff-queue)
+|/  
+*   42e7ccf 2026-09-19 Merge pull request #45 from Chessuker/feature/38-requester-comments
+|\  
+| * 5af69f1 2026-09-19 docs(#38): requester ticket detail screenshots for the PR (origin/feature/38-requester-comments, feature/38-requester-comments)
+| * cf6a7df 2026-09-19 feat(#38): Public Comments and "Problem appears resolved" on the Requester Ticket Detail
+|/  
+*   05f2133 2026-09-19 Merge pull request #44 from Chessuker/feature/37-auth-foundation
+|\  
+| * 35986d0 2026-09-18 feat(#37): authentication foundation — sessions, roles, login/change-password, migration and seed (origin/feature/37-auth-foundation, feature/37-auth-foundation)
+|/  
+*   4ad5d2e 2026-09-18 Merge pull request #43 from Chessuker/feature/36-lab3-spec-docs
+|\  
+| * 8921f2d 2026-09-18 chore: move lab-1 screenshots under docs/lab-01, untrack lab sheet and .claude tooling config (origin/feature/36-lab3-spec-docs, feature/36-lab3-spec-docs)
+| * e1f3aa2 2026-09-18 docs(lab-03): address review on #43 — auth matrix, BR-31, BR-07/10/11, AC-31
+| * 8c84d4c 2026-09-18 docs(lab-03): address review on #43 — auth matrix, BR-31, BR-07/10/11, AC-31
+| * 39cabce 2026-09-15 docs(lab-03): fill GitHub Issue numbers #36-#42
+| * 492dd30 2026-09-15 docs(lab-03): Sprint 3 engineering contract
+|/  
+*   ab23c4d 2026-09-05 Merge pull request #35 from Chessuker/docs/lab-02-final-evidence (origin/main, origin/HEAD, main)
+|\  
+| * 6a8b879 2026-09-05 docs(lab-02) (origin/docs/lab-02-final-evidence)
+* | d56579a 2026-09-05 Merge pull request #34 from Chessuker/docs/lab-02-final-evidence
+|\| 
+| * 08e34bb 2026-09-05 docs(lab-02)
+|/  
+*   9936b8c 2026-09-05 Merge pull request #33 from Chessuker/lab2-staging
+|\  
+| *   229659e 2026-09-05 Merge pull request #32 from Chessuker/feature/7-ui-responsive-e2e (origin/lab2-staging)
+| |\  
+| | * dad25b8 2026-09-05 feature 7: refine zen green UI, responsive styles, and implement Playwright E2E tests (origin/feature/7-ui-responsive-e2e)
+| |/  
+| *   f097031 2026-09-04 Merge pull request #31 from Chessuker/feature/6-ticket-detail-attachments
+| |\  
+| | * 4db72b0 2026-09-04 fix MIME check (origin/feature/6-ticket-detail-attachments)
+| | * f7f2a07 2026-09-04 feature 5: implement ticket detail view, attachment upload, download, soft removal, and ownership guards
+| |/  
+| *   accbb70 2026-08-30 Merge pull request #30 from Chessuker/feature/5-my-tickets-list
+| |\  
+| | * 91ed7cb 2026-08-29 feature 5: implement My Tickets listing with search, filtering, pagination, and empty/no-results states (origin/feature/5-my-tickets-list)
+| |/  
+| *   7f597a1 2026-08-29 Merge pull request #29 from Chessuker/feature/4-create-ticket
+| |\  
+| | * 8fbcb0b 2026-08-28 feature 4: implement ticket creation API, resilient create form UI, and automated tests (origin/feature/4-create-ticket, feature/4-create-ticket)
+* | |   f8d1155 2026-08-28 Merge pull request #28 from Chessuker/feature/3-requester-context
+|\ \ \  
+| | |/  
+| |/|   
+| * | 3a7f601 2026-08-28 feature 3: implement requester context, selector screen, and change requester shell action (origin/feature/3-requester-context, feature/3-requester-context)
+| |/  
+| *   d20a79e 2026-08-27 Merge pull request #27 from Chessuker/feature/2-db-schema-seed (lab2-staging)
+| |\  
+| | * 1ae37ec 2026-08-26 resolve feature2 (origin/feature/2-db-schema-seed)
+| | *   b07fd8e 2026-08-23 Merge branch 'lab2-staging' into feature/2-db-schema-seed
+| | |\  
+| | |/  
+| |/|   
+| * | 7a9224c 2026-08-23 Merge pull request #26 from Chessuker/feature/1-spec-docs
+|/| | 
+| * | 61089de 2026-08-23 add api_spec and reviewer md (origin/feature/1-spec-docs, feature/1-spec-docs)
+| | * a7cbd3f 2026-08-23 fix md (feature/2-db-schema-seed)
+| | * f8302fc 2026-08-22 edit gitignore
+| | * 27939be 2026-08-22 feature2: implement database schema, idempotent seed data, and unit tests
+| |/  
+| * de27ca3 2026-08-22 docs: complete sprint engineering spec, ui-spec, test plan, and ai-use tracking
+| * 5096b1d 2026-08-22 docs: complete sprint engineering spec, ui-spec, test plan, and ai-use tracking
+|/  
+* 4d334fa 2026-08-14 Fix repository link in README
+*   08d187f 2026-08-14 Merge pull request #15 from Chessuker/edit-md-lab1
+|\  
+| *   8086598 2026-08-14 Merge branch 'main' into edit-md-lab1 (origin/edit-md-lab1)
+| |\  
+| |/  
+|/|   
+* | 62c044d 2026-08-14 Refactor README for better readability and structure
+* |   83cfbf5 2026-08-13 Merge pull request #14 from Chessuker/edit-md-lab1
+|\ \  
+| | * 64b3f12 2026-08-14 README fixed
+| |/  
+| * 8f3dd2f 2026-08-13 edit md lab1
+| * a77cdd3 2026-08-11 add md-lab1
+| * 4e0ce31 2026-08-11 add md-lab1
+|/  
+* 5924b38 2026-08-09 Clean up README by removing unnecessary content
+* 6b3ba4b 2026-08-09 chore: add comprehensive README
+*   3e56aac 2026-08-09 Merge branch 'lab1-staging'
+|\  
+| *   849b788 2026-08-09 Merge pull request #12 from Chessuker/feature/4-category-list (origin/lab1-staging)
+| |\  
+| | * c096b22 2026-08-09 initial feature 4 (origin/feature/4-category-list)
+| |/  
+| *   42c801f 2026-08-08 Merge pull request #10 from Chessuker/feature/3-category-seed
+| |\  
+| | * 2f3daed 2026-08-08 initial feature 3 (origin/feature/3-category-seed)
+| |/  
+| *   a22718b 2026-08-08 Merge pull request #9 from Chessuker/feature/2-health-check
+| |\  

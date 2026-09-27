@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { API_URL } from '../api'
-import { useRequester } from '../context/requester'
+import { apiFetch, apiJson, readApiError } from '../apiClient'
+import { useAuth } from '../context/auth'
+import {
+  ItPriorityBadge,
+  OwnerName,
+  PriorityBadge,
+  RequesterResolvedBadge,
+  StatusBadge,
+} from './Badges'
+import CommentsPanel from './lab-03/CommentsPanel'
 import {
   ALLOWED_MIME_TYPES,
   ALLOWED_TYPES_LABEL,
@@ -11,8 +19,9 @@ import {
 } from '../attachments'
 
 /**
- * Requester Ticket Detail (ui-spec.md §3.4, api-spec.md §3.6 — FR-04, FR-05,
- * AC-03, AC-05, AC-09).
+ * Requester Ticket Detail (Lab 2 ui-spec.md §3.4, api-spec.md §3.6 — FR-04,
+ * FR-05, AC-03, AC-05, AC-09; Lab 3 ui-spec.md §3.3 — FR-06, FR-07, AC-14,
+ * AC-15).
  *
  * Three rules shape this screen:
  *
@@ -26,6 +35,13 @@ import {
  * 3. A removed attachment keeps its metadata and loses its file (BR-09, BR-10).
  *    The Download button is driven by `downloadUrl` being null rather than by a
  *    rule restated on the client, so the two can never disagree.
+ *
+ * Lab 3 adds two things a Requester may *say* without changing the ticket:
+ * a Public Comment (the panel at the bottom) and "Problem appears resolved",
+ * which sets `requesterResolvedAt` and nothing else (BR-05, BR-21). Status,
+ * owner and IT priority stay read-only badges here; the controls that change
+ * them exist only on the staff screens, and the API refuses a Requester
+ * anyway.
  */
 
 interface Attachment {
@@ -52,6 +68,9 @@ interface TicketDetailData {
   description: string
   status: string
   priority: string
+  itPriority: string
+  owner: { id: string; name: string; role: string } | null
+  requesterResolvedAt: string | null
   category: Option | null
   relatedSystem: Option | null
   requester: { id: string; name: string; email: string; department: string | null }
@@ -80,22 +99,8 @@ function formatDateTime(value: string | null): string {
   })
 }
 
-function StatusBadge({ status }: { status: string }) {
-  return <span className={`zg-badge zg-badge-status-${status.toLowerCase()}`}>{status}</span>
-}
-
-function PriorityBadge({ priority }: { priority: string }) {
-  return <span className={`zg-badge zg-badge-priority-${priority.toLowerCase()}`}>{priority}</span>
-}
-
-/** Matches the My Tickets list: IT triage fields have no column this sprint. */
-function NotAssigned({ label }: { label: string }) {
-  return (
-    <span className="zg-not-assigned" title={`${label} is assigned during IT triage`}>
-      Unassigned
-    </span>
-  )
-}
+/** Statuses in which the ticket is finished; the indication is no longer offered (BR-21). */
+const TERMINAL_STATUSES = new Set(['Resolved', 'Closed', 'Cancelled'])
 
 /** One read-only row of the ticket. No input, no edit affordance (AC-05). */
 function ReadOnlyField({
@@ -117,8 +122,7 @@ function ReadOnlyField({
 
 function TicketDetail() {
   const { id = '' } = useParams()
-  const { requester } = useRequester()
-  const requesterId = requester?.id ?? ''
+  const { user } = useAuth()
 
   const [ticket, setTicket] = useState<TicketDetailData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -138,7 +142,9 @@ function TicketDetail() {
   const [removing, setRemoving] = useState(false)
   const [removeError, setRemoveError] = useState<string | null>(null)
 
-  const headers = useCallback(() => ({ 'X-Requester-Id': requesterId }), [requesterId])
+  const [resolveOpen, setResolveOpen] = useState(false)
+  const [resolving, setResolving] = useState(false)
+  const [resolveError, setResolveError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -146,7 +152,7 @@ function TicketDetail() {
     setLoading(true)
     setFailure(null)
 
-    fetch(`${API_URL}/api/tickets/${id}`, { headers: { 'X-Requester-Id': requesterId } })
+    apiFetch(`/api/tickets/${id}`)
       .then(async (res) => {
         const body = await res.json().catch(() => null)
         if (cancelled) return
@@ -177,7 +183,7 @@ function TicketDetail() {
     return () => {
       cancelled = true
     }
-  }, [id, requesterId, reloadToken])
+  }, [id, reloadToken])
 
   const reload = useCallback(() => setReloadToken((token) => token + 1), [])
 
@@ -186,9 +192,8 @@ function TicketDetail() {
   const atAttachmentLimit = activeAttachments.length >= MAX_ATTACHMENTS
 
   /**
-   * Uploads one file at a time. The requester context lives in a header, so a
-   * plain form post will not do — and one request per file means a rejected
-   * file names itself instead of failing the whole batch.
+   * Uploads one file at a time: one request per file means a rejected file
+   * names itself instead of failing the whole batch.
    */
   const uploadFiles = async (picked: FileList | null) => {
     if (!picked || picked.length === 0) return
@@ -227,9 +232,8 @@ function TicketDetail() {
       form.append('file', file)
 
       try {
-        const res = await fetch(`${API_URL}/api/tickets/${id}/attachments`, {
+        const res = await apiFetch(`/api/tickets/${id}/attachments`, {
           method: 'POST',
-          headers: headers(),
           body: form,
         })
 
@@ -256,18 +260,17 @@ function TicketDetail() {
   }
 
   /**
-   * Downloads through `fetch` rather than a bare link: the requester context
-   * travels in a header, which an `<a href>` cannot carry. The blob is handed
-   * to a temporary anchor so the browser saves it under its original name.
+   * Downloads through `fetch` rather than a bare link so a refusal (`403`,
+   * `404`) can be shown inline instead of as a browser error page. The blob is
+   * handed to a temporary anchor so the browser saves it under its original
+   * name.
    */
   const download = async (attachment: Attachment) => {
     setDownloadError(null)
     setDownloadingId(attachment.id)
 
     try {
-      const res = await fetch(`${API_URL}/api/attachments/${attachment.id}/download`, {
-        headers: headers(),
-      })
+      const res = await apiFetch(`/api/attachments/${attachment.id}/download`)
 
       if (!res.ok) {
         const body = await res.json().catch(() => null)
@@ -310,10 +313,8 @@ function TicketDetail() {
     setRemoveError(null)
 
     try {
-      const res = await fetch(`${API_URL}/api/attachments/${removeTarget.id}/remove`, {
-        method: 'PATCH',
-        headers: { ...headers(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason: reason.trim() }),
+      const res = await apiJson(`/api/attachments/${removeTarget.id}/remove`, 'PATCH', {
+        reason: reason.trim(),
       })
 
       if (res.ok) {
@@ -330,6 +331,37 @@ function TicketDetail() {
       setRemoveError('Could not reach the server. Please try again.')
     } finally {
       setRemoving(false)
+    }
+  }
+
+  /**
+   * "Problem appears resolved" (AC-15). The server answers with the whole
+   * TicketDetail, which replaces the one on screen: the button disappears
+   * because `requesterResolvedAt` is now set, not because a flag was flipped
+   * here. A `409` (the ticket was closed meanwhile) is shown inside the dialog
+   * and the ticket is re-read so the header catches up.
+   */
+  const confirmResolved = async () => {
+    setResolving(true)
+    setResolveError(null)
+
+    try {
+      const res = await apiJson(`/api/tickets/${id}/resolution-indication`, 'POST')
+
+      if (res.ok) {
+        const updated = (await res.json()) as TicketDetailData
+        setTicket(updated)
+        setResolveOpen(false)
+        return
+      }
+
+      const error = await readApiError(res)
+      setResolveError(error?.message ?? 'The indication could not be saved. Please try again.')
+      if (res.status === 409) reload()
+    } catch {
+      setResolveError('Could not reach the server. Please try again.')
+    } finally {
+      setResolving(false)
     }
   }
 
@@ -353,7 +385,7 @@ function TicketDetail() {
         <h1 className="zg-state-title">Access denied</h1>
         <p className="zg-state-text">
           This ticket belongs to another requester. You can only open tickets raised by{' '}
-          {requester?.name ?? 'the selected requester'}.
+          {user?.name ?? 'you'}.
         </p>
         <Link className="zg-btn zg-btn-primary" to="/tickets">
           Back to My Tickets
@@ -405,9 +437,34 @@ function TicketDetail() {
             <span className="zg-ticket-number">{ticket.ticketNumber}</span>
             <StatusBadge status={ticket.status} />
             <PriorityBadge priority={ticket.priority} />
+            <ItPriorityBadge priority={ticket.itPriority ?? ticket.priority} />
+            <span className="zg-muted">
+              Owner: <OwnerName owner={ticket.owner ?? null} />
+            </span>
+            {ticket.requesterResolvedAt && <RequesterResolvedBadge at={ticket.requesterResolvedAt} />}
             <span className="zg-muted">Created {formatDateTime(ticket.createdAt)}</span>
           </div>
         </div>
+
+        {/*
+         * Offered only while it can still be acted on: not once it has been
+         * said, and not on a finished ticket (BR-21). The indication is the
+         * Requester's one word on the outcome; changing the status is not.
+         */}
+        {!ticket.requesterResolvedAt && !TERMINAL_STATUSES.has(ticket.status) && (
+          <div className="zg-page-head-actions">
+            <button
+              type="button"
+              className="zg-btn zg-btn-secondary"
+              onClick={() => {
+                setResolveError(null)
+                setResolveOpen(true)
+              }}
+            >
+              <i className="bi bi-check2-circle" aria-hidden="true" /> Problem appears resolved
+            </button>
+          </div>
+        )}
       </div>
 
       {/*
@@ -438,13 +495,13 @@ function TicketDetail() {
             <PriorityBadge priority={ticket.priority} />
           </ReadOnlyField>
           <ReadOnlyField label="IT Priority">
-            <NotAssigned label="IT Priority" />
+            <ItPriorityBadge priority={ticket.itPriority ?? ticket.priority} />
           </ReadOnlyField>
           <ReadOnlyField label="Current Status">
             <StatusBadge status={ticket.status} />
           </ReadOnlyField>
           <ReadOnlyField label="Ticket Owner">
-            <NotAssigned label="Ticket Owner" />
+            <OwnerName owner={ticket.owner ?? null} />
           </ReadOnlyField>
           <ReadOnlyField label="Last Updated">{formatDateTime(ticket.updatedAt)}</ReadOnlyField>
           <ReadOnlyField label="Summary" wide>
@@ -585,6 +642,63 @@ function TicketDetail() {
           )}
         </div>
       </div>
+
+      <CommentsPanel ticketId={ticket.id} canComment={user?.role !== 'Administrator'} />
+
+      {/*
+       * Confirmation for "Problem appears resolved" (ui-spec.md §2
+       * "Confirmation dialog", AC-15). Stays open on failure with the error
+       * inside it.
+       */}
+      {resolveOpen && (
+        <div className="zg-modal-backdrop" role="presentation">
+          <div
+            className="zg-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="resolve-modal-title"
+          >
+            <h2 className="zg-section-title" id="resolve-modal-title">
+              Tell IT Staff this looks fixed?
+            </h2>
+            <p className="zg-hint">
+              IT Staff will see that you consider the problem resolved. The ticket stays{' '}
+              <strong>{ticket.status}</strong> until they close it.
+            </p>
+
+            {resolveError && (
+              <p className="zg-field-error" role="alert">
+                {resolveError}
+              </p>
+            )}
+
+            <div className="zg-actions">
+              <button
+                type="button"
+                className="zg-btn zg-btn-primary"
+                onClick={() => void confirmResolved()}
+                disabled={resolving}
+              >
+                {resolving ? (
+                  <>
+                    <span className="zg-spinner-sm" aria-hidden="true" /> Saving...
+                  </>
+                ) : (
+                  'Confirm'
+                )}
+              </button>
+              <button
+                type="button"
+                className="zg-btn zg-btn-secondary"
+                onClick={() => setResolveOpen(false)}
+                disabled={resolving}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/*
        * Soft-removal modal (AC-09, BR-09). Confirm stays disabled until a

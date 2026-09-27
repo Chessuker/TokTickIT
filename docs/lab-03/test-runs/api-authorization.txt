@@ -1,0 +1,74 @@
+TokTickIT — direct API authorization evidence
+Run: 2026-09-26T06:39:03.563Z against http://localhost:5000
+Fixture: ticket TKT-2026-000076 raised by Jennifer (Requester), with one Internal Note by Priya (IT Staff)
+
+
+— No session (BR-30, AC-12)
+$ GET /api/staff/tickets   # as no session — no cookie: 401 before anything is read
+  expected 401 · got 401 PASS   {"error":{"code":"UNAUTHORIZED","message":"You must sign in to continue."}}
+$ GET /api/tickets/<ticket>   # as no session
+  expected 401 · got 401 PASS   {"error":{"code":"UNAUTHORIZED","message":"You must sign in to continue."}}
+$ GET /api/admin/users   # as no session
+  expected 401 · got 401 PASS   {"error":{"code":"UNAUTHORIZED","message":"You must sign in to continue."}}
+
+— Requester reaching staff and admin routes (FR-04, AC-04, AC-30)
+$ GET /api/staff/tickets   # as Requester — the queue is staff-only
+  expected 403 · got 403 PASS   {"error":{"code":"FORBIDDEN","message":"You do not have access to this resource."}}
+$ GET /api/staff/tickets/<ticket>/internal-notes   # as Requester — her own ticket, and still no note, count or hint (BR-23)
+  expected 403 · got 403 PASS   {"error":{"code":"FORBIDDEN","message":"You do not have access to this resource."}}
+$ POST /api/staff/tickets/<ticket>/claim   # as Requester
+  expected 403 · got 403 PASS   {"error":{"code":"FORBIDDEN","message":"You do not have access to this resource."}}
+$ PATCH /api/staff/tickets/<ticket>/status {"status":"Resolved"}   # as Requester — a Requester cannot set status (BR-05)
+  expected 403 · got 403 PASS   {"error":{"code":"FORBIDDEN","message":"You do not have access to this resource."}}
+$ PATCH /api/tickets/<ticket>/status {"status":"Resolved"}   # as Requester — there is no Requester status route at all
+  expected 404 · got 404 PASS   {"error":{"code":"NOT_FOUND","message":"No such endpoint."}}
+$ GET /api/admin/users   # as Requester
+  expected 403 · got 403 PASS   {"error":{"code":"FORBIDDEN","message":"You do not have access to this resource."}}
+$ GET /api/tickets/<ticket>   # as Requester — her own ticket is readable …
+  expected 200 · got 200 PASS   {"id":"dbf498c9-fbd7-4df3-bd5a-f858af3b4dcf","ticketNumber":"TKT-2026-000076","summary":"Authorization evidence ticket","description":"Created by capture-api-authoriza…
+$ GET /api/tickets/<ticket>   # as Other Requester — … another requester gets 403 and no ticket data (BR-14)
+  expected 403 · got 403 PASS   {"error":{"code":"FORBIDDEN","message":"This ticket belongs to another requester."}}
+
+— IT Staff: the workflow is the server’s (BR-15, BR-18, BR-19, BR-31)
+$ PATCH /api/staff/tickets/<ticket>/status {"status":"Closed"}   # as IT Staff — New → Closed is not in the matrix
+  expected 409 · got 409 PASS   {"error":{"code":"INVALID_TRANSITION","message":"A ticket that is New cannot become Closed. Permitted: Open, Cancelled."}}
+$ PATCH /api/staff/tickets/<ticket>/status {"status":"InProgress"}   # as IT Staff — In Progress needs an owner (AC-22)
+  expected 409 · got 409 PASS   {"error":{"code":"INVALID_TRANSITION","message":"A ticket must have an owner before it can become In Progress. Assign an owner first."}}
+$ PATCH /api/staff/tickets/<ticket>/owner {"ownerId":"<requester id>"}   # as IT Staff — a Requester cannot be an owner (AC-19)
+  expected 400 · got 400 PASS   {"error":{"code":"VALIDATION_FAILED","message":"One or more fields are invalid.","fields":{"ownerId":"The owner must be an active IT Staff member."}}}
+$ PATCH /api/staff/tickets/<ticket>/status {"status":"Bogus"}   # as IT Staff — unknown status value
+  expected 400 · got 400 PASS   {"error":{"code":"VALIDATION_FAILED","message":"One or more fields are invalid.","fields":{"status":"status must be one of New, Open, InProgress, WaitingForRequester, …
+$ POST /api/staff/tickets/<ticket>/claim   # as IT Staff — claim: owner = caller, New → Open
+  expected 200 · got 200 PASS   {"id":"dbf498c9-fbd7-4df3-bd5a-f858af3b4dcf","ticketNumber":"TKT-2026-000076","summary":"Authorization evidence ticket","status":"Open","itPriority":"Medium","requeste…
+$ PATCH /api/staff/tickets/<ticket>/status {"status":"InProgress"}   # as IT Staff — now permitted
+  expected 200 · got 200 PASS   {"id":"dbf498c9-fbd7-4df3-bd5a-f858af3b4dcf","ticketNumber":"TKT-2026-000076","summary":"Authorization evidence ticket","status":"InProgress","itPriority":"Medium","re…
+$ PATCH /api/staff/tickets/<ticket>/owner {"ownerId":null}   # as IT Staff — an In Progress ticket must keep an owner
+  expected 409 · got 409 PASS   {"error":{"code":"INVALID_TRANSITION","message":"A ticket that is In Progress must keep an owner. Reassign it, or change its status first."}}
+$ POST /api/tickets/<ticket>/attachments   # as IT Staff — staff read attachments but never add them (BR-14)
+  expected 403 · got 403 PASS   {"error":{"code":"FORBIDDEN","message":"You do not have access to this resource."}}
+$ GET /api/admin/users   # as IT Staff — user management is Administrator-only (API-15)
+  expected 403 · got 403 PASS   {"error":{"code":"FORBIDDEN","message":"You do not have access to this resource."}}
+
+— Administrator: reads everything, changes no ticket (BR-17)
+$ GET /api/staff/tickets/<ticket>   # as Administrator — read the ticket …
+  expected 200 · got 200 PASS   {"id":"dbf498c9-fbd7-4df3-bd5a-f858af3b4dcf","ticketNumber":"TKT-2026-000076","summary":"Authorization evidence ticket","status":"InProgress","itPriority":"Medium","re…
+$ GET /api/staff/tickets/<ticket>/internal-notes   # as Administrator — … and its notes
+  expected 200 · got 200 PASS   {"data":[{"id":"ff5286b5-021e-4255-bffb-1e04629a1a5e","body":"PRIVATE: vendor case 4471, do not share","createdAt":"2026-09-26T06:39:03.552Z","author":{"id":"8b941723-…
+$ POST /api/staff/tickets/<ticket>/claim   # as Administrator — no claim
+  expected 403 · got 403 PASS   {"error":{"code":"FORBIDDEN","message":"You do not have access to this resource."}}
+$ PATCH /api/staff/tickets/<ticket>/it-priority {"itPriority":"Low"}   # as Administrator — no IT priority
+  expected 403 · got 403 PASS   {"error":{"code":"FORBIDDEN","message":"You do not have access to this resource."}}
+$ PATCH /api/staff/tickets/<ticket>/status {"status":"WaitingForRequester"}   # as Administrator — no status
+  expected 403 · got 403 PASS   {"error":{"code":"FORBIDDEN","message":"You do not have access to this resource."}}
+$ POST /api/staff/tickets/<ticket>/internal-notes {"body":"admin note"}   # as Administrator — no note
+  expected 403 · got 403 PASS   {"error":{"code":"FORBIDDEN","message":"You do not have access to this resource."}}
+$ POST /api/tickets/<ticket>/comments {"body":"admin comment"}   # as Administrator — no comment
+  expected 403 · got 403 PASS   {"error":{"code":"FORBIDDEN","message":"You do not have access to this resource."}}
+$ PATCH /api/admin/users/<own id> {"isActive":false}   # as Administrator — cannot deactivate themselves (BR-25)
+  expected 409 · got 409 PASS   {"error":{"code":"CONFLICT","message":"You cannot deactivate your own account."}}
+
+— Internal Note never reaches the Requester (AC-23)
+  note text in GET /api/tickets/<ticket> as Requester: absent — PASS
+  note text in GET /api/tickets/<ticket>/comments as Requester: absent — PASS
+
+29 checks, all passed.

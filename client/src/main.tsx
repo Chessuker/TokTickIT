@@ -6,14 +6,14 @@ import 'bootstrap-icons/font/bootstrap-icons.css'
 import './index.css'
 import './styles/zen-green.css'
 import App from './App.tsx'
-import { RequesterProvider } from './context/RequesterProvider'
+import { AuthProvider } from './context/AuthProvider'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <RequesterProvider>
+      <AuthProvider>
         <App />
-      </RequesterProvider>
+      </AuthProvider>
     </BrowserRouter>
   </StrictMode>,
 )

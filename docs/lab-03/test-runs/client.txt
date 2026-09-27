@@ -1,0 +1,444 @@
+$ npm --prefix client run test -- --reporter=verbose
+# feature/42-e2e-release @ 91e5178 + uncommitted changes · 2026-09-26T06:42:06.322Z
+
+
+> client@0.0.0 test
+> vitest run --reporter=verbose
+
+
+ RUN  v4.1.10 D:/OpalFolder/KMUTT/CPE334/TokTickIT/client
+
+ ✓ src/components/lab-03/RequireAuth.test.tsx > RequireAuth (UI-09) > shows a loading state and nothing else until the session check answers 106ms
+ ✓ src/components/lab-03/RequireAuth.test.tsx > RequireAuth (UI-09) > redirects an anonymous visitor to /login with the attempted path in from (AC-08) 11ms
+ ✓ src/components/lab-03/RequireAuth.test.tsx > RequireAuth (UI-09) > lets a signed-in user through to a route for their role 8ms
+ ✓ src/components/lab-03/RequireAuth.test.tsx > RequireAuth (UI-09) > sends a user with mustChangePassword to /change-password from any other route (AC-02) 5ms
+ ✓ src/components/lab-03/RequireAuth.test.tsx > RequireAuth (UI-09) > lets a user with mustChangePassword reach /change-password itself 5ms
+ ✓ src/components/lab-03/RequireAuth.test.tsx > RequireAuth (UI-09) > renders the Forbidden state without loading the screen: Requester → /staff/queue (AC-11) 15ms
+ ✓ src/components/lab-03/RequireAuth.test.tsx > RequireAuth (UI-09) > renders the Forbidden state without loading the screen: Requester → /admin/users (AC-11) 5ms
+ ✓ src/components/lab-03/RequireAuth.test.tsx > RequireAuth (UI-09) > renders the Forbidden state without loading the screen: IT Staff → /admin/users (AC-11) 6ms
+ ✓ src/components/lab-03/RequireAuth.test.tsx > RequireAuth (UI-09) > renders the Forbidden state without loading the screen: IT Staff → /tickets (AC-11) 10ms
+ ✓ src/components/lab-03/RequireAuth.test.tsx > RequireAuth (UI-09) > renders the Forbidden state without loading the screen: Administrator → /tickets (AC-11) 7ms
+ ✓ src/components/lab-03/RequireAuth.test.tsx > RequireAuth (UI-09) > points the Forbidden state at the role home 9ms
+ ✓ src/components/lab-03/RequireAuth.test.tsx > RequireAuth (UI-09) > lets an Administrator into the shared staff area 3ms
+ ✓ src/components/lab-03/CommentsPanel.test.tsx > CommentsPanel — composer visibility (BR-17, BR-23) > offers the composer when the caller may comment 171ms
+ ✓ src/components/lab-03/CommentsPanel.test.tsx > CommentsPanel — composer visibility (BR-17, BR-23) > renders the thread read-only, with no composer, when the caller may not comment 15ms
+ ✓ src/components/lab-03/CommentsPanel.test.tsx > CommentsPanel — composer visibility (BR-17, BR-23) > shows a retryable error when the thread cannot be loaded 22ms
+ ✓ src/components/lab-03/CommentsPanel.test.tsx > relativeTime > 2026-08-25T11:59:50.000Z → just now 0ms
+ ✓ src/components/lab-03/CommentsPanel.test.tsx > relativeTime > 2026-08-25T11:59:00.000Z → 1 minute ago 0ms
+ ✓ src/components/lab-03/CommentsPanel.test.tsx > relativeTime > 2026-08-25T11:35:00.000Z → 25 minutes ago 0ms
+ ✓ src/components/lab-03/CommentsPanel.test.tsx > relativeTime > 2026-08-25T09:00:00.000Z → 3 hours ago 0ms
+ ✓ src/components/lab-03/CommentsPanel.test.tsx > relativeTime > 2026-08-23T12:00:00.000Z → 2 days ago 0ms
+ ✓ src/components/lab-03/CommentsPanel.test.tsx > relativeTime > falls back to a locale date once the comment is older than a month 1ms
+ ✓ src/components/lab-03/CommentsPanel.test.tsx > relativeTime > returns an empty string for an unparseable value 0ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — read-only presentation (UI-05, AC-05) > renders every ticket field as text 137ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — read-only presentation (UI-05, AC-05) > renders no editable control among the ticket fields 32ms
+ ✓ src/components/lab-03/Login.test.tsx > Login — client validation (UI-01, AC-05) > shows an error under each empty field and sends no request 286ms
+ ✓ src/components/CreateTicketForm.test.tsx > CreateTicketForm — master data (screen load) > populates the Category and Related System dropdowns from the API 287ms
+ ✓ src/components/AppShell.test.tsx > AppShell — identity and role navigation (UI-08, AC-11) > shows the user name and a role badge in the header 213ms
+ ✓ src/components/AppShell.test.tsx > AppShell — identity and role navigation (UI-08, AC-11) > renders only the Requester navigation 51ms
+ ✓ src/components/AppShell.test.tsx > AppShell — identity and role navigation (UI-08, AC-11) > renders only the IT Staff navigation 26ms
+ ✓ src/components/lab-03/StaffTicketDetail.test.tsx > StaffTicketDetail — layout and read-only group (UI-14, AC-24) > shows the header badges and the read-only ticket fields 149ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — read-only presentation (UI-05, AC-05) > offers no edit, save, status, owner or IT-priority control anywhere on the screen 209ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — read-only presentation (UI-05, AC-05) > shows IT Priority as a badge and an unassigned owner as an explicit placeholder 31ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — read-only presentation (UI-05, AC-05) > shows the owner's name once IT Staff have claimed the ticket 23ms
+ ✓ src/components/MyTickets.test.tsx > MyTickets — list rendering (UI-04, AC-04) > renders one table row per ticket with the ticket number and summary 323ms
+ ✓ src/components/lab-03/UserManagement.test.tsx > UserManagement — list (UI-21, AC-25) > shows name, email, role badge, status badge and Edit, sorted by name 375ms
+ ✓ src/components/lab-03/UserManagement.test.tsx > UserManagement — list (UI-21, AC-25) > marks the signed-in administrator with "(you)" 53ms
+ ✓ src/components/AppShell.test.tsx > AppShell — identity and role navigation (UI-08, AC-11) > renders only the Administrator navigation 26ms
+ ✓ src/components/AppShell.test.tsx > AppShell — identity and role navigation (UI-08, AC-11) > has no Development Requester block and no Change Requester control (FR-05) 27ms
+ ✓ src/components/AppShell.test.tsx > AppShell — identity and role navigation (UI-08, AC-11) > links the app name to the role home 19ms
+ ✓ src/components/AppShell.test.tsx > AppShell — identity and role navigation (UI-08, AC-11) > collapses to the app name and Log out while a password change is pending (AC-02) 18ms
+ ✓ src/components/CreateTicketForm.test.tsx > CreateTicketForm — master data (screen load) > offers the three requested priorities with no ticket number or status input 126ms
+ ✓ src/components/lab-03/StaffTicketDetail.test.tsx > StaffTicketDetail — layout and read-only group (UI-14, AC-24) > offers three operational controls and a Claim button for a ticket the caller does not own 233ms
+ ✓ src/components/lab-03/StaffTicketDetail.test.tsx > StaffTicketDetail — layout and read-only group (UI-14, AC-24) > keeps the queue query string on Back to Queue 43ms
+ ✓ src/components/lab-03/StaffTicketDetail.test.tsx > StaffTicketDetail — layout and read-only group (UI-14, AC-24) > shows a not-found state for an unknown ticket 11ms
+ ✓ src/components/lab-03/StaffTicketQueue.test.tsx > StaffTicketQueue — table (UI-10, AC-16) > lists every ticket with the nine columns in order and an Open action 412ms
+ ✓ src/components/lab-03/StaffTicketQueue.test.tsx > StaffTicketQueue — table (UI-10, AC-16) > shows both priorities as distinct badges, the status label, owner or Unassigned, and the You tag 64ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — attachment list (BR-10, V-10) > lists an active attachment with its size, upload date and both actions 49ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — attachment list (BR-10, V-10) > shows a removed attachment with its reason and timestamp and no download button 21ms
+ ✓ src/components/MyTickets.test.tsx > MyTickets — list rendering (UI-04, AC-04) > renders every column the screen specifies 139ms
+ ✓ src/components/MyTickets.test.tsx > MyTickets — list rendering (UI-04, AC-04) > shows a status badge and a priority badge on each row 47ms
+ ✓ src/components/lab-03/UserManagement.test.tsx > UserManagement — list (UI-21, AC-25) > offers no delete control anywhere (BR-27) 50ms
+ ✓ src/components/CreateTicketForm.test.tsx > CreateTicketForm — validation (UI-03, AC-01) > renders an error under every required field when submitting an empty form 118ms
+ ✓ src/components/CreateTicketForm.test.tsx > CreateTicketForm — validation (UI-03, AC-01) > blocks the submit — no ticket is posted while the form is invalid 70ms
+ ✓ src/components/lab-03/StaffTicketQueue.test.tsx > StaffTicketQueue — table (UI-10, AC-16) > marks a requester-resolved ticket with the check icon before its status 52ms
+ ✓ src/components/lab-03/StaffTicketQueue.test.tsx > StaffTicketQueue — table (UI-10, AC-16) > shows the result line and requests the documented defaults 27ms
+ ✓ src/components/AppShell.test.tsx > AppShell — profile menu and logout (UI-08, AC-08) > opens a menu with Change password and Log out 72ms
+ ✓ src/components/lab-03/StaffTicketDetail.test.tsx > StaffTicketDetail — claim and owner (UI-15, AC-18, AC-19) > claims a New ticket: owner becomes the caller and the status becomes Open 119ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — attachment list (BR-10, V-10) > downloads an active attachment through the API with the session cookie 84ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — attachment list (BR-10, V-10) > reports a refused download instead of failing silently 75ms
+ ✓ src/components/lab-03/ChangePassword.test.tsx > ChangePassword — live rules panel and validation (UI-06, AC-09) > lists the five BR-08 rules and ticks each one as the new password satisfies it 566ms
+ ✓ src/components/MyTickets.test.tsx > MyTickets — list rendering (UI-04, AC-04) > links each row to its ticket detail 59ms
+ ✓ src/components/MyTickets.test.tsx > MyTickets — list rendering (UI-04, AC-04) > identifies the caller by the session cookie, never by a header or query parameter (UI-20, AC-13) 44ms
+ ✓ src/components/AppShell.test.tsx > AppShell — profile menu and logout (UI-08, AC-08) > navigates to /change-password from the menu 117ms
+ ✓ src/components/CreateTicketForm.test.tsx > CreateTicketForm — validation (UI-03, AC-01) > marks the offending field invalid and links the message to it 94ms
+ ✓ src/components/lab-03/ChangePassword.test.tsx > ChangePassword — live rules panel and validation (UI-06, AC-09) > requires all three fields and sends nothing when they are empty 103ms
+ ✓ src/components/lab-03/StaffTicketDetail.test.tsx > StaffTicketDetail — claim and owner (UI-15, AC-18, AC-19) > assigns another IT Staff member from the dropdown 101ms
+ ✓ src/components/lab-03/StaffTicketQueue.test.tsx > StaffTicketQueue — table (UI-10, AC-16) > Open navigates to the staff ticket detail 129ms
+ ✓ src/components/lab-03/StaffTicketQueue.test.tsx > StaffTicketQueue — table (UI-10, AC-16) > renders the same screen for an Administrator 21ms
+ ✓ src/components/MyTickets.test.tsx > MyTickets — list rendering (UI-04, AC-04) > renders a stacked card list instead of a table on a mobile viewport 80ms
+ ✓ src/components/AppShell.test.tsx > AppShell — profile menu and logout (UI-08, AC-08) > calls logout and lands on /login 108ms
+ ✓ src/components/lab-03/StaffTicketDetail.test.tsx > StaffTicketDetail — claim and owner (UI-15, AC-18, AC-19) > confirms before taking a ticket away from its current owner 155ms
+ ✓ src/components/AppShell.test.tsx > AppShell — profile menu and logout (UI-08, AC-08) > posts to /api/auth/logout with credentials and forgets the user (through the real provider) 124ms
+ ✓ src/components/CreateTicketForm.test.tsx > CreateTicketForm — validation (UI-03, AC-01) > rejects a summary that is too short 186ms
+ ✓ src/components/AppShell.test.tsx > AppShell — identity change discards loaded data > remounts the routed subtree when a different user signs in 92ms
+ ✓ src/components/lab-03/Login.test.tsx > Login — client validation (UI-01, AC-05) > rejects a malformed email without a request 590ms
+ ✓ src/components/lab-03/StaffTicketDetail.test.tsx > StaffTicketDetail — claim and owner (UI-15, AC-18, AC-19) > unassigns with the Unassigned option, and reports the 409 when the ticket is In Progress 108ms
+ ✓ src/components/lab-03/StaffTicketDetail.test.tsx > StaffTicketDetail — IT priority (UI-16, AC-20) > saves the new IT priority without touching the requested one 95ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — removal modal (UI-06, AC-09, BR-09) > keeps Confirm disabled until a reason is typed 297ms
+ ✓ src/components/lab-03/UserManagement.test.tsx > UserManagement — list (UI-21, AC-25) > searches by name or email, debounced 473ms
+ ✓ src/components/lab-03/StaffTicketDetail.test.tsx > StaffTicketDetail — status (UI-17, AC-21, AC-22) > offers only the permitted transitions plus the current status 11ms
+ ✓ src/components/lab-03/StaffTicketDetail.test.tsx > StaffTicketDetail — status (UI-17, AC-21, AC-22) > hides the owner-only targets and explains why when the ticket is unassigned (AC-22) 12ms
+ ✓ src/components/lab-03/UserManagement.test.tsx > UserManagement — list (UI-21, AC-25) > filters by role 108ms
+ ✓ src/components/lab-03/Badges.test.tsx > StatusBadge > New → "New" with zg-badge-status-new 24ms
+ ✓ src/components/lab-03/Badges.test.tsx > StatusBadge > Open → "Open" with zg-badge-status-open 3ms
+ ✓ src/components/lab-03/Badges.test.tsx > StatusBadge > InProgress → "In Progress" with zg-badge-status-in-progress 3ms
+ ✓ src/components/lab-03/Badges.test.tsx > StatusBadge > WaitingForRequester → "Waiting for Requester" with zg-badge-status-waiting 2ms
+ ✓ src/components/lab-03/Badges.test.tsx > StatusBadge > Reopened → "Reopened" with zg-badge-status-reopened 2ms
+ ✓ src/components/lab-03/Badges.test.tsx > StatusBadge > Resolved → "Resolved" with zg-badge-status-resolved 2ms
+ ✓ src/components/lab-03/Badges.test.tsx > StatusBadge > Closed → "Closed" with zg-badge-status-closed 2ms
+ ✓ src/components/lab-03/Badges.test.tsx > StatusBadge > Cancelled → "Cancelled" with zg-badge-status-cancelled 1ms
+ ✓ src/components/lab-03/Badges.test.tsx > PriorityBadge and ItPriorityBadge > requested Low 1ms
+ ✓ src/components/lab-03/Badges.test.tsx > PriorityBadge and ItPriorityBadge > requested Medium 1ms
+ ✓ src/components/lab-03/Badges.test.tsx > PriorityBadge and ItPriorityBadge > requested High 1ms
+ ✓ src/components/lab-03/Badges.test.tsx > PriorityBadge and ItPriorityBadge > IT Low carries the IT prefix and its own class 1ms
+ ✓ src/components/lab-03/Badges.test.tsx > PriorityBadge and ItPriorityBadge > IT Medium carries the IT prefix and its own class 1ms
+ ✓ src/components/lab-03/Badges.test.tsx > PriorityBadge and ItPriorityBadge > IT High carries the IT prefix and its own class 1ms
+ ✓ src/components/lab-03/Badges.test.tsx > RoleBadge and ActiveBadge > Requester → "Requester" 1ms
+ ✓ src/components/lab-03/Badges.test.tsx > RoleBadge and ActiveBadge > ITStaff → "IT Staff" 1ms
+ ✓ src/components/lab-03/Badges.test.tsx > RoleBadge and ActiveBadge > Administrator → "Administrator" 1ms
+ ✓ src/components/lab-03/Badges.test.tsx > RoleBadge and ActiveBadge > renders Active and Inactive 2ms
+ ✓ src/components/lab-03/Badges.test.tsx > OwnerName and RequesterResolvedBadge > shows the name, or the italic Unassigned placeholder 1ms
+ ✓ src/components/lab-03/Badges.test.tsx > OwnerName and RequesterResolvedBadge > writes the indication and carries the timestamp on hover 19ms
+ ✓ src/components/MyTickets.test.tsx > MyTickets — search, filter and pagination (UI-04, AC-10) > re-queries with the search term and narrows the visible rows 415ms
+ ✓ src/components/lab-03/StaffTicketDetail.test.tsx > StaffTicketDetail — status (UI-17, AC-21, AC-22) > applies an unconfirmed transition straight away 100ms
+ ✓ src/components/lab-03/StaffTicketQueue.test.tsx > StaffTicketQueue — toolbar (UI-11, AC-17) > debounces the search and re-queries with the term 462ms
+ ✓ src/components/lab-03/Login.test.tsx > Login — client validation (UI-01, AC-05) > clears a field error as soon as the field is edited 351ms
+ ✓ src/components/lab-03/Login.test.tsx > Login — client validation (UI-01, AC-05) > offers a show/hide toggle on the password field with aria-pressed 53ms
+ ✓ src/components/lab-03/Login.test.tsx > Login — client validation (UI-01, AC-05) > explains that passwords are reset by an administrator (X-01) 5ms
+ ✓ src/components/lab-03/StaffTicketDetail.test.tsx > StaffTicketDetail — status (UI-17, AC-21, AC-22) > confirms before moving to Resolved 154ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — removal modal (UI-06, AC-09, BR-09) > re-disables Confirm when the reason is cleared or is only whitespace 434ms
+ ✓ src/components/lab-03/ChangePassword.test.tsx > ChangePassword — live rules panel and validation (UI-06, AC-09) > flags a mismatch under the confirmation field 712ms
+ ✓ src/components/CreateTicketForm.test.tsx > CreateTicketForm — validation (UI-03, AC-01) > clears a field error as soon as the field is corrected 562ms
+ ✓ src/components/lab-03/StaffTicketDetail.test.tsx > StaffTicketDetail — status (UI-17, AC-21, AC-22) > confirms before moving to Cancelled 156ms
+ ✓ src/components/lab-03/StaffTicketQueue.test.tsx > StaffTicketQueue — toolbar (UI-11, AC-17) > status chips toggle and send a repeated status parameter 326ms
+ ✓ src/components/lab-03/StaffTicketDetail.test.tsx > StaffTicketDetail — status (UI-17, AC-21, AC-22) > cancelling the dialog leaves the status alone 159ms
+ ✓ src/components/lab-03/UserManagement.test.tsx > UserManagement — list (UI-21, AC-25) > shows the no-results state when nothing matches 561ms
+ ✓ src/components/lab-03/UserManagement.test.tsx > UserManagement — list (UI-21, AC-25) > renders cards instead of a table on mobile (AC-33) 24ms
+ ✓ src/components/lab-03/UserManagement.test.tsx > UserManagement — list (UI-21, AC-25) > shows a retryable failure on a 500 (AC-34) 26ms
+ ✓ src/components/lab-03/StaffTicketDetail.test.tsx > StaffTicketDetail — status (UI-17, AC-21, AC-22) > keeps the previous status and shows the conflict when the server answers 409 (AC-21) 93ms
+ ✓ src/components/MyTickets.test.tsx > MyTickets — search, filter and pagination (UI-04, AC-10) > finds a ticket by its ticket number 623ms
+ ✓ src/components/MyTickets.test.tsx > MyTickets — search, filter and pagination (UI-04, AC-10) > filters by category through the dropdown 155ms
+ ✓ src/components/lab-03/StaffTicketDetail.test.tsx > StaffTicketDetail — status (UI-17, AC-21, AC-22) > keeps the confirmation dialog open and shows the error when a confirmed change is refused 169ms
+ ✓ src/components/MyTickets.test.tsx > MyTickets — search, filter and pagination (UI-04, AC-10) > filters by status through the dropdown 93ms
+ ✓ src/components/lab-03/StaffTicketDetail.test.tsx > StaffTicketDetail — tabs, notes and attachments (UI-18, AC-23, AC-24) > shows three tabs with counts and follows the WAI-ARIA tabs pattern 95ms
+ ✓ src/components/lab-03/StaffTicketDetail.test.tsx > StaffTicketDetail — tabs, notes and attachments (UI-18, AC-23, AC-24) > renders the Internal Notes panel with its own styling and composer 69ms
+ ✓ src/components/lab-03/StaffTicketQueue.test.tsx > StaffTicketQueue — toolbar (UI-11, AC-17) > IT priority, owner and category filters map to their parameters 481ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — removal modal (UI-06, AC-09, BR-09) > sends the reason and moves the file into the removed list 686ms
+ ✓ src/components/MyTickets.test.tsx > MyTickets — search, filter and pagination (UI-04, AC-10) > sends the chosen sort option 112ms
+ ✓ src/components/lab-03/Login.test.tsx > Login — invalid credentials (UI-02, AC-05) > shows the generic callout, clears the password, keeps the email and focuses the password 813ms
+ ✓ src/components/lab-03/ChangePassword.test.tsx > ChangePassword — live rules panel and validation (UI-06, AC-09) > flags a new password equal to the current one under the new-password field 738ms
+ ✓ src/components/lab-03/StaffTicketQueue.test.tsx > StaffTicketQueue — toolbar (UI-11, AC-17) > the sort select and the sortable headers drive the sort parameter and aria-sort 316ms
+ ✓ src/components/lab-03/StaffTicketDetail.test.tsx > StaffTicketDetail — tabs, notes and attachments (UI-18, AC-23, AC-24) > posts an internal note to the staff endpoint, never to the comments one (AD-03) 459ms
+ ✓ src/components/lab-03/StaffTicketDetail.test.tsx > StaffTicketDetail — tabs, notes and attachments (UI-18, AC-23, AC-24) > shows the two composers as visibly distinct panels (V-12) 64ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — removal modal (UI-06, AC-09, BR-09) > closes without removing anything when Cancel is pressed 451ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — upload zone (AC-06, AC-07, AC-08) > uploads a picked file and shows it in the active list 64ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — upload zone (AC-06, AC-07, AC-08) > rejects a disallowed type in the browser without calling the API 76ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — upload zone (AC-06, AC-07, AC-08) > surfaces a server rejection under the upload control 63ms
+ ✓ src/components/MyTickets.test.tsx > MyTickets — search, filter and pagination (UI-04, AC-10) > restores the full list when the filters are cleared 531ms
+ ✓ src/components/lab-03/StaffTicketDetail.test.tsx > StaffTicketDetail — tabs, notes and attachments (UI-18, AC-23, AC-24) > lists attachments read-only: Download on active files, no upload and no Remove (AC-24) 69ms
+ ✓ src/components/lab-03/ChangePassword.test.tsx > ChangePassword — live rules panel and validation (UI-06, AC-09) > flags a new password that breaks the rules 530ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — upload zone (AC-06, AC-07, AC-08) > disables the picker once five files are active (AC-08) 16ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — ownership guard (AC-03, BR-04) > shows access denied instead of ticket data on a 403 20ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — ownership guard (AC-03, BR-04) > shows a not-found screen for a ticket that does not exist 11ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — ownership guard (AC-03, BR-04) > sends the session cookie on every read and never an X-Requester-Id header (UI-20) 9ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — Public Comments (UI-19, AC-14, BR-22) > lists the thread newest-first with author name, role badge and time 28ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — Public Comments (UI-19, AC-14, BR-22) > shows "No comments yet." for an empty thread 25ms
+ ✓ src/components/lab-03/StaffTicketQueue.test.tsx > StaffTicketQueue — toolbar (UI-11, AC-17) > pages with the queue page sizes and returns to page 1 when a filter changes 435ms
+ ✓ src/components/lab-03/UserManagement.test.tsx > UserManagement — create panel (UI-22, AC-26) > collects the fields, shows the password rules live and creates the user 1059ms
+ ✓ src/components/lab-03/Login.test.tsx > Login — inactive and throttled (UI-03, AC-06, AC-07) > shows the inactive-account callout on 403 ACCOUNT_INACTIVE 658ms
+ ✓ src/components/lab-03/StaffTicketDetail.test.tsx > StaffTicketDetail — tabs, notes and attachments (UI-18, AC-23, AC-24) > downloads an attachment through the API with the session cookie 133ms
+ ✓ src/components/lab-03/StaffTicketDetail.test.tsx > StaffTicketDetail — Administrator (UI-14, BR-17) > renders the operational fields as values, with no controls and no composers 64ms
+ ✓ src/components/MyTickets.test.tsx > MyTickets — search, filter and pagination (UI-04, AC-10) > pages through the list with Previous and Next 186ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — Public Comments (UI-19, AC-14, BR-22) > renders a comment body as text, never as HTML 18ms
+ ✓ src/components/MyTickets.test.tsx > MyTickets — search, filter and pagination (UI-04, AC-10) > jumps to a page by its number 130ms
+ ✓ src/components/CreateTicketForm.test.tsx > CreateTicketForm — validation (UI-03, AC-01) > shows server-supplied field errors under the matching fields 1870ms
+ ✓ src/components/lab-03/ChangePassword.test.tsx > ChangePassword — live rules panel and validation (UI-06, AC-09) > maps server field errors onto the three fields 711ms
+ ✓ src/components/lab-03/StaffTicketDetail.test.tsx > StaffTicketDetail — busy states (V-09) > shows Posting… on Post Comment and on Add Internal Note 541ms
+ ✓ src/components/lab-03/StaffTicketQueue.test.tsx > StaffTicketQueue — toolbar (UI-11, AC-17) > Clear filters drops every filter and the search, and is disabled when nothing is set 683ms
+ ✓ src/components/lab-03/StaffTicketQueue.test.tsx > StaffTicketQueue — toolbar (UI-11, AC-17) > reads its initial state from the URL so a queue link can be shared or returned to 35ms
+ ✓ src/components/lab-03/StaffTicketQueue.test.tsx > StaffTicketQueue — states (UI-12, AC-17, AC-34) > shows skeleton rows while loading 5ms
+ ✓ src/components/lab-03/StaffTicketQueue.test.tsx > StaffTicketQueue — states (UI-12, AC-17, AC-34) > shows the empty state when the system has no tickets 18ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — Public Comments (UI-19, AC-14, BR-22) > posts a comment with the session cookie and re-reads the thread 595ms
+ ✓ src/components/lab-03/StaffTicketDetail.test.tsx > StaffTicketDetail — busy states (V-09) > shows Saving… on Confirm and on the control while a change is in flight 184ms
+ ✓ src/components/lab-03/Login.test.tsx > Login — inactive and throttled (UI-03, AC-06, AC-07) > shows the throttled callout on 429 and disables the button for the cooldown 809ms
+ ✓ src/components/MyTickets.test.tsx > MyTickets — search, filter and pagination (UI-04, AC-10) > returns to page 1 when a filter changes, so a narrower set is not skipped past 703ms
+ ✓ src/components/MyTickets.test.tsx > MyTickets — empty vs. no-results (UI-09, AC-15) > shows the empty state, and only the empty state, when the requester has no tickets 18ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — Public Comments (UI-19, AC-14, BR-22) > refuses an empty or whitespace comment under the textarea without calling the API 283ms
+ ✓ src/components/lab-03/UserManagement.test.tsx > UserManagement — create panel (UI-22, AC-26) > shows a duplicate email under the Email field (AC-26) 1004ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — Public Comments (UI-19, AC-14, BR-22) > turns the counter red and disables Post Comment past 2000 characters 132ms
+ ✓ src/components/lab-03/UserManagement.test.tsx > UserManagement — create panel (UI-22, AC-26) > offers an Initial Password only on create, with a show/hide toggle 122ms
+ ✓ src/components/lab-03/UserManagement.test.tsx > UserManagement — create panel (UI-22, AC-26) > closes without saving on Cancel 139ms
+ ✓ src/components/lab-03/ChangePassword.test.tsx > ChangePassword — live rules panel and validation (UI-06, AC-09) > posts the three values as JSON with credentials: include 676ms
+ ✓ src/components/lab-03/ChangePassword.test.tsx > ChangePassword — forced mode (UI-07, AC-02, AC-10) > shows the forced wording, Continue, and no Cancel 15ms
+ ✓ src/components/lab-03/ChangePassword.test.tsx > ChangePassword — forced mode (UI-07, AC-02, AC-10) > renders the shell without navigation while the change is pending 21ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — Public Comments (UI-19, AC-14, BR-22) > keeps the typed text and shows the error when the server refuses the post 289ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — "Problem appears resolved" (UI-19, AC-15, BR-21) > offers the button on an open ticket and none of the staff controls 18ms
+ ✓ src/components/lab-03/UserManagement.test.tsx > UserManagement — edit panel (UI-23, AC-27, AC-29) > prefills the fields and saves the changes 184ms
+ ✓ src/components/lab-03/StaffTicketQueue.test.tsx > StaffTicketQueue — states (UI-12, AC-17, AC-34) > shows a distinct no-results state when a filter matches nothing 774ms
+ ✓ src/components/lab-03/StaffTicketQueue.test.tsx > StaffTicketQueue — states (UI-12, AC-17, AC-34) > shows the Forbidden state on a 403 without rendering any ticket 30ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — "Problem appears resolved" (UI-19, AC-15, BR-21) > confirms in a dialog, posts the indication and swaps the button for the indicator 139ms
+ ✓ src/components/lab-03/Login.test.tsx > Login — failure handling (UI-04, AC-34) > shows the safe message with Retry and preserves the entered values on a network failure 758ms
+ ✓ src/components/MyTickets.test.tsx > MyTickets — empty vs. no-results (UI-09, AC-15) > shows the no-results state, and only that, when a search matches nothing 695ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — "Problem appears resolved" (UI-19, AC-15, BR-21) > closes the dialog without posting when Cancel is pressed 159ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — "Problem appears resolved" (UI-19, AC-15, BR-21) > shows the indicator instead of the button once the ticket already carries the indication 10ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — "Problem appears resolved" (UI-19, AC-15, BR-21) > does not offer the button on a Resolved ticket 13ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — "Problem appears resolved" (UI-19, AC-15, BR-21) > does not offer the button on a Closed ticket 10ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — "Problem appears resolved" (UI-19, AC-15, BR-21) > does not offer the button on a Cancelled ticket 10ms
+ ✓ src/components/lab-03/UserManagement.test.tsx > UserManagement — edit panel (UI-23, AC-27, AC-29) > confirms before deactivating, and says the user is signed out 311ms
+ ✓ src/components/TicketDetail.test.tsx > TicketDetail — "Problem appears resolved" (UI-19, AC-15, BR-21) > keeps the dialog open and shows the server error on a 409 154ms
+ ✓ src/components/lab-03/ChangePassword.test.tsx > ChangePassword — forced mode (UI-07, AC-02, AC-10) > publishes the updated user and navigates to the role home on success 653ms
+ ✓ src/components/MyTickets.test.tsx > MyTickets — empty vs. no-results (UI-09, AC-15) > distinguishes the two states by message and by call to action 408ms
+ ✓ src/components/lab-03/StaffTicketQueue.test.tsx > StaffTicketQueue — states (UI-12, AC-17, AC-34) > shows a safe failure with Retry on a 500, keeping the entered search, and recovers 485ms
+ ✓ src/components/lab-03/UserManagement.test.tsx > UserManagement — edit panel (UI-23, AC-27, AC-29) > cancelling the confirmation sends nothing 283ms
+ ✓ src/components/lab-03/UserManagement.test.tsx > UserManagement — edit panel (UI-23, AC-27, AC-29) > disables the Active toggle on the administrator’s own account, with the reason (AC-29) 88ms
+ ✓ src/components/lab-03/StaffTicketQueue.test.tsx > StaffTicketQueue — states (UI-12, AC-17, AC-34) > Retry repeats the same request after a network failure 156ms
+ ✓ src/components/lab-03/StaffTicketQueue.test.tsx > StaffTicketQueue — mobile (UI-13, AC-33) > renders cards, not a table, at the mobile media query 16ms
+ ✓ src/components/lab-03/UserManagement.test.tsx > UserManagement — edit panel (UI-23, AC-27, AC-29) > disables the toggle and the role select for the last active administrator (AC-29, BR-26) 85ms
+ ✓ src/components/lab-03/UserManagement.test.tsx > UserManagement — edit panel (UI-23, AC-27, AC-29) > leaves the controls enabled once a second active administrator exists 84ms
+ ✓ src/components/lab-03/Login.test.tsx > Login — failure handling (UI-04, AC-34) > shows the safe message on a 500 761ms
+ ✓ src/components/CreateTicketForm.test.tsx > CreateTicketForm — submitting state > disables the button and shows a busy label while the request is in flight 1829ms
+ ✓ src/components/lab-03/UserManagement.test.tsx > UserManagement — edit panel (UI-23, AC-27, AC-29) > shows the server’s 409 inline when a guard is reached anyway (AC-29) 282ms
+ ✓ src/components/lab-03/ChangePassword.test.tsx > ChangePassword — voluntary mode > shows the voluntary wording, Save password and Cancel, and stays with a success callout 714ms
+ ✓ src/components/MyTickets.test.tsx > MyTickets — empty vs. no-results (UI-09, AC-15) > leaves the no-results state via Clear Filters 808ms
+ ✓ src/components/MyTickets.test.tsx > MyTickets — failure handling > shows an error callout with a retry instead of a misleading empty state 18ms
+ ✓ src/components/lab-03/StaffTicketQueue.test.tsx > StaffTicketQueue — search box and history (UI-11) > follows Back to an earlier search, and keeps what is typed after Clear filters 699ms
+ ✓ src/components/lab-03/UserManagement.test.tsx > UserManagement — initial password and access (UI-24, AC-28, AC-30) > sets a new initial password and confirms the user must change it 396ms
+ ✓ src/components/lab-03/Login.test.tsx > Login — failure handling (UI-04, AC-34) > shows the busy state while the request is in flight 806ms
+ ✓ src/components/lab-03/UserManagement.test.tsx > UserManagement — initial password and access (UI-24, AC-28, AC-30) > shows the server’s rejection under the password field 281ms
+ ✓ src/components/lab-03/UserManagement.test.tsx > UserManagement — initial password and access (UI-24, AC-28, AC-30) > shows the forbidden state, and no user data, for a non-Administrator (AC-30) 8ms
+ ✓ src/components/lab-03/ChangePassword.test.tsx > ChangePassword — voluntary mode > shows the safe failure message when the server is unreachable 701ms
+ ✓ src/components/lab-03/Login.test.tsx > Login — failure handling (UI-04, AC-34) > posts JSON with credentials: include to /api/auth/login 844ms
+ ✓ src/components/lab-03/ChangePassword.test.tsx > ChangePassword — busy state (V-09) > shows Saving… and disables Continue while the request is in flight 854ms
+ ✓ src/components/CreateTicketForm.test.tsx > CreateTicketForm — success (AC-01) > shows the ticket number returned by the server and a way onward 1861ms
+ ✓ src/components/lab-03/UserManagement.test.tsx > UserManagement — busy states (V-09) > shows Saving… on Save User while the create request is in flight 1043ms
+ ✓ src/components/lab-03/UserManagement.test.tsx > UserManagement — busy states (V-09) > shows Setting… on Set Initial Password while the request is in flight 388ms
+ ✓ src/components/lab-03/Login.test.tsx > Login — success routing (UI-05, AC-02, AC-10) > sends a Requester to their role home and publishes the user 762ms
+ ✓ src/components/lab-03/Login.test.tsx > Login — success routing (UI-05, AC-02, AC-10) > sends a IT Staff to their role home and publishes the user 672ms
+ ✓ src/components/lab-03/Login.test.tsx > Login — success routing (UI-05, AC-02, AC-10) > sends a Administrator to their role home and publishes the user 623ms
+ ✓ src/components/CreateTicketForm.test.tsx > CreateTicketForm — success (AC-01) > sends the requester in the header and never in the body 1832ms
+ ✓ src/components/lab-03/Login.test.tsx > Login — success routing (UI-05, AC-02, AC-10) > sends a user with mustChangePassword to /change-password before anything else 699ms
+ ✓ src/components/lab-03/Login.test.tsx > Login — success routing (UI-05, AC-02, AC-10) > returns to the from path when it belongs to the role 763ms
+ ✓ src/components/CreateTicketForm.test.tsx > CreateTicketForm — backend failure (UI-08, AC-12, FR-07) > shows an error callout and keeps every entered value after a 500 1841ms
+ ✓ src/components/lab-03/Login.test.tsx > Login — success routing (UI-05, AC-02, AC-10) > ignores a from path that belongs to another role and uses the role home 740ms
+ ✓ src/components/lab-03/Login.test.tsx > Login — success routing (UI-05, AC-02, AC-10) > redirects an already signed-in visitor to their role home without rendering the form 3ms
+ ✓ src/components/CreateTicketForm.test.tsx > CreateTicketForm — backend failure (UI-08, AC-12, FR-07) > keeps every entered value when the server cannot be reached at all 1770ms
+ ✓ src/components/CreateTicketForm.test.tsx > CreateTicketForm — backend failure (UI-08, AC-12, FR-07) > returns the submit button to its idle state so the user can retry 1862ms
+ ✓ src/components/CreateTicketForm.test.tsx > CreateTicketForm — attachments (BR-05, BR-06, BR-07) > accepts an allowed file and lists it with its size 99ms
+ ✓ src/components/CreateTicketForm.test.tsx > CreateTicketForm — attachments (BR-05, BR-06, BR-07) > rejects a file over 5 MB and explains why 111ms
+ ✓ src/components/CreateTicketForm.test.tsx > CreateTicketForm — attachments (BR-05, BR-06, BR-07) > rejects a disallowed file type dropped onto the dropzone 27ms
+ ✓ src/components/CreateTicketForm.test.tsx > CreateTicketForm — attachments (BR-05, BR-06, BR-07) > rejects a sixth file once five are staged 87ms
+ ✓ src/components/CreateTicketForm.test.tsx > CreateTicketForm — attachments (BR-05, BR-06, BR-07) > removes a staged file when its Remove control is used 166ms
+
+ Test Files  12 passed (12)
+      Tests  231 passed (231)
+   Start at  13:41:48
+   Duration  17.65s (transform 2.62s, setup 2.60s, import 9.80s, tests 61.05s, environment 16.34s)
+
+Not implemented: navigation to another Document
+Not implemented: navigation to another Document
+stderr | src/components/lab-03/StaffTicketDetail.test.tsx > StaffTicketDetail — busy states (V-09) > shows Posting… on Post Comment and on Add Internal Note
+An update to ThreadPanel inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ThreadPanel inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ThreadPanel inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to StaffTicketDetail inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ThreadPanel inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/components/lab-03/StaffTicketQueue.test.tsx > StaffTicketQueue — states (UI-12, AC-17, AC-34) > shows skeleton rows while loading
+An update to StaffTicketQueue inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to StaffTicketQueue inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to StaffTicketQueue inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to StaffTicketQueue inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/components/lab-03/StaffTicketQueue.test.tsx > StaffTicketQueue — states (UI-12, AC-17, AC-34) > shows skeleton rows while loading
+An update to StaffTicketQueue inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/components/lab-03/StaffTicketQueue.test.tsx > StaffTicketQueue — search box and history (UI-11) > follows Back to an earlier search, and keeps what is typed after Clear filters
+An update to MemoryRouter inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/components/lab-03/StaffTicketQueue.test.tsx > StaffTicketQueue — search box and history (UI-11) > follows Back to an earlier search, and keeps what is typed after Clear filters
+An update to StaffTicketQueue inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to StaffTicketQueue inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/components/lab-03/StaffTicketQueue.test.tsx > StaffTicketQueue — search box and history (UI-11) > follows Back to an earlier search, and keeps what is typed after Clear filters
+An update to StaffTicketQueue inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to StaffTicketQueue inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/components/lab-03/StaffTicketQueue.test.tsx > StaffTicketQueue — search box and history (UI-11) > follows Back to an earlier search, and keeps what is typed after Clear filters
+An update to StaffTicketQueue inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/components/lab-03/ChangePassword.test.tsx > ChangePassword — busy state (V-09) > shows Saving… and disables Continue while the request is in flight
+An update to MemoryRouter inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ChangePassword inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { API_URL } from '../api'
-import { useRequester } from '../context/requester'
+import { apiFetch } from '../apiClient'
+import { useAuth } from '../context/auth'
 import { useMediaQuery } from '../useMediaQuery'
+import { ItPriorityBadge, OwnerName, PriorityBadge, StatusBadge } from './Badges'
 
 /**
  * My Tickets list (ui-spec.md §3.3, api-spec.md §3.5 — FR-03, AC-04, AC-10, AC-15).
@@ -10,8 +11,9 @@ import { useMediaQuery } from '../useMediaQuery'
  * Three rules shape this component:
  *
  * 1. Ownership is the server's job (BR-04). Nothing here filters by requester;
- *    the id travels in `X-Requester-Id` and the endpoint answers with that
- *    requester's tickets only. The component simply renders what it is given.
+ *    the session cookie identifies the caller and the endpoint answers with
+ *    that requester's tickets only. The component simply renders what it is
+ *    given.
  * 2. Every control maps to a query parameter and the server does the work
  *    (AC-10). Searching, filtering, sorting and paging all re-fetch rather than
  *    slicing a cached array, so what is on screen always describes the whole
@@ -20,10 +22,10 @@ import { useMediaQuery } from '../useMediaQuery'
  *    search matched nothing" are distinct panels with distinct calls to action,
  *    decided from `totalItems` plus whether a filter is active.
  *
- * BR-13 is handled above this component: AppShell keys the routed subtree by
- * the requester id, so a requester switch unmounts and remounts this list with
- * empty state. The stale-response guard below covers the narrower race where a
- * request issued for the old requester lands after the switch.
+ * Identity changes are handled above this component: AppShell keys the routed
+ * subtree by the user id, so a different sign-in unmounts and remounts this
+ * list with empty state. The stale-response guard below covers the narrower
+ * race where a request issued for the old filters lands after they change.
  */
 
 interface Option {
@@ -37,6 +39,9 @@ export interface TicketListItem {
   summary: string
   status: string
   priority: string
+  itPriority: string
+  owner: { id: string; name: string; role: string } | null
+  requesterResolvedAt: string | null
   category: Option | null
   relatedSystem: Option | null
   attachmentCount: number
@@ -83,31 +88,8 @@ function formatDate(value: string): string {
   return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' })
 }
 
-function StatusBadge({ status }: { status: string }) {
-  return <span className={`zg-badge zg-badge-status-${status.toLowerCase()}`}>{status}</span>
-}
-
-function PriorityBadge({ priority }: { priority: string }) {
-  return <span className={`zg-badge zg-badge-priority-${priority.toLowerCase()}`}>{priority}</span>
-}
-
-/**
- * IT Priority and Ticket Owner are triage fields owned by the IT side of the
- * workflow, which is not in the Lab 2 schema — the requester-facing sprint
- * stops at the requested priority. The columns are rendered now, as Issue #5
- * asks, with an explicit "not yet assigned" placeholder rather than a blank
- * cell, so "no value yet" cannot be misread as missing data.
- */
-function NotAssigned({ label }: { label: string }) {
-  return (
-    <span className="zg-not-assigned" title={`${label} is assigned during IT triage`}>
-      Unassigned
-    </span>
-  )
-}
-
 function MyTickets() {
-  const { requester } = useRequester()
+  const { user } = useAuth()
   const isMobile = useMediaQuery('(max-width: 767.98px)')
 
   // `searchInput` is what the user is typing; `filters.search` is what has been
@@ -127,8 +109,6 @@ function MyTickets() {
   /** Bumped by the Retry control so a failed load can be repeated unchanged. */
   const [reloadToken, setReloadToken] = useState(0)
 
-  const requesterId = requester?.id ?? ''
-
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setFilters((current) => (current.search === searchInput ? current : { ...current, search: searchInput }))
@@ -147,7 +127,7 @@ function MyTickets() {
   useEffect(() => {
     let cancelled = false
 
-    fetch(`${API_URL}/api/categories`)
+    apiFetch('/api/categories')
       .then((res) => (res.ok ? res.json() : null))
       .then((body) => {
         if (!cancelled) setCategories(Array.isArray(body?.data) ? body.data : [])
@@ -182,11 +162,9 @@ function MyTickets() {
     setLoading(true)
     setError(null)
 
-    fetch(`${API_URL}/api/tickets?${params.toString()}`, {
-      // Requester context travels in the header, never in the query string
-      // (api-spec.md §1.1), so the server owns the ownership check.
-      headers: { 'X-Requester-Id': requesterId },
-    })
+    // The caller is the session cookie, never a query parameter (Lab 3
+    // api-spec.md §1.1), so the server owns the ownership check.
+    apiFetch(`/api/tickets?${params.toString()}`)
       .then(async (res) => {
         const body = await res.json().catch(() => null)
         if (requestIdRef.current !== requestId) return
@@ -210,7 +188,7 @@ function MyTickets() {
       .finally(() => {
         if (requestIdRef.current === requestId) setLoading(false)
       })
-  }, [requesterId, filters.search, filters.category, filters.status, filters.sort, page, pageSize, reloadToken])
+  }, [filters.search, filters.category, filters.status, filters.sort, page, pageSize, reloadToken])
 
   const hasActiveFilters = Boolean(filters.search || filters.category || filters.status)
 
@@ -249,7 +227,7 @@ function MyTickets() {
         <div>
           <h1 className="zg-title">My Tickets</h1>
           <p className="zg-subtitle mb-0">
-            Tickets raised by {requester?.name ?? 'the selected requester'}.
+            Tickets raised by {user?.name ?? 'you'}.
           </p>
         </div>
         <Link className="zg-btn zg-btn-primary" to="/tickets/new">
@@ -428,13 +406,13 @@ function MyTickets() {
                       <div>
                         <dt>IT Priority</dt>
                         <dd>
-                          <NotAssigned label="IT Priority" />
+                          <ItPriorityBadge priority={ticket.itPriority ?? ticket.priority} />
                         </dd>
                       </div>
                       <div>
                         <dt>Ticket Owner</dt>
                         <dd>
-                          <NotAssigned label="Ticket Owner" />
+                          <OwnerName owner={ticket.owner ?? null} />
                         </dd>
                       </div>
                     </dl>
@@ -446,7 +424,7 @@ function MyTickets() {
             <div className="zg-table-wrap">
               <table className="zg-table">
                 <caption className="visually-hidden">
-                  Tickets raised by the selected requester
+                  Tickets raised by you
                 </caption>
                 {/*
                  * Explicit widths with `table-layout: fixed` (see the
@@ -497,13 +475,13 @@ function MyTickets() {
                         <PriorityBadge priority={ticket.priority} />
                       </td>
                       <td className="zg-cell-tight">
-                        <NotAssigned label="IT Priority" />
+                        <ItPriorityBadge priority={ticket.itPriority ?? ticket.priority} />
                       </td>
                       <td className="zg-cell-tight">
                         <StatusBadge status={ticket.status} />
                       </td>
                       <td className="zg-cell-tight">
-                        <NotAssigned label="Ticket Owner" />
+                        <OwnerName owner={ticket.owner ?? null} />
                       </td>
                       <td className="zg-cell-tight zg-cell-date">{formatDate(ticket.updatedAt)}</td>
                       <td className="zg-cell-tight">

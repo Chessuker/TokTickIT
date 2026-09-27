@@ -7,29 +7,55 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+/// Every user has exactly one role (BR-13).
+enum Role {
+  Requester
+  ITStaff
+  Administrator
 }
 
-/// Temporary Lab 2 requester directory. This is a testing mechanism, not
-/// authentication: it carries no password, session, or role. Lab 3 replaces the
-/// selector with real auth and can extend this model with credential fields.
-model RequesterUser {
-  id         String   @id @default(uuid())
-  name       String
-  email      String   @unique
-  department String?
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+/// Lab 3 renamed `RequesterUser` to `User` in place (AD-02): the ids that
+/// `Ticket.requesterId` already points at are unchanged, and the Lab 2 columns
+/// (`name`, `email`, `department`, `isActive`) survive untouched. The legacy
+/// Lab 1 `User` table was dropped in the same migration (specification.md §7).
+model User {
+  id                 String    @id @default(uuid())
+  name               String
+  email              String    @unique
+  department         String?
+  role               Role      @default(Requester)
+  /// bcrypt hash. Empty string means "never seeded", which never matches a
+  /// password, so a migrated-but-unseeded user cannot log in (AD-13).
+  passwordHash       String    @default("")
+  mustChangePassword Boolean   @default(true)
+  isActive           Boolean   @default(true)
+  lastLoginAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  tickets Ticket[]
+  tickets       Ticket[]             @relation("TicketRequester")
+  ownedTickets  Ticket[]             @relation("TicketOwner")
+  sessions      Session[]
+  comments      TicketComment[]
+  internalNotes TicketInternalNote[]
 
   @@index([isActive])
+  @@index([role, isActive])
+}
+
+/// One row per live login (BR-10, AD-01). Only the SHA-256 of the cookie token
+/// is stored; deleting the row is what logout and revocation mean.
+model Session {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model Category {
@@ -57,10 +83,19 @@ model RelatedSystem {
   @@index([isActive])
 }
 
-/// Only `New` is reachable in Lab 2; the ticket status lifecycle is out of scope
-/// for this sprint and the enum is extended in a later one.
+/// The full workflow (BR-18). Which pairs are reachable from which is decided
+/// by the transition matrix on the server, never by the enum.
+/// Declared in workflow order (api-spec.md §3.9): Postgres sorts an enum by
+/// declaration order, which is what `GET /api/staff/tickets?sort=status` uses.
 enum TicketStatus {
   New
+  Open
+  InProgress
+  WaitingForRequester
+  Reopened
+  Resolved
+  Closed
+  Cancelled
 }
 
 enum TicketPriority {
@@ -75,17 +110,28 @@ model Ticket {
   summary      String
   description  String
   status       TicketStatus   @default(New)
+  /// The Requested Priority: immutable once the ticket exists (BR-16).
   priority     TicketPriority
+  /// IT Priority, copied from `priority` at create and changed only by IT Staff.
+  itPriority   TicketPriority
 
   requesterId     String
+  ownerId         String?
   categoryId      String
   relatedSystemId String?
 
-  requester     RequesterUser  @relation(fields: [requesterId], references: [id])
+  requesterResolvedAt DateTime?
+  resolvedAt          DateTime?
+  closedAt            DateTime?
+
+  requester     User           @relation("TicketRequester", fields: [requesterId], references: [id])
+  owner         User?          @relation("TicketOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   category      Category       @relation(fields: [categoryId], references: [id])
   relatedSystem RelatedSystem? @relation(fields: [relatedSystemId], references: [id])
 
-  attachments Attachment[]
+  attachments   Attachment[]
+  comments      TicketComment[]
+  internalNotes TicketInternalNote[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -95,6 +141,39 @@ model Ticket {
   @@index([relatedSystemId])
   @@index([status])
   @@index([createdAt])
+  @@index([ownerId, status])
+  @@index([itPriority])
+  @@index([updatedAt])
+}
+
+/// Public Comments: readable by the Requester, IT Staff and Administrators
+/// (BR-04). Kept in its own table so no query can return an Internal Note by
+/// mistake (AD-03).
+model TicketComment {
+  id        String   @id @default(uuid())
+  ticketId  String
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author User   @relation(fields: [authorId], references: [id])
+
+  @@index([ticketId, createdAt])
+}
+
+/// Internal Notes: IT Staff and Administrators only (BR-04, BR-23).
+model TicketInternalNote {
+  id        String   @id @default(uuid())
+  ticketId  String
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author User   @relation(fields: [authorId], references: [id])
+
+  @@index([ticketId, createdAt])
 }
 
 /// Attachments are never hard-deleted. `isRemoved` marks a soft removal and

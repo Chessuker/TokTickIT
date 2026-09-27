@@ -56,7 +56,7 @@ describe('ticket number generation', () => {
 
     expect(findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { ticketNumber: { startsWith: 'TKT-2027-' } },
+        where: { ticketNumber: { startsWith: 'TKT-2027-', lt: 'TKT-2027-900000' } },
         orderBy: { ticketNumber: 'desc' },
       })
     );

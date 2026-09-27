@@ -1,6 +1,6 @@
 # TokTickIT
 
-TokTickIT is a full-stack IT ticketing/status portal built with a React + Express + PostgreSQL stack, wrapped in a deliberately over-the-top "1999 cyber portal" retro UI. It exposes a health-check endpoint that reports live database connectivity, a category list backed by Postgres, and a simple user directory with create support.
+TokTickIT is a full-stack IT ticketing portal built with a React + Express + PostgreSQL stack. Requesters sign in, raise tickets with attachments and follow them; IT Staff and Administrators get their own areas. Every request is authorised on the server from a session cookie.
 
 ## Table of contents
 
@@ -18,10 +18,14 @@ TokTickIT is a full-stack IT ticketing/status portal built with a React + Expres
 
 ## Features
 
-- **Live health check** — `GET /api/health` runs `SELECT 1` against Postgres and returns `200`/`ok` or `503`/`error` based on real DB connectivity, not a hardcoded response.
-- **Category list** — categories are seeded in Postgres and served through `GET /api/categories`, rendered by the frontend with loading and error states.
-- **User directory** — list existing users (`GET /api/users`) and create new ones from the UI (`POST /api/users`), with server-side email validation.
-- **Retro cyber UI** — a Bootstrap 5-themed "late-90s internet" interface (marquee ticker, window chrome, blinking badges) as the frontend shell.
+- **Authentication (Lab 3)** — email + password login, bcrypt-hashed passwords, an `httpOnly` session cookie backed by a `Session` table, logout that revokes the session, login throttling, and a forced password change for accounts on an initial password. Every protected endpoint checks the session and role on the server.
+- **Roles** — Requester, IT Staff and Administrator, each with its own navigation and home screen; the wrong role gets a Forbidden state in the UI and a `403` from the API.
+- **Requester ticketing (Lab 2)** — create tickets, list and search your own tickets, open a read-only detail view, and attach, download or soft-remove files. Ownership is enforced from the session identity.
+- **Public Comments and "Problem appears resolved" (Lab 3)** — a Requester comments on their own ticket and IT Staff on any ticket; the thread is readable by all three roles, newest first, and bodies are stored and rendered as plain text. A Requester can flag an open ticket as "appears resolved" (`requesterResolvedAt`) without touching its status.
+- **IT Staff Ticket Queue (Lab 3)** — every ticket in the system with search, status / IT priority / owner / category filters, sortable columns and pagination, all done server-side (`GET /api/staff/tickets`). The queue state lives in the URL so a filtered view can be shared or returned to. Administrators see the same list read-only.
+- **IT Staff ticket operations (Lab 3)** — claim, assign or unassign an owner, set an IT Priority independent of what the requester asked for, and move the ticket through a server-enforced status workflow (`New → Open → In Progress → … → Closed`, with `Reopened` and `Cancelled`). Public Comments reach the requester; Internal Notes never do. Administrators see the same screen read-only.
+- **Administrator user management (Lab 3)** — one screen to search the directory, filter by role, create an account with a one-time initial password, edit name, email, role and activation, and hand out a new initial password. Nobody is ever deleted: deactivation retires an account and signs it out immediately, and the server refuses both self-deactivation and removing the last active administrator.
+- **Live health check** — `GET /api/health` runs `SELECT 1` against Postgres and returns `200`/`ok` or `503`/`error` based on real DB connectivity.
 
 ## Tech stack
 
@@ -49,7 +53,8 @@ TokTickIT/
 │   │   └── seed.ts      # DB seed script
 │   ├── prisma/schema.prisma
 │   └── tests/app.test.ts
-├── docs/lab-01/     # CPE334 Lab 1 write-ups (tests, AI usage, peer review)
+├── e2e/             # Playwright end-to-end suites (lab-02 flows + lab-03/)
+├── docs/lab-0N/     # CPE334 lab write-ups (specification, API/UI spec, tests, AI usage, review)
 └── package.json     # Root scripts that fan out to client/server
 ```
 
@@ -87,9 +92,10 @@ cp server/.env.example server/.env
 ```
 PORT=5000
 DATABASE_URL="postgresql://postgres:postgres@localhost:5433/toktickit?schema=public"
+CLIENT_ORIGIN=http://localhost:5173
 ```
 
-The value above matches the bundled `docker-compose.yml`. Point it at your own instance if you are not using Docker.
+The database value matches the bundled `docker-compose.yml`. Point it at your own instance if you are not using Docker. `CLIENT_ORIGIN` is the browser origin allowed to send the session cookie (CORS with credentials); change it only if the Vite dev server runs somewhere other than port 5173.
 
 The frontend reads `VITE_API_URL` (defaults to `http://localhost:5000` if unset) — set it in a `client/.env` file if your API isn't running on the default port.
 
@@ -110,7 +116,39 @@ npm run dev:server   # http://localhost:5000
 npm run dev:client   # http://localhost:5173
 ```
 
-Open `http://localhost:5173` in a browser. The app checks `/api/health` and loads `/api/categories` and `/api/users` on load.
+Open `http://localhost:5173` in a browser and sign in with one of the accounts below.
+
+### Local development accounts
+
+The seed creates these accounts for local development only (never use them anywhere else). Re-running the seed resets each of them to the password and state listed here.
+
+| Name | Email | Password | Role | State |
+| --- | --- | --- | --- | --- |
+| Jennifer Anderson | `jennifer.anderson@kmutt.ac.th` | `Requester1!` | Requester | ready |
+| David Lee | `david.lee@kmutt.ac.th` | `Requester2!` | Requester | ready |
+| Sarah Johnson | `sarah.johnson@kmutt.ac.th` | `Welcome123!` | Requester | must change password at first login |
+| Michael Brown | `michael.brown@kmutt.ac.th` | `Welcome123!` | Requester | must change password at first login |
+| Alex Smith | `alex.smith@kmutt.ac.th` | `Welcome123!` | Requester | **inactive** — login refused |
+| Nattapong Srisuk | `nattapong.srisuk@kmutt.ac.th` | `Staff1!pass` | IT Staff | ready |
+| Priya Raman | `priya.raman@kmutt.ac.th` | `Staff1!pass` | IT Staff | ready |
+| Chen Wei | `chen.wei@kmutt.ac.th` | `Staff1!pass` | IT Staff | ready |
+| Robert Wilson | `robert.wilson@kmutt.ac.th` | `Staff1!pass` | IT Staff | **inactive** — login refused |
+| System Administrator | `admin@toktickit.xyz` | `Admin1!pass` | Administrator | ready |
+
+Requesters migrated from a Lab 2 database receive `Welcome123!` as their initial password once the seed has run, and must change it at first login.
+
+The seed also creates 24 sample tickets numbered `TKT-2026-900001` … `TKT-2026-900024` across the four active Requesters, covering every status and priority, about a third unassigned and the rest owned by the three active IT Staff. That range is reserved: user-created tickets keep counting from `TKT-2026-000001`, and re-running the seed resets the sample tickets without touching anything else. Each worked ticket also carries a short Public Comment thread and, where IT Staff are involved, one or two Internal Notes.
+
+### Upgrading a Lab 2 database
+
+The Lab 3 migration renames `RequesterUser` to `User` in place, so existing tickets and attachments keep their owners. To verify that on a database holding Lab 2 data:
+
+```bash
+npm --prefix server exec tsx scripts/verify-lab03-migration.ts before   # snapshot counts on the Lab 2 schema
+npm run prisma:migrate
+npm --prefix server exec tsx scripts/verify-lab03-migration.ts after    # compare, before seeding
+npm run prisma:seed
+```
 
 ## Available scripts
 
@@ -127,7 +165,8 @@ Run from the repo root (each forwards to the relevant workspace):
 | `npm run prisma:generate` | Regenerate the Prisma client |
 | `npm run prisma:db:push` | Push `schema.prisma` to the database |
 | `npm run prisma:migrate` | Apply pending migrations (`prisma migrate deploy`) |
-| `npm run prisma:seed` | Seed reference data — safe to re-run |
+| `npm run prisma:seed` | Seed reference data and local accounts — safe to re-run |
+| `npm run test:e2e` | Run the Playwright suites against a migrated, seeded database |
 
 Additional server-only scripts (`npm --prefix server run ...`): `prisma:migrate`, `prisma:seed`.
 
@@ -138,15 +177,15 @@ npm run test:server   # Supertest against Express, Prisma mocked — no live DB 
 npm run test:client   # Vitest + React Testing Library
 ```
 
-Both suites currently pass (7 backend / 3 frontend tests). See [docs/lab-01/tests.md](docs/lab-01/tests.md) for the full breakdown of what each test covers.
+Both suites run without a database. The Playwright end-to-end suite (`npm run test:e2e`) needs PostgreSQL migrated and seeded, and starts the API and Vite itself. See [docs/lab-03/tests.md](docs/lab-03/tests.md) for what each test covers.
 
 ## Lab documentation
 
-This repo doubles as the CPE334 Lab 1 submission. Supporting docs live in [`docs/lab-01/`](docs/lab-01/):
+This repo doubles as the CPE334 lab submissions. Each lab's contract and evidence live under `docs/`:
 
-- [tests.md](docs/lab-01/tests.md) — test environment and results
-- [ai_use.md](docs/lab-01/ai_use.md) — AI tool usage log
-- [reviewer.md](docs/lab-01/reviewer.md) — peer review records
+- [`docs/lab-03/`](docs/lab-03/) — specification, API spec, UI spec, test plan, issues, AI usage, review (current sprint)
+- [`docs/lab-02/`](docs/lab-02/) — Requester ticketing sprint
+- [`docs/lab-01/`](docs/lab-01/) — project foundation
 
 ## Contact
 
