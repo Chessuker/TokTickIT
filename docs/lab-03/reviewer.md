@@ -37,7 +37,7 @@ One row per pull request. Base branch is `lab3-staging` for feature PRs and `mai
 | 5 | #40 IT Staff Ticket operations | [#47](https://github.com/Chessuker/TokTickIT/pull/47) | `feature/40-staff-ticket-ops` | `lab3-staging` | TeekhathatTT | 2026-09-25 (`f835755`) | Approved |
 | 6 | #41 Administrator user management | [#48](https://github.com/Chessuker/TokTickIT/pull/48) | `feature/41-admin-users` | `lab3-staging` | TeekhathatTT | 2026-09-26 (`91e5178`) | Approved |
 | 7 | #42 E2E, visual inspection, release | [#49](https://github.com/Chessuker/TokTickIT/pull/49) | `feature/42-e2e-release` | `lab3-staging` | TeekhathatTT | 2026-09-26 (`ac1f845`) | Changes requested (1) → fixed → Approved |
-| 8 | Release Lab 3 | [#50](https://github.com/Chessuker/TokTickIT/pull/50) | `lab3-staging` | `main` | TeekhathatTT | | Approved |
+| 8 | Release Lab 3 | [#50](https://github.com/Chessuker/TokTickIT/pull/50) | `lab3-staging` | `main` | TeekhathatTT | 2026-09-27 `(34eadf5)` | Approved |
 
 ---
 
@@ -58,7 +58,7 @@ One row per pull request. Base branch is `lab3-staging` for feature PRs and `mai
 
 ## 4. Comments I Gave on My Partner's PRs
 
-Repository: [TeekhathatTT/CPE334-TokTickIT](https://github.com/TeekhathatTT/CPE334-TokTickIT). All five Lab 3 pull requests target `lab3-staging`.
+Repository: [TeekhathatTT/CPE334-TokTickIT](https://github.com/TeekhathatTT/CPE334-TokTickIT). All six Lab 3 pull requests target `lab3-staging`.
 
 | PR | Comment (summary) | Their response | Outcome |
 | --- | --- | --- | --- |
