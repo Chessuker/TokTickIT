@@ -34,11 +34,22 @@ const ANSI = /\u001b\[[0-9;?]*[A-Za-z]/g
 
 const branch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: ROOT }).toString().trim()
 // A log must say exactly what it ran against: a commit, or a commit plus edits
-// not yet committed. Only the first kind is final evidence.
-const dirty = execSync('git status --porcelain', { cwd: ROOT }).toString().trim() !== ''
+// not yet committed. Only the first kind is final evidence — except that edits
+// confined to docs/ and artifacts/ (answer pages, screenshots, these logs) are
+// never loaded by any suite, so the code under test is still exactly the commit.
+const changed = execSync('git status --porcelain', { cwd: ROOT })
+  .toString()
+  .split('\n')
+  .filter(Boolean)
+  .map((line) => line.slice(3))
+const docsOnly = changed.every((path) => /^"?(docs|artifacts)\//.test(path))
 const commit =
   execSync('git rev-parse --short HEAD', { cwd: ROOT }).toString().trim() +
-  (dirty ? ' + uncommitted changes' : '')
+  (changed.length === 0
+    ? ''
+    : docsOnly
+      ? ' + uncommitted docs/artifacts only (code = this commit)'
+      : ' + uncommitted changes')
 
 const only = process.argv.find((arg) => arg.startsWith('--only='))?.slice('--only='.length)
 

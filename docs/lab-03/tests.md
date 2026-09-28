@@ -367,7 +367,7 @@ Turned to Pass: E2E-04 (IT Staff half added), E2E-07. The new `visual.spec.ts` f
 
 ### Final run
 
-On a database reset with `prisma migrate reset` and re-seeded, all three suites from the repository root. The complete, verbatim output of each is in [`test-runs/`](test-runs/) (`server.txt`, `client.txt`, `e2e.txt`); each file's second line names the branch and commit it ran against.
+On `main` after the release merge — `34eadf5`, Merge pull request #50 — against a migrated and freshly seeded database, all three suites from the repository root. The complete, verbatim output of each is in [`test-runs/`](test-runs/) (`server.txt`, `client.txt`, `e2e.txt`); each file's second line names the branch and commit it ran against.
 
 ```
 $ npm run test:server
@@ -384,7 +384,7 @@ $ npx playwright test
 970 tests, 970 passing, 0 failed, 0 skipped.
 ```
 
-Recorded on `feature/42-e2e-release` — `lab3-staging` plus this issue's changes. After the release pull request merges, the same command sequence (`node docs/lab-03/scripts/capture-test-runs.mjs`) is re-run on `main` and the logs replaced, so the evidence names the release commit.
+Recorded 2026-09-27 on `docs/lab-03-final-evidence`, branched from `main` at `34eadf5` by `node docs/lab-03/scripts/capture-test-runs.mjs`. The only uncommitted edits at the time were under `docs/` and `artifacts/` (these logs, the answer pages, the Kanban screenshot), which no suite loads — so the code under test is exactly the release commit, and each log header says so. The same 970 tests had passed before the release on `feature/42-e2e-release`.
 
 ---
 

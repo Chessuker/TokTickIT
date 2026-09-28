@@ -37,18 +37,16 @@ Six to ten prompts that materially shaped the sprint. Rows are added as the spri
 
 ## 3. My Reflection
 
-> **Draft for me to rewrite in my own words before submitting.** Prepared from the session record so that every example below is something that actually happened; the opinions are mine to state.
+**Specification agent.** เขียน Contract ให้เสร็จก่อน ทั้ง specification, API, UI และ test plan จากนั้นเริ่ม implementation ก็สามารถอ้างอิงเอกสารเหล่านี้ได้โดยตรง และเมื่อภายหลังเกิดปัญหาที่ขัดแย้งกับสิ่งที่ระบุไว้ก่อนหน้า ก็ใช้ contract เป็นตัวตัดสินได้ เช่น coding session ตั้งชื่อไฟล์ทดสอบ staff detail ว่า staff-ticket-ops.api.test.ts แต่ทั้ง contract และ lab sheet ระบุว่า staff-ticket-detail.api.test.ts ดังนั้นจึงยึดตาม contract ส่วนกรณีที่ specification agent ผิดนั้น มักเป็นสิ่งที่การวัดจริงเท่านั้นที่จะตรวจพบได้
 
-**Specification agent.** Writing the whole contract first — specification, API, UI and test plan — before any code paid off more than I expected. The implementation sessions could be pointed at the documents instead of at a chat history, and when a later issue disagreed with an earlier one the contract settled it: the test file for the staff detail was named `staff-ticket-ops.api.test.ts` by the coding session, the contract and the lab sheet both said `staff-ticket-detail.api.test.ts`, and the contract won. Where the specification agent was wrong, it was wrong in ways only measurement shows: it chose `#6B7280` on `#F3F4F6` for the Cancelled badge, which reads fine and measures 4.39:1, under its own 4.5:1 rule.
-
-**Coding agent.** Handing each issue to a session with the contract as its brief produced code that followed the contract closely — the transition matrix, the owner rule and `permittedTransitions` came out exactly as specified, and the unit test compares the implementation against an independently transcribed copy of the table. It was least reliable where a check was *easy to pass by accident*: in #39 it verified "no horizontal overflow" by reading `body.scrollWidth`, which cannot see an element escaping to the document, and the queue actually overflowed at 820 px until the release pass measured `documentElement.scrollWidth`.
+**Coding agent.** ส่วนใหญ่ทำงานตาม Contact แบ่งเป็น Session ๆ ทำให้โค้ดที่ได้ทำตามได้ค่อนข้างใกล้เคียงมาก ทั้ง transition matrix, owner rule และ permittedTransitions ถูกสร้างออกมาตรงตาม specification จุดที่มันน่าเชื่อถือน้อยที่สุดคือกรณีที่การตรวจสอบสามารถ "ผ่านโดยบังเอิญ" ได้ง่าย เช่น ใน #39 มันตรวจสอบว่า "ไม่มี horizontal overflow" ด้วยการอ่านค่า body.scrollWidth ซึ่งไม่สามารถตรวจจับได้ว่า element ใดกำลังล้นออกไปนอก document
 
 **Where AI was wrong, and what caught it.**
-- A malformed JSON body returned Express's HTML error page with a stack trace and absolute server paths — against BR-30. Found while building the direct-API evidence, fixed with an envelope-returning error handler, now covered by a test.
-- Two overflow bugs (queue at 820 px, mobile header sheet at 375 px) passed every earlier check and failed the first run of the E2E-07 visual spec.
-- Test fixtures that hid bugs: a Prisma stub that returned every field it was given would have hidden a `passwordHash` leak, and a shallow-copied fake directory leaked one test's edits into the next. Both were fixed so the tests assert what they claim to.
-- A date test assumed an English locale and failed on my machine, which formats the year as 2569.
+- JSON body ที่ malformed ทำให้ Express ส่ง HTML error page ที่มี stack trace และ absolute server paths ออกมา ซึ่งขัดกับ BR-30 พบปัญหานี้ขณะสร้างหลักฐานสำหรับ direct API จึงแก้ด้วย error handler ที่ส่ง response ในรูปแบบ envelope และเพิ่ม test ครอบคลุมกรณีนี้แล้ว
+- พบ overflow bug สองจุดได้แก่ queue ที่ 820 px และ mobile header sheet ที่ 375 px ซึ่งผ่านการตรวจสอบก่อนหน้านี้ทั้งหมด แต่ล้มเหลวเมื่อรัน E2E-07 visual spec ครั้งแรก
+- Test fixtures ที่ซ่อน bug: Prisma stub ที่คืนทุก field ที่ถูกส่งเข้าไปจะสามารถซ่อนปัญหา passwordHash รั่วออกมาได้ และ fake directory ที่ถูก shallow-copy ก็ทำให้การแก้ไขจาก test หนึ่งรั่วไหลไปยัง test ถัดไป ทั้งสองกรณีจึงถูกแก้เพื่อให้ test ตรวจสอบสิ่งที่มันอ้างว่ากำลังตรวจสอบจริง ๆ
+- Date test สมมติว่าเครื่องใช้ locale ภาษาอังกฤษ และล้มเหลวบน Local ของผมซึ่งแสดงปีเป็น 2569
 
-**Process.** The agent broke my "read-only git" rule once, in #41. It reported that itself in the same message and gave me the command to undo it, which is the behaviour I want — but it is also why the rule exists: I want every change to the repository to go through my hands.
+**Process.** Agent ละเมิดกฎ "read-only git" หนึ่งครั้งใน #41 โดยมันรายงานเรื่องนี้ด้วยตัวเองใน message เดียวกัน และให้ command สำหรับ undo การเปลี่ยนแปลงมาให้ แต่เหตุการณ์นี้ก็แสดงให้เห็นว่าทำไมกฎที่ว่า ฉันต้องการให้ทุกการเปลี่ยนแปลงใน repository ต้องผ่านมือของฉันเองเท่านั้น
 
-**Next sprint.** Put the measured checks (overflow, focus, labels, contrast) in the plan from the first UI issue rather than the release issue, so defects are found in the issue that introduced them; and keep the one-issue-per-session pattern, which kept each change reviewable.
+**Next sprint.** นำ measured checks ต่าง ๆ เช่น overflow, focus, labels และ contrast เข้าไปอยู่ในแผนตั้งแต่ UI issue แรก แทนที่จะรอจนถึง release issue เพื่อให้ defect ถูกพบตั้งแต่ issue ที่เป็นต้นเหตุของมัน และยังคงใช้รูปแบบ one-issue-per-session ต่อไป เพราะมันช่วยให้การเปลี่ยนแปลงแต่ละส่วนสามารถ review ได้ง่าย
