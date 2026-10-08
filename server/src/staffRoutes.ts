@@ -18,6 +18,7 @@ import { sendError, sendInternalError, sendValidationFailed } from './httpErrors
 import { ATTACHMENT_SELECT, toAttachmentResponse } from './attachmentRules.js';
 import type { AttachmentRow } from './attachmentRules.js';
 import { COMMENT_SELECT, validateCommentBody } from './commentRules.js';
+import { staffActionsRouter } from './actionRoutes.js';
 import {
   TICKET_STATUSES,
   checkTransition,
@@ -37,6 +38,10 @@ function isItPriority(value: unknown): value is ItPriorityValue {
 export const staffRouter = Router();
 
 staffRouter.use(requireAuth, requireRole('ITStaff', 'Administrator'));
+
+// Actions Taken (Lab 4 api-spec.md §3.1, §3.3, §3.4). Mounted after the gate
+// above, so it inherits it; its writes are open to Administrators (AD-02).
+staffRouter.use('/tickets/:id/actions', staffActionsRouter);
 
 /** The `select` behind a `StaffTicketListItem` (api-spec.md §2). */
 export const STAFF_TICKET_LIST_SELECT = {

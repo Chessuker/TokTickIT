@@ -32,34 +32,34 @@ The handout's example rows keep their ids: **API-03** (create a valid Action, AC
 
 | Test ID | Type | Requirement / AC | What It Tests | Expected Result | Automated Test File Path | Final Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| UNIT-01 | Unit | BR-05, AC-04 | Action field rules: missing/empty/whitespace description and result, lengths at 0/1/max/max+1, `actionAt` missing, unparsable, +4 min, +6 min, before Ticket `createdAt`; attachment notes 500/501 and `""` → `null` | Exactly the failing field named in `fields`; valid input normalised (trimmed) | `server/tests/lab-04/actionRules.test.ts` | Planned |
-| UNIT-02 | Unit | BR-06, BR-07, AC-07 | Follow-up rules: required ⇒ note + assignee; not required with note/assignee given; open → Completed/Cancelled; closed → anything; required true → false; false → true on edit | Accepted / `400` field / `409` reason exactly per BR-06/BR-07 | `server/tests/lab-04/actionRules.test.ts` | Planned |
+| UNIT-01 | Unit | BR-05, AC-04 | Action field rules: missing/empty/whitespace description and result, lengths at 0/1/max/max+1, `actionAt` missing, unparsable, +4 min, +6 min, before Ticket `createdAt`; attachment notes 500/501 and `""` → `null` | Exactly the failing field named in `fields`; valid input normalised (trimmed) | `server/tests/lab-04/actionRules.test.ts` | Pass |
+| UNIT-02 | Unit | BR-06, BR-07, AC-07 | Follow-up rules: required ⇒ note + assignee; not required with note/assignee given; open → Completed/Cancelled; closed → anything; required true → false; false → true on edit | Accepted / `400` field / `409` reason exactly per BR-06/BR-07 | `server/tests/lab-04/actionRules.test.ts` | Pass |
 | UNIT-03 | Unit | BR-14, BR-17, AC-12, AC-13 | Resolution gate: every combination of owner / actions since reopen / open follow-ups; never-reopened vs reopened with older and newer Actions | `ok` only when all three hold; `unmet` lists exactly the failing ones, in fixed order | `server/tests/lab-04/resolutionGate.test.ts` | Planned |
 | UNIT-04 | Unit | BR-13, BR-14, AC-14 | Transition matrix (L3 UNIT-02 retained) plus `permittedTransitions` with the gate closed and open | Matrix unchanged from Lab 3; `Resolved` omitted iff the gate is closed | `server/tests/lab-03/ticketWorkflow.test.ts` (extended) | Planned |
 | UNIT-05 | Unit | BR-22 … BR-27, AC-19, AC-20 | Dashboard metric definitions: each metric's Prisma `where` and its `href` produced from one definition; active-status set; Administrator nulls | Snapshot of `where` + `href` per metric; the queue/list parser re-reads each `href` into the same filter | `server/tests/lab-04/dashboardMetrics.test.ts` | Planned |
 | UNIT-06 | Unit | AC-20 | Requester list parser: repeatable `status`, single `status` (Lab 2 compatibility), invalid value, `sort=updatedAt:desc` | Parsed list / `400 fields.status` | `server/tests/lab-04/ticketListQuery.test.ts` | Planned |
 | UNIT-07 | Unit | AC-20 | Queue parser: `followUp=mine`, `requesterResolved=true`, invalid values, combination with Lab 3 parameters | Parsed / `400` naming the parameter | `server/tests/lab-03/queueQuery.test.ts` (extended) | Planned |
-| UNIT-08 | Unit | BR-30, AC-25 | Seed run twice against the upsert-only fake client | No `create`/`delete*` calls; same keys both runs; Tickets with 0, 1 and ≥ 3 Actions; at least one open follow-up per active IT Staff; Ploy has no Tickets | `server/tests/seed.test.ts` (extended) | Planned |
-| UNIT-09 | Unit | BR-08, BR-18, AC-16 | Static check of `server/src/**`: no `ticketStatusChange.update*` / `delete*`, no `ticketAction.delete*` | No match | `server/tests/lab-04/appendOnly.test.ts` | Planned |
+| UNIT-08 | Unit | BR-30, AC-25 | Seed run twice against the upsert-only fake client | No `create`/`delete*` calls; same keys both runs; Tickets with 0, 1 and ≥ 3 Actions; at least one open follow-up per active IT Staff; Ploy has no Tickets | `server/tests/seed.test.ts` (extended) | Pass |
+| UNIT-09 | Unit | BR-08, BR-18, AC-16 | Static check of `server/src/**`: no `ticketStatusChange.update*` / `delete*`, no `ticketAction.delete*` | No match | `server/tests/lab-04/appendOnly.test.ts` | Pass |
 | UNIT-10 | Unit | BR-25, AD-11 | `formatBangkok` and `toUtcIso` across midnight UTC and month end | `2026-10-02T17:30Z` → "3 Oct 2026, 00:30"; round trip exact | `client/src/components/lab-04/dates.test.ts` | Planned |
 
 ### API — Actions Taken (`server/tests/lab-04/actions-taken.api.test.ts`)
 
 | Test ID | Type | Requirement / AC | What It Tests | Expected Result | Automated Test File Path | Final Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| API-01 | API | AC-11, BR-11 | `GET /api/staff/tickets/:id/actions` as IT Staff and Administrator with Actions sharing `actionAt` | `200`; `orderBy` = `actionAt desc, createdAt desc, id asc`; Action shape incl. `followUp` block | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
-| API-02 | API | AC-03, AC-08, BR-04 | `GET /api/tickets/:id/actions` as owner Requester, other Requester, IT Staff; unknown id as staff | `200` same shape / `403` no data / `200` / `404` | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
-| API-03 | API | AC-01 | Create a valid Actions Taken with follow-up | `201`; created under the correct Ticket; `performedBy` = session user; follow-up `Open` with the approved assignee; `Ticket.updatedAt` touched, `Ticket.version` not | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
-| API-04 | API | AC-05, BR-02, BR-03 | Create by IT Staff who is not the owner; body carries `performedById`, `ticketId`, `followUpStatus`, `version` | `201`; performer = caller; owner unchanged; injected fields ignored | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
-| API-05 | API | AC-04, BR-05, BR-06 | Create with each invalid field (UNIT-01 cases end to end) and follow-up without note / assignee | `400 VALIDATION_FAILED` with the right `fields` key; nothing written | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
-| API-06 | API | AC-07, BR-06 | Follow-up assignee = inactive IT Staff (Robert), a Requester, an Administrator, unknown uuid; reassign to the same on PATCH | `400 fields.followUpAssigneeId` in every case | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
-| API-07 | API | AC-06, BR-08 | PATCH description/result/actionAt/attachmentNotes with the current `version` | `200`; `version + 1`; `updatedBy` = caller; `performedBy`, `ticketId`, `createdAt` unchanged | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
-| API-08 | API | AC-06, BR-19 | PATCH with an old `version`; PATCH without `version` | `409 STALE_UPDATE` with `current.version` and nothing written / `400 fields.version` | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
-| API-09 | API | AC-07, BR-07 | PATCH `followUpStatus` Completed; Cancelled; on a closed follow-up; `followUpRequired: false`; opening a follow-up on an Action without one; editing note of a closed follow-up | `200` stamps closer/time / `200` / `409` / `400` / `200` Open / `409` | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
-| API-10 | API | AC-09, BR-09 | Create and PATCH on Resolved, Closed, Cancelled Tickets | `409 TICKET_LOCKED`; nothing written | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
-| API-11 | API | AC-08, BR-04 | Requester POST and PATCH (own Ticket); no session on all three routes; Administrator POST and PATCH | `403` / `401` / `201`, `200` | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
-| API-12 | API | AC-10, BR-10 | Same `clientRequestId` twice by the same user; by another user; on another Ticket; unique-violation race | `201` then `200` same Action / `409` / `409` / `200` existing | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
-| API-13 | API | BR-01 | PATCH an Action through another Ticket's URL; `DELETE` on an Action | `404` / `404` (no delete route) | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
+| API-01 | API | AC-11, BR-11 | `GET /api/staff/tickets/:id/actions` as IT Staff and Administrator with Actions sharing `actionAt` | `200`; `orderBy` = `actionAt desc, createdAt desc, id asc`; Action shape incl. `followUp` block | `server/tests/lab-04/actions-taken.api.test.ts` | Pass |
+| API-02 | API | AC-03, AC-08, BR-04 | `GET /api/tickets/:id/actions` as owner Requester, other Requester, IT Staff; unknown id as staff | `200` same shape / `403` no data / `200` / `404` | `server/tests/lab-04/actions-taken.api.test.ts` | Pass |
+| API-03 | API | AC-01 | Create a valid Actions Taken with follow-up | `201`; created under the correct Ticket; `performedBy` = session user; follow-up `Open` with the approved assignee; `Ticket.updatedAt` touched, `Ticket.version` not | `server/tests/lab-04/actions-taken.api.test.ts` | Pass |
+| API-04 | API | AC-05, BR-02, BR-03 | Create by IT Staff who is not the owner; body carries `performedById`, `ticketId`, `followUpStatus`, `version` | `201`; performer = caller; owner unchanged; injected fields ignored | `server/tests/lab-04/actions-taken.api.test.ts` | Pass |
+| API-05 | API | AC-04, BR-05, BR-06 | Create with each invalid field (UNIT-01 cases end to end) and follow-up without note / assignee | `400 VALIDATION_FAILED` with the right `fields` key; nothing written | `server/tests/lab-04/actions-taken.api.test.ts` | Pass |
+| API-06 | API | AC-07, BR-06 | Follow-up assignee = inactive IT Staff (Robert), a Requester, an Administrator, unknown uuid; reassign to the same on PATCH | `400 fields.followUpAssigneeId` in every case | `server/tests/lab-04/actions-taken.api.test.ts` | Pass |
+| API-07 | API | AC-06, BR-08 | PATCH description/result/actionAt/attachmentNotes with the current `version` | `200`; `version + 1`; `updatedBy` = caller; `performedBy`, `ticketId`, `createdAt` unchanged | `server/tests/lab-04/actions-taken.api.test.ts` | Pass |
+| API-08 | API | AC-06, BR-19 | PATCH with an old `version`; PATCH without `version` | `409 STALE_UPDATE` with `current.version` and nothing written / `400 fields.version` | `server/tests/lab-04/actions-taken.api.test.ts` | Pass |
+| API-09 | API | AC-07, BR-07 | PATCH `followUpStatus` Completed; Cancelled; on a closed follow-up; `followUpRequired: false`; opening a follow-up on an Action without one; editing note of a closed follow-up | `200` stamps closer/time / `200` / `409` / `400` / `200` Open / `409` | `server/tests/lab-04/actions-taken.api.test.ts` | Pass |
+| API-10 | API | AC-09, BR-09 | Create and PATCH on Resolved, Closed, Cancelled Tickets | `409 TICKET_LOCKED`; nothing written | `server/tests/lab-04/actions-taken.api.test.ts` | Pass |
+| API-11 | API | AC-08, BR-04 | Requester POST and PATCH (own Ticket); no session on all three routes; Administrator POST and PATCH | `403` / `401` / `201`, `200` | `server/tests/lab-04/actions-taken.api.test.ts` | Pass |
+| API-12 | API | AC-10, BR-10 | Same `clientRequestId` twice by the same user; by another user; on another Ticket; unique-violation race | `201` then `200` same Action / `409` / `409` / `200` existing | `server/tests/lab-04/actions-taken.api.test.ts` | Pass |
+| API-13 | API | BR-01 | PATCH an Action through another Ticket's URL; `DELETE` on an Action | `404` / `404` (no delete route) | `server/tests/lab-04/actions-taken.api.test.ts` | Pass |
 
 ### API — Ticket workflow (`server/tests/lab-04/ticket-workflow.api.test.ts`)
 
@@ -112,7 +112,7 @@ The handout's example rows keep their ids: **API-03** (create a valid Action, AC
 | --- | --- | --- | --- | --- | --- | --- |
 | INT-01 | Integration | AC-19, AC-02, BR-21 | On the seeded database, call both dashboards (as Jennifer, Ploy, Priya, admin) and run the raw SQL for every metric | Every API value equals its SQL value; output saved for Answer Part 5 | `server/scripts/verify-lab04-dashboards.ts` | Planned |
 | INT-02 | Integration | AC-17, BR-19 | Two concurrent status PATCHes with the same `expectedVersion` | Exactly one `200`, one `409 STALE_UPDATE`; one history row | `server/scripts/verify-lab04-concurrency.ts` | Planned |
-| INT-03 | Integration | BR-06, DB-03 | Raw `INSERT` violating the follow-up `CHECK` | Rejected by PostgreSQL | `server/scripts/verify-lab04-concurrency.ts` | Planned |
+| INT-03 | Integration | BR-06, DB-03 | Raw `INSERT` violating the follow-up `CHECK` | Rejected by PostgreSQL | `server/scripts/verify-lab04-concurrency.ts` | Pass |
 
 ### UI component (`client/src/components/lab-04/`)
 
@@ -155,9 +155,9 @@ The handout's example rows keep their ids: **API-03** (create a valid Action, AC
 
 | Test ID | Type | Requirement / AC | What It Tests | Expected Result | Automated Test File Path | Final Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| MIG-01 | Migration | AC-24, BR-29 | `before` → `prisma migrate deploy` → `after` on a Lab 3 database, before the seed: counts of User, Ticket, Attachment, TicketComment, TicketInternalNote; every FK resolves; every Ticket `version = 0`; zero Actions and history | All equal; output pasted into §5 | `server/scripts/verify-lab04-migration.ts` | Planned |
-| MIG-02 | Migration | AC-24 | Rollback script → `after-rollback` (same counts, no Lab 4 tables) → Lab 3 server suite → re-deploy | Counts equal; suite green; re-deploy succeeds | `server/prisma/rollback/20261003000000_lab04_actions_taken.down.sql` + `verify-lab04-migration.ts` | Planned |
-| MIG-03 | Seed | AC-25, BR-30 | Seed twice on PostgreSQL; count Actions, history, users | Identical counts both runs | `server/src/seed.ts` (run manually, log in §5) | Planned |
+| MIG-01 | Migration | AC-24, BR-29 | `before` → `prisma migrate deploy` → `after` on a Lab 3 database, before the seed: counts of User, Ticket, Attachment, TicketComment, TicketInternalNote; every FK resolves; every Ticket `version = 0`; zero Actions and history | All equal; output pasted into §5 | `server/scripts/verify-lab04-migration.ts` | Pass |
+| MIG-02 | Migration | AC-24 | Rollback script → `after-rollback` (same counts, no Lab 4 tables) → Lab 3 server suite → re-deploy | Counts equal; suite green; re-deploy succeeds | `server/prisma/rollback/20261003000000_lab04_actions_taken.down.sql` + `verify-lab04-migration.ts` | Pass |
+| MIG-03 | Seed | AC-25, BR-30 | Seed twice on PostgreSQL; count Actions, history, users | Identical counts both runs | `server/src/seed.ts` (run manually, log in §5) | Pass |
 | PERF-01 | Performance smoke | AC-30 | 20 sequential requests each to both dashboards and one Actions list on the seeded local stack | p95 < 500 ms; dashboard bodies < 10 KB | `server/scripts/perf-lab04-smoke.ts` | Planned |
 
 ### End-to-end (`e2e/lab-04/`)
@@ -263,15 +263,101 @@ Kept here so API-36 / UI-22 / E2E-08 can show that the earlier suites ran unchan
 
 | Suite | Change | Why |
 | --- | --- | --- |
-| _filled in as Issues merge_ | | |
+| `server/tests/seed.test.ts` (Issue #53) | Fake client gains `ticketAction` and `ticketStatusChange` upsert delegates; expected requester count 5 → 6 (`REQUESTERS` length too); the row-count, call-count and duplicate-key checks include the two new tables. Every Lab 2/3 assertion is otherwise unchanged; the Lab 4 cases (UNIT-08) are a new `describe` block | Ploy is a sixth Requester (specification.md §7), and the seed now writes Actions and history |
 
-### Migration and regression evidence (AC-24)
+### Migration and regression evidence (AC-24) — recorded 2026-10-08
 
-_Recorded by Issue #53: MIG-01 before/after output, MIG-02 rollback and re-apply, MIG-03 seed twice._
+Run against the local Lab 3 development database (`toktikit`, all four Lab 1–3 migrations applied, holding the data accumulated through Lab 3 and its E2E runs), from `server/`, after a `pg_dump` backup kept outside the repository.
+
+**MIG-01** — migrate and verify, before any seed:
+
+```
+$ npx tsx scripts/verify-lab04-migration.ts before
+Before migration (Lab 3 schema): {
+  User: 36, Session: 708, Category: 4, RelatedSystem: 7,
+  Ticket: 161, Attachment: 28, TicketComment: 84, TicketInternalNote: 37
+}
+
+$ npx prisma migrate deploy
+Applying migration `20261003000000_lab04_actions_taken`
+All migrations have been successfully applied.
+
+$ npx tsx scripts/verify-lab04-migration.ts after
+After migration (Lab 4 schema): {
+  User: 36, Session: 708, Category: 4, RelatedSystem: 7,
+  Ticket: 161, Attachment: 28, TicketComment: 84, TicketInternalNote: 37,
+  TicketAction: 0, TicketStatusChange: 0
+}
+MIG-01 PASSED: Lab 1–3 counts, ticket statuses and foreign keys unchanged; every ticket version 0 with no Actions or history; both CHECK constraints present.
+```
+
+**MIG-02** — roll back, verify, re-apply:
+
+```
+$ npx prisma db execute --file prisma/rollback/20261003000000_lab04_actions_taken.down.sql --schema prisma/schema.prisma
+Script executed successfully.
+
+$ npx tsx scripts/verify-lab04-migration.ts after-rollback
+After rollback (Lab 3 schema): {
+  User: 36, Session: 708, Category: 4, RelatedSystem: 7,
+  Ticket: 161, Attachment: 28, TicketComment: 84, TicketInternalNote: 37
+}
+MIG-02 PASSED: Lab 4 tables, column and migration record removed; Lab 1–3 counts, statuses and foreign keys unchanged.
+
+$ npx prisma migrate deploy
+Applying migration `20261003000000_lab04_actions_taken`
+All migrations have been successfully applied.
+
+$ npx tsx scripts/verify-lab04-migration.ts after
+MIG-01 PASSED: Lab 1–3 counts, ticket statuses and foreign keys unchanged; every ticket version 0 with no Actions or history; both CHECK constraints present.
+```
+
+The plan in §2 also mentions running the Lab 3 server suite while rolled back. That suite mocks the database, so it cannot see the schema; it was not run against the rolled-back state. Instead, all 83 Lab 2/3 Playwright tests were run against the re-applied Lab 4 schema (below), which is the regression that actually touches the database.
+
+**MIG-03** — seed twice, identical counts (users include accounts created by earlier E2E runs; the seeded rows are the 24 tickets, 22 Actions and 45 history rows):
+
+```
+$ npx tsx src/seed.ts      # run 1
+Seed complete: { categories: 4, relatedSystems: 7, requesters: 20, itStaff: 16, administrators: 1, inactiveUsers: 8,
+  seededTickets: 24, comments: 84, internalNotes: 37, actions: 22, openFollowUps: 6, statusChanges: 45 }
+$ npx tsx src/seed.ts      # run 2
+Seed complete: { categories: 4, relatedSystems: 7, requesters: 20, itStaff: 16, administrators: 1, inactiveUsers: 8,
+  seededTickets: 24, comments: 84, internalNotes: 37, actions: 22, openFollowUps: 6, statusChanges: 45 }
+```
+
+**INT-03** — the follow-up CHECK constraints, probed in rolled-back transactions:
+
+```
+$ npx tsx scripts/verify-lab04-concurrency.ts
+INT-03 — follow-up CHECK constraints
+  ok   no follow-up: inserted
+  ok   complete open follow-up: inserted
+  ok   completed follow-up with closer and time: inserted
+  ok   required but no note: rejected
+  ok   required but no assignee: rejected
+  ok   required but no status: rejected
+  ok   not required but has a note: rejected
+  ok   not required but has a status: rejected
+  ok   Completed without closer or time: rejected
+  ok   Open but stamped closed: rejected
+  ok   closed time without closer: rejected
+  ok   no follow-up but stamped closed: rejected
+INT-03 PASSED: 3 consistent rows accepted, 9 inconsistent rows rejected by PostgreSQL; nothing left behind.
+```
 
 ### Per-issue verification logs
 
 Appended as each Issue merges: command, summary line, and the test ids it turned to Pass.
+
+#### Issue #53 — Actions Taken foundation (2026-10-08)
+
+```
+$ npm run test:server     Test Files  19 passed (19)    Tests  763 passed (763)
+$ npm run test:client     Test Files  12 passed (12)    Tests  231 passed (231)
+$ npx playwright test     83 passed (2.1m)              # Lab 2/3 suites on the migrated Lab 4 schema
+```
+
+Turned to Pass: UNIT-01, UNIT-02, UNIT-08, UNIT-09, API-01 … API-13, INT-03, MIG-01, MIG-02, MIG-03. Server tests went from 656 to 763 (+107). The only change to an earlier suite is `seed.test.ts` (table above). Before the suite was trusted, two deliberate mutations were made to `actionRoutes.ts` (skip the version check; take `performedById` from the body); API-04 and API-08 each failed, and the file was restored.
 
 ### Final run
 

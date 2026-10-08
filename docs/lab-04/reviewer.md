@@ -8,10 +8,10 @@ A record of the peer review for this sprint: who reviewed, which pull requests, 
 
 | Field | Detail |
 | --- | --- |
-| Name | |
-| Student ID | |
-| GitHub Username | |
-| Their repository, which I reviewed | |
+| Name | Theehathat |
+| Student ID | 67070501019 |
+| GitHub Username | [TeekhathatTT](https://github.com/TeekhathatTT) |
+| Their repository, which I reviewed | https://github.com/TeekhathatTT/CPE334-TokTickIT |
 | My repository, which they reviewed | https://github.com/Chessuker/TokTickIT |
 
 ### My Information
@@ -30,7 +30,7 @@ One row per pull request. The base branch is `lab4-staging` for feature PRs and 
 
 | # | Issue | PR | Branch | Base | Reviewed By | Merged | Outcome |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | #52 Sprint 4 engineering contract | | `feature/52-lab4-spec-docs` | `lab4-staging` | | | |
+| 1 | #52 Sprint 4 engineering contract | [#59](https://github.com/Chessuker/TokTickIT/pull/59) | `feature/52-lab4-spec-docs` | `lab4-staging` | TeekhathatTT | 2026-10-07 (`b48ef3a`) | Approved |
 | 2 | #53 Actions Taken foundation (DB + API) | | `feature/53-actions-taken-api` | `lab4-staging` | | | |
 | 3 | #54 Actions Taken UI | | `feature/54-actions-taken-ui` | `lab4-staging` | | | |
 | 4 | #55 Ticket workflow, resolution gate and stale updates | | `feature/55-ticket-workflow` | `lab4-staging` | | | |
@@ -45,7 +45,7 @@ One row per pull request. The base branch is `lab4-staging` for feature PRs and 
 
 | PR | Comment (summary) | My response | Outcome |
 | --- | --- | --- | --- |
-| | | | |
+| [#59](https://github.com/Chessuker/TokTickIT/pull/59) | Approved: "Spec requirement = ครบ ✅" — the contract covers every requirement in the handout. | Thanked the reviewer; merged by TeekhathatTT. | Approved, no changes |
 
 ---
 
