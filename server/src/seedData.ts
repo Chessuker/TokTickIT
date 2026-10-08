@@ -67,6 +67,9 @@ export const REQUESTERS: UserSeed[] = [
   { name: 'David Lee', email: 'david.lee@kmutt.ac.th', department: 'Engineering', role: 'Requester', isActive: true, password: 'Requester2!', mustChangePassword: false },
   { name: 'Michael Brown', email: 'michael.brown@kmutt.ac.th', department: 'Library', role: 'Requester', isActive: true, password: INITIAL_REQUESTER_PASSWORD, mustChangePassword: true },
   { name: 'Alex Smith', email: 'alex.smith@kmutt.ac.th', department: 'Facilities', role: 'Requester', isActive: false, password: INITIAL_REQUESTER_PASSWORD, mustChangePassword: true },
+  // Lab 4 specification.md §7: an active Requester with no tickets at all, so
+  // the empty Requester dashboard (every count 0) can be shown and tested.
+  { name: 'Ploy Charoen', email: 'ploy.charoen@kmutt.ac.th', department: 'Student Affairs', role: 'Requester', isActive: true, password: 'Requester3!', mustChangePassword: false },
 ];
 
 /** IT Staff: three active, one inactive (Robert) for the assignee rules. */
@@ -270,3 +273,169 @@ export const TICKET_INTERNAL_NOTES: ThreadSeed[] = TICKETS.filter((ticket) =>
 
   return notes;
 });
+
+// ---------------------------------------------------------------------------
+// Lab 4: Actions Taken and status history (specification.md §7 "Seed data",
+// BR-30). Deterministic ids, as for the threads above, so a re-run rewrites
+// the same rows. Times are placed as a fraction of each ticket's life
+// (createdAt → updatedAt), so every Action and every status change falls
+// inside the window the ticket already shows, and in workflow order.
+// ---------------------------------------------------------------------------
+
+const ROBERT = 'robert.wilson@kmutt.ac.th';
+
+/** `…-a000000000NN` for Actions, `…-h000000000NN` for history rows. */
+function lab4Id(kind: 'a' | 'h', sequence: number): string {
+  return `00000000-0000-4000-8000-${kind}${String(sequence).padStart(11, '0')}`;
+}
+
+function ticketBySequence(sequence: number): TicketSeed {
+  const ticket = TICKETS.find((entry) => entry.ticketNumber === seedTicketNumber(sequence));
+  if (!ticket) throw new Error(`No seeded ticket ${sequence}`);
+  return ticket;
+}
+
+/** The moment `fraction` of the way through the ticket's life. */
+function during(ticket: TicketSeed, fraction: number): string {
+  const start = new Date(ticket.createdAt).getTime();
+  const end = new Date(ticket.updatedAt).getTime();
+  return new Date(start + Math.round((end - start) * fraction)).toISOString();
+}
+
+export type SeedFollowUpStatus = 'Open' | 'Completed' | 'Cancelled';
+
+export interface ActionSeed {
+  id: string;
+  ticketNumber: string;
+  performedByEmail: string;
+  actionAt: string;
+  description: string;
+  result: string;
+  attachmentNotes: string | null;
+  followUp: {
+    note: string;
+    assigneeEmail: string;
+    status: SeedFollowUpStatus;
+    /** Set only when the follow-up is Completed or Cancelled (BR-07). */
+    closedByEmail: string | null;
+    closedAt: string | null;
+  } | null;
+}
+
+interface ActionPlan {
+  ticket: number;
+  by: string;
+  at: number;
+  description: string;
+  result: string;
+  attachmentNotes?: string;
+  followUp?: { note: string; assignee: string; status: SeedFollowUpStatus; closedBy?: string; closedAt?: number };
+}
+
+/**
+ * Who did what, per ticket (specification.md §7). Zero Actions on every New
+ * ticket, on the Cancelled ones, on unassigned TKT-…023, and on legacy-style
+ * TKT-2026-900019 (Closed, no work recorded — BR-29). Several Actions by
+ * different IT Staff on TKT-…007 and TKT-…008 (AC-11). Open follow-ups for
+ * each active IT Staff member, one for inactive Robert (the "assignee
+ * inactive" flag), plus Completed and Cancelled examples. Every Resolved or
+ * Closed ticket except …019 has at least one Action and no open follow-up, so
+ * the seed already satisfies the resolution gate (BR-14). The two Reopened
+ * tickets show its two refusals: …012 has no Action since the reopen, …013 has
+ * one but its follow-up is still open.
+ */
+const ACTION_PLAN: ActionPlan[] = [
+  { ticket: 4, by: NATTAPONG, at: 0.5, description: 'Checked the VPN client logs on a remote session with the requester.', result: 'The tunnel drops when the home router renews its DHCP lease; workaround sent to the requester.' },
+  { ticket: 5, by: PRIYA, at: 0.6, description: 'Ran the battery report and checked the charge cycles.', result: 'Battery at 61% of design capacity; a replacement battery was requested from the vendor.', attachmentNotes: 'battery-report.html in Attachments.' },
+  { ticket: 6, by: CHEN, at: 0.6, description: 'Surveyed the Wi-Fi signal on the second floor of the library.', result: 'Access point AP-LIB-2F-03 reboots every few minutes; logged with the network team.' },
+  { ticket: 7, by: CHEN, at: 0.3, description: 'Re-created the Outlook profile and cleared the cached credentials.', result: 'The password prompt stopped for two hours, then returned.', attachmentNotes: 'outlook-prompt.png in Attachments shows the prompt.' },
+  { ticket: 7, by: PRIYA, at: 0.5, description: "Checked the account's sign-in logs in the identity portal.", result: 'Repeated token refresh failures from the desktop client.' },
+  { ticket: 7, by: NATTAPONG, at: 0.7, description: 'Updated Office to the current build and reset the sign-in broker.', result: 'Prompts reduced to once at start-up; waiting to confirm over a full day.', followUp: { note: 'Check the Exchange authentication policy with the mail team.', assignee: NATTAPONG, status: 'Open' } },
+  { ticket: 8, by: PRIYA, at: 0.3, description: "Compared the app's section list with the registrar feed.", result: "The feed still points at last semester's term code.", followUp: { note: 'Ask the registrar for the new term code.', assignee: PRIYA, status: 'Completed', closedBy: PRIYA, closedAt: 0.5 } },
+  { ticket: 8, by: CHEN, at: 0.6, description: 'Updated the term code in the app configuration on staging.', result: 'Staging shows the current sections; the production change is scheduled.', followUp: { note: 'Deploy the configuration change to production in the maintenance window.', assignee: ROBERT, status: 'Open' } },
+  { ticket: 9, by: NATTAPONG, at: 0.5, description: 'Re-mapped the department share with the new DFS path.', result: 'Works after a reboot, but the group policy still applies the old path.', followUp: { note: 'Update the drive-mapping group policy to the new DFS path.', assignee: CHEN, status: 'Open' } },
+  { ticket: 10, by: CHEN, at: 0.5, description: 'Checked stock for a 24-inch DisplayPort monitor.', result: 'One unit available; asked the requester which desk it goes to.', followUp: { note: 'Deliver and set up the monitor once the requester confirms the desk.', assignee: CHEN, status: 'Open' } },
+  { ticket: 11, by: PRIYA, at: 0.5, description: 'Re-installed the printer driver on the LT-2 PC.', result: 'The printer shows online and a test page printed.', followUp: { note: 'Replace the network cable if the problem returns.', assignee: NATTAPONG, status: 'Cancelled', closedBy: PRIYA, closedAt: 0.8 } },
+  { ticket: 12, by: NATTAPONG, at: 0.3, description: 'Archived old mail and recalculated the mailbox quota.', result: 'The warning stopped; the ticket was resolved.' },
+  { ticket: 13, by: CHEN, at: 0.3, description: 'Renewed the VPN machine certificate on the lab laptop.', result: 'The VPN connected; the ticket was resolved.' },
+  { ticket: 13, by: PRIYA, at: 0.85, description: 'Checked the certificate chain after the requester reported the error again.', result: 'The intermediate certificate on the laptop has also expired.', followUp: { note: 'Push the new intermediate certificate through device management.', assignee: PRIYA, status: 'Open' } },
+  { ticket: 14, by: NATTAPONG, at: 0.3, description: 'Reproduced the upload failure with a 25 MB file.', result: 'Confirmed a 20 MB request-size limit on the proxy.', followUp: { note: 'Raise the proxy upload limit to 100 MB.', assignee: PRIYA, status: 'Completed', closedBy: PRIYA, closedAt: 0.7 } },
+  { ticket: 14, by: PRIYA, at: 0.8, description: 'Raised the proxy upload limit to 100 MB and retested.', result: 'Uploads of 25 MB and 80 MB both succeed.' },
+  { ticket: 15, by: NATTAPONG, at: 0.6, description: 'Replaced the front-desk keyboard.', result: 'All keys respond normally.' },
+  { ticket: 16, by: CHEN, at: 0.7, description: 'Updated the captive-portal redirect rule for Android devices.', result: 'Android phones stay connected after accepting the terms.' },
+  { ticket: 17, by: PRIYA, at: 0.6, description: 'Migrated the mailbox to the new mail server.', result: 'Mail and calendar are available on the new server; the old account forwards.' },
+  { ticket: 18, by: NATTAPONG, at: 0.3, description: 'Sent the laptop to the vendor for a screen replacement.', result: 'The vendor accepted it under warranty.' },
+  { ticket: 18, by: NATTAPONG, at: 0.8, description: 'Received the laptop back and tested the display.', result: 'The new screen works; the laptop was returned to the requester.' },
+  { ticket: 24, by: NATTAPONG, at: 0.5, description: 'Swapped the HDMI cable and tested with two laptops.', result: "The tint remains on HDMI; the projector's HDMI board is suspect.", followUp: { note: "Book the vendor to replace the projector's HDMI board.", assignee: NATTAPONG, status: 'Open' } },
+];
+
+export const TICKET_ACTIONS: ActionSeed[] = ACTION_PLAN.map((plan, index) => {
+  const ticket = ticketBySequence(plan.ticket);
+  return {
+    id: lab4Id('a', index + 1),
+    ticketNumber: ticket.ticketNumber,
+    performedByEmail: plan.by,
+    actionAt: during(ticket, plan.at),
+    description: plan.description,
+    result: plan.result,
+    attachmentNotes: plan.attachmentNotes ?? null,
+    followUp: plan.followUp
+      ? {
+          note: plan.followUp.note,
+          assigneeEmail: plan.followUp.assignee,
+          status: plan.followUp.status,
+          closedByEmail: plan.followUp.closedBy ?? null,
+          closedAt: plan.followUp.closedAt === undefined ? null : during(ticket, plan.followUp.closedAt)
+        }
+      : null
+  };
+});
+
+export interface StatusChangeSeed {
+  id: string;
+  ticketNumber: string;
+  fromStatus: SeedStatus;
+  toStatus: SeedStatus;
+  changedByEmail: string;
+  createdAt: string;
+}
+
+/**
+ * The path each current status was reached by, with the fraction of the
+ * ticket's life at which each step happened. A Resolved ticket is resolved at
+ * the very end of its window, matching the `resolvedAt` the ticket seed
+ * writes; a Reopened ticket was resolved half-way and reopened later, so its
+ * Actions fall on both sides of the reopen (see ACTION_PLAN).
+ */
+const STATUS_PATHS: Record<SeedStatus, Array<[SeedStatus, SeedStatus, number]>> = {
+  New: [],
+  Open: [['New', 'Open', 0.1]],
+  InProgress: [['New', 'Open', 0.1], ['Open', 'InProgress', 0.2]],
+  WaitingForRequester: [['New', 'Open', 0.1], ['Open', 'InProgress', 0.2], ['InProgress', 'WaitingForRequester', 0.9]],
+  Reopened: [['New', 'Open', 0.1], ['Open', 'InProgress', 0.2], ['InProgress', 'Resolved', 0.5], ['Resolved', 'Reopened', 0.7]],
+  Resolved: [['New', 'Open', 0.1], ['Open', 'InProgress', 0.2], ['InProgress', 'Resolved', 1]],
+  Closed: [['New', 'Open', 0.1], ['Open', 'InProgress', 0.2], ['InProgress', 'Resolved', 0.95], ['Resolved', 'Closed', 1]],
+  Cancelled: [['New', 'Cancelled', 1]],
+};
+
+/** The legacy-style ticket: Closed before Lab 4, so no Actions and no stored history (BR-29). */
+export const LEGACY_TICKET_NUMBER = seedTicketNumber(19);
+
+/**
+ * Status history (BR-18): one row per step of each ticket's path, made by its
+ * owner, or by Nattapong for a ticket that has none (he triaged the
+ * unassigned ones).
+ */
+export const TICKET_STATUS_CHANGES: StatusChangeSeed[] = TICKETS.filter(
+  (ticket) => ticket.ticketNumber !== LEGACY_TICKET_NUMBER
+)
+  .flatMap((ticket) =>
+    STATUS_PATHS[ticket.status].map(([fromStatus, toStatus, fraction]) => ({
+      ticketNumber: ticket.ticketNumber,
+      fromStatus,
+      toStatus,
+      changedByEmail: ticket.ownerEmail ?? NATTAPONG,
+      createdAt: during(ticket, fraction),
+    }))
+  )
+  .map((change, index) => ({ id: lab4Id('h', index + 1), ...change }));

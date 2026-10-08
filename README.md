@@ -129,6 +129,7 @@ The seed creates these accounts for local development only (never use them anywh
 | Sarah Johnson | `sarah.johnson@kmutt.ac.th` | `Welcome123!` | Requester | must change password at first login |
 | Michael Brown | `michael.brown@kmutt.ac.th` | `Welcome123!` | Requester | must change password at first login |
 | Alex Smith | `alex.smith@kmutt.ac.th` | `Welcome123!` | Requester | **inactive** — login refused |
+| Ploy Charoen | `ploy.charoen@kmutt.ac.th` | `Requester3!` | Requester | ready; has **no tickets** (empty dashboard) |
 | Nattapong Srisuk | `nattapong.srisuk@kmutt.ac.th` | `Staff1!pass` | IT Staff | ready |
 | Priya Raman | `priya.raman@kmutt.ac.th` | `Staff1!pass` | IT Staff | ready |
 | Chen Wei | `chen.wei@kmutt.ac.th` | `Staff1!pass` | IT Staff | ready |
@@ -139,6 +140,8 @@ Requesters migrated from a Lab 2 database receive `Welcome123!` as their initial
 
 The seed also creates 24 sample tickets numbered `TKT-2026-900001` … `TKT-2026-900024` across the four active Requesters, covering every status and priority, about a third unassigned and the rest owned by the three active IT Staff. That range is reserved: user-created tickets keep counting from `TKT-2026-000001`, and re-running the seed resets the sample tickets without touching anything else. Each worked ticket also carries a short Public Comment thread and, where IT Staff are involved, one or two Internal Notes.
 
+Lab 4 adds 22 Actions Taken (none on New tickets, one on most worked tickets, three by different IT Staff on `TKT-2026-900007`), with open follow-ups assigned to each IT Staff member, and a status history for every ticket that has moved. `TKT-2026-900019` is deliberately left with neither, to show how a ticket closed before Lab 4 looks.
+
 ### Upgrading a Lab 2 database
 
 The Lab 3 migration renames `RequesterUser` to `User` in place, so existing tickets and attachments keep their owners. To verify that on a database holding Lab 2 data:
@@ -148,6 +151,21 @@ npm --prefix server exec tsx scripts/verify-lab03-migration.ts before   # snapsh
 npm run prisma:migrate
 npm --prefix server exec tsx scripts/verify-lab03-migration.ts after    # compare, before seeding
 npm run prisma:seed
+```
+
+### Upgrading a Lab 3 database
+
+The Lab 4 migration (`20261003000000_lab04_actions_taken`) only adds tables, an enum, one index and `Ticket.version`; it changes no existing row. To verify that, and that the rollback script returns the Lab 3 schema intact, on a database holding Lab 3 data (back it up first with `pg_dump` if the data matters):
+
+```bash
+npm --prefix server exec tsx scripts/verify-lab04-migration.ts before          # snapshot on the Lab 3 schema
+npm run prisma:migrate
+npm --prefix server exec tsx scripts/verify-lab04-migration.ts after           # MIG-01
+npm --prefix server exec prisma db execute --file prisma/rollback/20261003000000_lab04_actions_taken.down.sql --schema prisma/schema.prisma
+npm --prefix server exec tsx scripts/verify-lab04-migration.ts after-rollback  # MIG-02
+npm run prisma:migrate                                                         # re-apply
+npm run prisma:seed
+npm --prefix server exec tsx scripts/verify-lab04-concurrency.ts               # INT-03: follow-up CHECK constraints
 ```
 
 ## Available scripts
