@@ -295,6 +295,7 @@ describe('POST /api/staff/tickets/:id/actions (API-03 … API-06)', () => {
     ['missing actionAt', { actionAt: undefined }, 'actionAt'],
     ['actionAt in the future', { actionAt: '2099-01-01T00:00:00.000Z' }, 'actionAt'],
     ['actionAt before the ticket', { actionAt: '2026-09-29T00:00:00.000Z' }, 'actionAt'],
+    ['actionAt one millisecond before the ticket', { actionAt: '2026-09-30T03:19:59.999Z' }, 'actionAt'],
     ['attachment notes too long', { attachmentNotes: 'x'.repeat(501) }, 'attachmentNotes'],
     ['follow-up without a note', { followUpRequired: true, followUpAssigneeId: CHEN.id }, 'followUpNote'],
     ['follow-up without an assignee', { followUpRequired: true, followUpNote: 'Call back' }, 'followUpAssigneeId'],

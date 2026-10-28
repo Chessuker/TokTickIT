@@ -32,7 +32,7 @@ The handout's example rows keep their ids: **API-03** (create a valid Action, AC
 
 | Test ID | Type | Requirement / AC | What It Tests | Expected Result | Automated Test File Path | Final Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| UNIT-01 | Unit | BR-05, AC-04 | Action field rules: missing/empty/whitespace description and result, lengths at 0/1/max/max+1, `actionAt` missing, unparsable, +4 min, +6 min, before Ticket `createdAt`; attachment notes 500/501 and `""` → `null` | Exactly the failing field named in `fields`; valid input normalised (trimmed) | `server/tests/lab-04/actionRules.test.ts` | Pass |
+| UNIT-01 | Unit | BR-05, AC-04 | Action field rules: missing/empty/whitespace description and result, lengths at 0/1/max/max+1, `actionAt` missing, unparsable, +4 min, +6 min, before Ticket `createdAt` including the exact boundary (start of the same minute and 1 ms before → refused; exactly `createdAt` and the next whole minute → accepted, on create and edit); attachment notes 500/501 and `""` → `null` | Exactly the failing field named in `fields`; valid input normalised (trimmed) | `server/tests/lab-04/actionRules.test.ts` | Pass |
 | UNIT-02 | Unit | BR-06, BR-07, AC-07 | Follow-up rules: required ⇒ note + assignee; not required with note/assignee given; open → Completed/Cancelled; closed → anything; required true → false; false → true on edit | Accepted / `400` field / `409` reason exactly per BR-06/BR-07 | `server/tests/lab-04/actionRules.test.ts` | Pass |
 | UNIT-03 | Unit | BR-14, BR-17, AC-12, AC-13 | Resolution gate: every combination of owner / actions since reopen / open follow-ups; never-reopened vs reopened with older and newer Actions | `ok` only when all three hold; `unmet` lists exactly the failing ones, in fixed order | `server/tests/lab-04/resolutionGate.test.ts` | Planned |
 | UNIT-04 | Unit | BR-13, BR-14, AC-14 | Transition matrix (L3 UNIT-02 retained) plus `permittedTransitions` with the gate closed and open | Matrix unchanged from Lab 3; `Resolved` omitted iff the gate is closed | `server/tests/lab-03/ticketWorkflow.test.ts` (extended) | Planned |
@@ -358,6 +358,8 @@ $ npx playwright test     83 passed (2.1m)              # Lab 2/3 suites on the 
 ```
 
 Turned to Pass: UNIT-01, UNIT-02, UNIT-08, UNIT-09, API-01 … API-13, INT-03, MIG-01, MIG-02, MIG-03. Server tests went from 656 to 763 (+107). The only change to an earlier suite is `seed.test.ts` (table above). Before the suite was trusted, two deliberate mutations were made to `actionRoutes.ts` (skip the version check; take `performedById` from the body); API-04 and API-08 each failed, and the file was restored.
+
+Review fix on PR #60 (2026-10-28): the `actionAt` lower bound rounded `createdAt` down to the minute, so it accepted up to 59 s before the ticket existed. It now compares exactly; five boundary tests were added (UNIT-01 ×4, API-05 ×1), and reinstating the rounding makes three of them fail. `npm run test:server` → 19 files, **768 passed (768)**.
 
 ### Final run
 

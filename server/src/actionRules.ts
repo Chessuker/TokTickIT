@@ -151,12 +151,12 @@ function requiredText(raw: unknown, label: string, max: number): { value?: strin
 
 /**
  * BR-05: Action Date/Time is required, at most 5 minutes in the future, and
- * not earlier than the ticket.
+ * not earlier than the ticket's `createdAt`, compared to the millisecond.
  *
- * The lower bound is the ticket's creation time rounded *down* to the minute:
- * the UI's `datetime-local` input has minute precision, so a user who records
- * work in the same minute the ticket was raised must not be refused because
- * the ticket was stamped a few seconds into that minute.
+ * The server does not round. The `datetime-local` input has minute precision,
+ * so the client sets the input's minimum to `createdAt` rounded *up* to the
+ * next whole minute (ui-spec.md §3.3); every time the form can produce is then
+ * valid here, and no time before the ticket existed is ever accepted.
  */
 function parseActionAt(raw: unknown, context: ActionContext): { value?: Date; error?: string } {
   if (isBlank(raw)) return { error: 'Action date/time is required.' };
@@ -169,8 +169,7 @@ function parseActionAt(raw: unknown, context: ActionContext): { value?: Date; er
     return { error: 'Action date/time cannot be in the future.' };
   }
 
-  const earliest = Math.floor(context.ticketCreatedAt.getTime() / 60_000) * 60_000;
-  if (value.getTime() < earliest) {
+  if (value.getTime() < context.ticketCreatedAt.getTime()) {
     return { error: 'Action date/time cannot be before the ticket was created.' };
   }
 

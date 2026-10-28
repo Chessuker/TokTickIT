@@ -96,9 +96,29 @@ describe('validateActionCreate — fields (UNIT-01, BR-05)', () => {
     expect(validateActionCreate(validBody({ actionAt: minutes(5) }), CONTEXT).ok).toBe(true);
   });
 
-  it('accepts the minute the ticket was created, even before its seconds (datetime-local precision)', () => {
-    // Ticket stamped 03:20:45; the form can only say 03:20.
-    expect(validateActionCreate(validBody({ actionAt: '2026-09-30T03:20:00.000Z' }), CONTEXT).ok).toBe(true);
+  describe('lower bound is the exact ticket createdAt, never rounded (BR-05, PR #60 review)', () => {
+    // CONTEXT.ticketCreatedAt is 2026-09-30T03:20:45.000Z.
+    const before = 'Action date/time cannot be before the ticket was created.';
+
+    it.each([
+      ['the start of the same minute, before its seconds', '2026-09-30T03:20:00.000Z'],
+      ['one millisecond before', '2026-09-30T03:20:44.999Z']
+    ])('refuses %s', (_label, actionAt) => {
+      expect(validateActionCreate(validBody({ actionAt }), CONTEXT)).toEqual({ ok: false, fields: { actionAt: before } });
+    });
+
+    it.each([
+      ['exactly createdAt', '2026-09-30T03:20:45.000Z'],
+      ['the next whole minute (the minimum the datetime-local input offers)', '2026-09-30T03:21:00.000Z']
+    ])('accepts %s', (_label, actionAt) => {
+      expect(validateActionCreate(validBody({ actionAt }), CONTEXT).ok).toBe(true);
+    });
+
+    it('applies the same bound to an edit', () => {
+      expect(
+        validateActionPatch({ version: 0, actionAt: '2026-09-30T03:20:00.000Z' }, { followUpRequired: false, followUpStatus: null }, CONTEXT)
+      ).toEqual({ ok: false, kind: 'invalid', fields: { actionAt: before } });
+    });
   });
 
   it('stores empty attachment notes as null and refuses 501 characters', () => {
