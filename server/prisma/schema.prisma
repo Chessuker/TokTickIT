@@ -39,6 +39,13 @@ model User {
   comments      TicketComment[]
   internalNotes TicketInternalNote[]
 
+  // Lab 4 reverse relations only; no User column changes (specification.md §7).
+  actionsPerformed  TicketAction[]       @relation("ActionPerformer")
+  followUpsAssigned TicketAction[]       @relation("FollowUpAssignee")
+  followUpsClosed   TicketAction[]       @relation("FollowUpCloser")
+  actionsEdited     TicketAction[]       @relation("ActionEditor")
+  statusChanges     TicketStatusChange[]
+
   @@index([isActive])
   @@index([role, isActive])
 }
@@ -132,11 +139,19 @@ model Ticket {
   attachments   Attachment[]
   comments      TicketComment[]
   internalNotes TicketInternalNote[]
+  actions       TicketAction[]
+  statusChanges TicketStatusChange[]
+
+  /// Optimistic-concurrency counter (Lab 4 BR-19, DB-02). Moves only on
+  /// status, owner and IT Priority changes — never on a comment or an Action
+  /// — so recording work cannot invalidate a colleague's pending status change.
+  version Int @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([requesterId, createdAt])
+  @@index([requesterId, status])
   @@index([categoryId])
   @@index([relatedSystemId])
   @@index([status])
@@ -172,6 +187,80 @@ model TicketInternalNote {
 
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   author User   @relation(fields: [authorId], references: [id])
+
+  @@index([ticketId, createdAt])
+}
+
+/// The follow-up an Action Taken may carry (Lab 4 BR-06, BR-07). `null` on the
+/// Action means no follow-up was needed; `Open` is the only non-final state.
+enum FollowUpStatus {
+  Open
+  Completed
+  Cancelled
+}
+
+/// One Action Taken on a Ticket (Lab 4 FR-01 … FR-04, BR-01 … BR-12).
+///
+/// `ticketId` and `performedById` are set once and never updated (BR-01,
+/// BR-03); both foreign keys are `Restrict` because an Action is an audit
+/// record that must outlive nothing it points at (DB-01). There is no delete
+/// path anywhere in the application (BR-08).
+///
+/// The four follow-up columns are all set or all null. A CHECK constraint in
+/// the migration enforces it in the database itself, whatever code writes the
+/// row (DB-03). Prisma does not model CHECK constraints, so it lives only in
+/// the SQL.
+model TicketAction {
+  id              String   @id @default(uuid())
+  ticketId        String
+  /// Action Date/Time: when the work was done, entered by the user (BR-05).
+  actionAt        DateTime
+  description     String
+  result          String
+  attachmentNotes String?
+  performedById   String
+
+  followUpRequired   Boolean         @default(false)
+  followUpNote       String?
+  followUpAssigneeId String?
+  followUpStatus     FollowUpStatus?
+  followUpClosedAt   DateTime?
+  followUpClosedById String?
+
+  /// Client-generated id that makes a retried create harmless (BR-10).
+  clientRequestId String? @unique
+  /// Optimistic-concurrency counter for edits (BR-19).
+  version         Int     @default(0)
+  updatedById     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ticket           Ticket @relation(fields: [ticketId], references: [id], onDelete: Restrict)
+  performedBy      User   @relation("ActionPerformer", fields: [performedById], references: [id], onDelete: Restrict)
+  followUpAssignee User?  @relation("FollowUpAssignee", fields: [followUpAssigneeId], references: [id], onDelete: Restrict)
+  followUpClosedBy User?  @relation("FollowUpCloser", fields: [followUpClosedById], references: [id], onDelete: Restrict)
+  updatedBy        User?  @relation("ActionEditor", fields: [updatedById], references: [id], onDelete: Restrict)
+
+  @@index([ticketId, actionAt])
+  @@index([performedById, createdAt])
+  @@index([followUpAssigneeId, followUpStatus])
+  @@index([ticketId, followUpStatus])
+}
+
+/// Append-only status history (Lab 4 BR-18, DB-04). Written in the same
+/// transaction as the status change it records; never updated or deleted.
+/// `Ticket.status` stays the authoritative value — this table is the trail.
+model TicketStatusChange {
+  id          String       @id @default(uuid())
+  ticketId    String
+  fromStatus  TicketStatus
+  toStatus    TicketStatus
+  changedById String
+  createdAt   DateTime     @default(now())
+
+  ticket    Ticket @relation(fields: [ticketId], references: [id], onDelete: Restrict)
+  changedBy User   @relation(fields: [changedById], references: [id], onDelete: Restrict)
 
   @@index([ticketId, createdAt])
 }

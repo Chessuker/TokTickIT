@@ -8,6 +8,7 @@ import { validateCreateTicketInput } from './ticketValidation.js';
 import { getSessionUser, requireAuth, requireRole } from './auth.js';
 import { authRouter } from './authRoutes.js';
 import { staffRouter } from './staffRoutes.js';
+import { listTicketActions } from './actionRoutes.js';
 import { adminRouter } from './adminRoutes.js';
 import { parseTicketListQuery, toOrderBy } from './ticketListQuery.js';
 import { sendError, sendInternalError, sendValidationFailed } from './httpErrors.js';
@@ -718,6 +719,22 @@ app.get('/api/tickets/:id/comments', requireAuth, async (req, res) => {
     res.json({ data: comments });
   } catch (error) {
     sendInternalError(res, 'GET /api/tickets/:id/comments', error);
+  }
+});
+
+// GET /api/tickets/:id/actions — the ticket's Actions Taken for its Requester
+// (Lab 4 api-spec.md §3.2, BR-04, AC-03, AC-08). Same access rule as the
+// comments above: owner, IT Staff or Administrator; another Requester's
+// ticket is 403 with no Action data. Read-only — every write lives under
+// `/api/staff`, which a Requester cannot reach.
+app.get('/api/tickets/:id/actions', requireAuth, async (req, res) => {
+  try {
+    const ticket = await loadTicketAccess(res, String(req.params.id));
+    if (!ticket) return;
+
+    res.json({ data: await listTicketActions(ticket.id) });
+  } catch (error) {
+    sendInternalError(res, 'GET /api/tickets/:id/actions', error);
   }
 });
 

@@ -7,9 +7,12 @@ import {
   IT_STAFF,
   RELATED_SYSTEMS,
   REQUESTERS,
+  LEGACY_TICKET_NUMBER,
   TICKETS,
+  TICKET_ACTIONS,
   TICKET_COMMENTS,
   TICKET_INTERNAL_NOTES,
+  TICKET_STATUS_CHANGES,
   USERS,
 } from '../src/seedData.js';
 
@@ -50,6 +53,8 @@ function createFakeClient(uniqueFields: Record<string, string>) {
     ticket: delegate('ticket'),
     ticketComment: delegate('ticketComment'),
     ticketInternalNote: delegate('ticketInternalNote'),
+    ticketAction: delegate('ticketAction'),
+    ticketStatusChange: delegate('ticketStatusChange'),
   };
 
   return {
@@ -67,6 +72,8 @@ const UNIQUE_FIELDS = {
   ticket: 'ticketNumber',
   ticketComment: 'id',
   ticketInternalNote: 'id',
+  ticketAction: 'id',
+  ticketStatusChange: 'id',
 };
 
 /** A cheap, recognisable stand-in for bcrypt so the suite stays fast. */
@@ -90,16 +97,19 @@ describe('seed', () => {
     expect(TICKETS).toHaveLength(24);
     expect(fake.count('ticketComment')).toBe(TICKET_COMMENTS.length);
     expect(fake.count('ticketInternalNote')).toBe(TICKET_INTERNAL_NOTES.length);
+    expect(fake.count('ticketAction')).toBe(TICKET_ACTIONS.length);
+    expect(fake.count('ticketStatusChange')).toBe(TICKET_STATUS_CHANGES.length);
   });
 
-  it('seeds 5 requesters, 4 IT Staff and 1 Administrator', async () => {
+  // Lab 4 adds Ploy, a sixth Requester with no tickets (specification.md §7).
+  it('seeds 6 requesters, 4 IT Staff and 1 Administrator', async () => {
     await seed(fake.client, { hashPassword: fakeHash });
 
     const users = fake.rows('user');
-    expect(users.filter((row) => row.role === 'Requester')).toHaveLength(5);
+    expect(users.filter((row) => row.role === 'Requester')).toHaveLength(6);
     expect(users.filter((row) => row.role === 'ITStaff')).toHaveLength(4);
     expect(users.filter((row) => row.role === 'Administrator')).toHaveLength(1);
-    expect(REQUESTERS).toHaveLength(5);
+    expect(REQUESTERS).toHaveLength(6);
     expect(IT_STAFF).toHaveLength(4);
     expect(ADMINISTRATORS).toHaveLength(1);
   });
@@ -113,6 +123,8 @@ describe('seed', () => {
       ticket: fake.count('ticket'),
       ticketComment: fake.count('ticketComment'),
       ticketInternalNote: fake.count('ticketInternalNote'),
+      ticketAction: fake.count('ticketAction'),
+      ticketStatusChange: fake.count('ticketStatusChange'),
     };
 
     await expect(seed(fake.client, { hashPassword: fakeHash })).resolves.toBeUndefined();
@@ -125,6 +137,8 @@ describe('seed', () => {
       ticket: fake.count('ticket'),
       ticketComment: fake.count('ticketComment'),
       ticketInternalNote: fake.count('ticketInternalNote'),
+      ticketAction: fake.count('ticketAction'),
+      ticketStatusChange: fake.count('ticketStatusChange'),
     }).toEqual(afterFirstRun);
   });
 
@@ -141,7 +155,9 @@ describe('seed', () => {
         USERS.length +
         TICKETS.length +
         TICKET_COMMENTS.length +
-        TICKET_INTERNAL_NOTES.length,
+        TICKET_INTERNAL_NOTES.length +
+        TICKET_ACTIONS.length +
+        TICKET_STATUS_CHANGES.length,
     );
     expect(fake.calls.slice(firstRun.length)).toEqual(firstRun);
   });
@@ -154,7 +170,12 @@ describe('seed', () => {
     const categoryNames = fake.rows('category').map((row) => row.name);
     const systemNames = fake.rows('relatedSystem').map((row) => row.name);
     const ticketNumbers = fake.rows('ticket').map((row) => row.ticketNumber);
-    const threadIds = [...fake.rows('ticketComment'), ...fake.rows('ticketInternalNote')].map((row) => row.id);
+    const threadIds = [
+      ...fake.rows('ticketComment'),
+      ...fake.rows('ticketInternalNote'),
+      ...fake.rows('ticketAction'),
+      ...fake.rows('ticketStatusChange'),
+    ].map((row) => row.id);
 
     expect(new Set(emails).size).toBe(emails.length);
     expect(new Set(categoryNames).size).toBe(categoryNames.length);
@@ -396,6 +417,152 @@ describe('seed', () => {
       const commentBodies = fake.rows('ticketComment').map((row) => row.body);
       for (const note of TICKET_INTERNAL_NOTES) {
         expect(commentBodies).not.toContain(note.body);
+      }
+    });
+  });
+
+  /**
+   * UNIT-08 — Lab 4 specification.md §7 "Seed data", BR-14, BR-30, AC-25:
+   * Actions Taken and status history.
+   */
+  describe('Lab 4 actions taken and status history', () => {
+    const ticketsByNumber = Object.fromEntries(TICKETS.map((ticket) => [ticket.ticketNumber, ticket]));
+    const actionsOn = (ticketNumber: string) => TICKET_ACTIONS.filter((action) => action.ticketNumber === ticketNumber);
+    const activeStaff = IT_STAFF.filter((user) => user.isActive).map((user) => user.email);
+    const allStaff = IT_STAFF.map((user) => user.email);
+
+    it('has tickets with zero, one and several Actions, several of them by different IT Staff', () => {
+      const counts = TICKETS.map((ticket) => actionsOn(ticket.ticketNumber).length);
+      expect(counts).toContain(0);
+      expect(counts).toContain(1);
+      expect(Math.max(...counts)).toBeGreaterThanOrEqual(3);
+
+      const performers = new Set(actionsOn('TKT-2026-900007').map((action) => action.performedByEmail));
+      expect(performers.size).toBeGreaterThanOrEqual(3);
+    });
+
+    it('records no Action on New tickets or on the legacy-style ticket', () => {
+      for (const ticket of TICKETS.filter((entry) => entry.status === 'New')) {
+        expect(actionsOn(ticket.ticketNumber)).toHaveLength(0);
+      }
+      expect(actionsOn(LEGACY_TICKET_NUMBER)).toHaveLength(0);
+      expect(ticketsByNumber[LEGACY_TICKET_NUMBER].status).toBe('Closed');
+    });
+
+    it('gives every active IT Staff member an open follow-up, and one to inactive Robert', () => {
+      const openAssignees = TICKET_ACTIONS.filter((action) => action.followUp?.status === 'Open').map(
+        (action) => action.followUp?.assigneeEmail
+      );
+      for (const staff of activeStaff) expect(openAssignees).toContain(staff);
+      expect(openAssignees).toContain('robert.wilson@kmutt.ac.th');
+
+      const statuses = TICKET_ACTIONS.map((action) => action.followUp?.status ?? null);
+      expect(statuses).toContain('Completed');
+      expect(statuses).toContain('Cancelled');
+      expect(statuses).toContain(null);
+    });
+
+    it('keeps each follow-up complete or absent, and closed ones stamped (DB-03 CHECK constraints)', () => {
+      for (const action of TICKET_ACTIONS) {
+        const followUp = action.followUp;
+        if (!followUp) continue;
+        expect(followUp.note.trim().length).toBeGreaterThan(0);
+        expect(allStaff).toContain(followUp.assigneeEmail);
+        const closed = followUp.status !== 'Open';
+        expect(followUp.closedAt !== null).toBe(closed);
+        expect(followUp.closedByEmail !== null).toBe(closed);
+      }
+    });
+
+    it('performs every Action by IT Staff and keeps its fields within BR-05', () => {
+      for (const action of TICKET_ACTIONS) {
+        expect(allStaff).toContain(action.performedByEmail);
+        expect(action.description.length).toBeGreaterThan(0);
+        expect(action.description.length).toBeLessThanOrEqual(2000);
+        expect(action.result.length).toBeGreaterThan(0);
+        expect(action.result.length).toBeLessThanOrEqual(1000);
+        expect((action.attachmentNotes ?? '').length).toBeLessThanOrEqual(500);
+      }
+    });
+
+    it('dates every Action and history row inside its ticket\'s life', () => {
+      for (const entry of [...TICKET_ACTIONS.map((action) => ({ ticketNumber: action.ticketNumber, at: action.actionAt })),
+        ...TICKET_STATUS_CHANGES.map((change) => ({ ticketNumber: change.ticketNumber, at: change.createdAt }))]) {
+        const ticket = ticketsByNumber[entry.ticketNumber];
+        const at = new Date(entry.at).getTime();
+        expect(at).toBeGreaterThanOrEqual(new Date(ticket.createdAt).getTime());
+        expect(at).toBeLessThanOrEqual(new Date(ticket.updatedAt).getTime());
+      }
+    });
+
+    it('satisfies the resolution gate on every Resolved and Closed ticket except the legacy one (BR-14)', () => {
+      for (const ticket of TICKETS.filter((entry) => ['Resolved', 'Closed'].includes(entry.status))) {
+        if (ticket.ticketNumber === LEGACY_TICKET_NUMBER) continue;
+        const actions = actionsOn(ticket.ticketNumber);
+        expect(actions.length).toBeGreaterThanOrEqual(1);
+        expect(actions.some((action) => action.followUp?.status === 'Open')).toBe(false);
+      }
+    });
+
+    it('leaves each Reopened ticket short of the gate in a different way (BR-14(b), (c))', () => {
+      for (const ticket of TICKETS.filter((entry) => entry.status === 'Reopened')) {
+        const reopenedAt = TICKET_STATUS_CHANGES.find(
+          (change) => change.ticketNumber === ticket.ticketNumber && change.toStatus === 'Reopened'
+        )?.createdAt;
+        expect(reopenedAt).toBeDefined();
+        const sinceReopen = actionsOn(ticket.ticketNumber).filter(
+          (action) => new Date(action.actionAt) > new Date(reopenedAt as string)
+        );
+        const blockedByAction = sinceReopen.length === 0;
+        const blockedByFollowUp = sinceReopen.some((action) => action.followUp?.status === 'Open');
+        expect(blockedByAction || blockedByFollowUp).toBe(true);
+      }
+    });
+
+    it('builds each history as a chain from New to the ticket\'s current status, in time order', () => {
+      for (const ticket of TICKETS) {
+        const chain = TICKET_STATUS_CHANGES.filter((change) => change.ticketNumber === ticket.ticketNumber);
+        if (ticket.status === 'New' || ticket.ticketNumber === LEGACY_TICKET_NUMBER) {
+          expect(chain).toHaveLength(0);
+          continue;
+        }
+        expect(chain[0].fromStatus).toBe('New');
+        expect(chain[chain.length - 1].toStatus).toBe(ticket.status);
+        for (let index = 1; index < chain.length; index += 1) {
+          expect(chain[index].fromStatus).toBe(chain[index - 1].toStatus);
+          expect(new Date(chain[index].createdAt).getTime()).toBeGreaterThan(new Date(chain[index - 1].createdAt).getTime());
+        }
+      }
+    });
+
+    it('gives Ploy no tickets, so her dashboard shows only zeros (AC-21)', () => {
+      expect(REQUESTERS.find((user) => user.email === 'ploy.charoen@kmutt.ac.th')).toMatchObject({
+        isActive: true,
+        mustChangePassword: false
+      });
+      expect(TICKETS.some((ticket) => ticket.requesterEmail === 'ploy.charoen@kmutt.ac.th')).toBe(false);
+    });
+
+    it('writes ids, not emails, and resets each seeded Action to version 0', async () => {
+      await seed(fake.client, { hashPassword: fakeHash });
+
+      const tickets = Object.fromEntries(fake.rows('ticket').map((row) => [row.ticketNumber, row.id]));
+      const users = Object.fromEntries(fake.rows('user').map((row) => [row.email, row.id]));
+
+      for (const [index, action] of TICKET_ACTIONS.entries()) {
+        const row = fake.rows('ticketAction')[index];
+        expect(row.id).toBe(action.id);
+        expect(row.ticketId).toBe(tickets[action.ticketNumber]);
+        expect(row.performedById).toBe(users[action.performedByEmail]);
+        expect(row.followUpAssigneeId).toBe(action.followUp ? users[action.followUp.assigneeEmail] : null);
+        expect(row.followUpRequired).toBe(action.followUp !== null);
+        expect(row.version).toBe(0);
+        expect(row).not.toHaveProperty('performedByEmail');
+      }
+      for (const [index, change] of TICKET_STATUS_CHANGES.entries()) {
+        const row = fake.rows('ticketStatusChange')[index];
+        expect(row.id).toBe(change.id);
+        expect(row.changedById).toBe(users[change.changedByEmail]);
       }
     });
   });
