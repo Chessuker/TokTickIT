@@ -97,13 +97,19 @@ export function isTerminal(status: TicketStatusValue): boolean {
  * `InProgress` or `Resolved`, so the UI's status dropdown cannot offer a
  * transition the server would refuse. An Administrator gets `[]` — the caller
  * decides that, since this module knows nothing about roles.
+ *
+ * Lab 4 BR-14: while the resolution gate is closed, `Resolved` is left out as
+ * well. `gateOk` defaults to open so a caller that has no gate (the Lab 3 unit
+ * tests) keeps the Lab 3 answer.
  */
 export function permittedTransitions(
   status: TicketStatusValue,
-  hasOwner: boolean
+  hasOwner: boolean,
+  gateOk = true
 ): TicketStatusValue[] {
   return TRANSITIONS[status]
     .filter((transition) => hasOwner || !transition.requiresOwner)
+    .filter((transition) => gateOk || transition.to !== 'Resolved')
     .map((transition) => transition.to);
 }
 
@@ -198,4 +204,73 @@ export function timestampsFor(
     default:
       return {};
   }
+}
+
+// ---------------------------------------------------------------------------
+// Resolution gate (Lab 4 specification.md BR-14, BR-17, AD-04).
+// ---------------------------------------------------------------------------
+
+/** One unmet condition, in the fixed order the API reports them. */
+export type GateCondition = 'OWNER' | 'ACTION_SINCE_REOPEN' | 'OPEN_FOLLOW_UPS';
+
+export interface ResolutionGate {
+  ok: boolean;
+  unmet: GateCondition[];
+}
+
+/** What the gate needs to know about a ticket, and nothing else. */
+export interface GateInput {
+  hasOwner: boolean;
+  /** Every Action on the ticket: when it was created and its follow-up state. */
+  actions: { createdAt: Date; followUpStatus: string | null }[];
+  /** When the ticket last entered `Reopened`, or null if it never has. */
+  lastReopenedAt: Date | null;
+}
+
+/**
+ * BR-14: a ticket may become Resolved only with an owner, at least one Action
+ * created since it last entered Reopened (any Action if it never was), and no
+ * open follow-up.
+ *
+ * "Since" is strict: an Action created in the same instant as the reopen was
+ * recorded against the old attempt (the reopen is one transaction, the Action
+ * another), so it does not count as new work.
+ */
+export function resolutionGate(input: GateInput): ResolutionGate {
+  const unmet: GateCondition[] = [];
+  const since = input.lastReopenedAt?.getTime() ?? null;
+
+  if (!input.hasOwner) unmet.push('OWNER');
+  if (!input.actions.some((action) => since === null || action.createdAt.getTime() > since)) {
+    unmet.push('ACTION_SINCE_REOPEN');
+  }
+  if (input.actions.some((action) => action.followUpStatus === 'Open')) unmet.push('OPEN_FOLLOW_UPS');
+
+  return { ok: unmet.length === 0, unmet };
+}
+
+/** Counts the open follow-ups, for the gate message and the Cancel dialog. */
+export function openFollowUpCount(actions: GateInput['actions']): number {
+  return actions.filter((action) => action.followUpStatus === 'Open').length;
+}
+
+/**
+ * The `RESOLUTION_BLOCKED` message: one clause per unmet condition, in the
+ * order of `unmet`, worded as what to do next (api-spec.md §1.2).
+ */
+export function resolutionBlockedMessage(gate: ResolutionGate, openFollowUps: number, reopened: boolean): string {
+  const clauses = gate.unmet.map((condition) => {
+    switch (condition) {
+      case 'OWNER':
+        return 'assign an owner';
+      case 'ACTION_SINCE_REOPEN':
+        return reopened
+          ? 'record at least one action taken since the ticket was reopened'
+          : 'record at least one action taken';
+      case 'OPEN_FOLLOW_UPS':
+        return `complete or cancel ${openFollowUps} open follow-up${openFollowUps === 1 ? '' : 's'}`;
+    }
+  });
+
+  return `This ticket cannot be resolved yet: ${clauses.join('; ')}.`;
 }

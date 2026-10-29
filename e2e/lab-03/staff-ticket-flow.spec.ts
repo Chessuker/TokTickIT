@@ -58,6 +58,15 @@ test.describe('IT Staff ticket operations (E2E-05)', () => {
     await page.getByRole('button', { name: 'Add Internal Note' }).click()
     await expect(page.getByTestId('note-list')).toContainText('Vendor RMA 12345')
 
+    // --- Lab 4 resolution gate: Resolved needs a recorded Action (BR-14) ---
+    await expect(page.getByLabel('Current Status').locator('option', { hasText: 'Resolved' })).toHaveCount(0)
+    await page.getByRole('tab', { name: /actions taken/i }).click()
+    await page.getByRole('button', { name: /record action/i }).click()
+    await page.getByLabel(/^Action Description/).fill('Replaced the laptop battery.')
+    await page.getByLabel(/^Result/).fill('Battery holds charge for a full day.')
+    await page.getByRole('button', { name: 'Save action' }).click()
+    await expect(page.getByTestId('actions-list')).toContainText('Replaced the laptop battery.')
+
     // --- Resolved and Closed, both behind a confirmation ------------------
     await page.getByLabel('Current Status').selectOption('Resolved')
     const resolveDialog = page.getByRole('dialog')
@@ -108,17 +117,19 @@ test.describe('IT Staff ticket operations (E2E-05)', () => {
     expect((await refused.json()).error.code).toBe('INVALID_TRANSITION')
     expect((await refused.json()).error.message).toMatch(/owner/i)
 
-    // Assigning an owner opens the ticket and unlocks the two targets (BR-31).
+    // Assigning an owner opens the ticket and unlocks In Progress (BR-31).
+    // Lab 4: Resolved stays out until an Action is recorded (BR-14), and the
+    // gate hint says so.
     await page.getByRole('button', { name: 'Claim' }).click()
     await expect(status).toHaveValue('Open')
     await expect(status.locator('option')).toHaveText([
       'Open',
       'In Progress',
       'Waiting for Requester',
-      'Resolved',
       'Cancelled',
     ])
     await expect(page.getByTestId('owner-required-hint')).toHaveCount(0)
+    await expect(page.getByTestId('resolution-gate-hint')).toContainText('at least one action is recorded')
   })
 
   test('a transition outside the matrix is refused and the screen keeps the real status (AC-21)', async ({ page }) => {

@@ -83,6 +83,11 @@ export interface ActionsTakenProps {
   onCountChange?: (count: number) => void
   /** The server said the ticket is locked: the parent should re-read the ticket. */
   onLocked?: () => void
+  /**
+   * An Action was recorded or edited, or a follow-up closed: the resolution
+   * gate may have changed, so the parent should re-read the ticket (BR-14).
+   */
+  onChanged?: () => void
 }
 
 /** Limits from BR-05 / BR-06; the server repeats every one of them. */
@@ -785,7 +790,16 @@ interface PendingClose {
   status: 'Completed' | 'Cancelled'
 }
 
-function ActionsTaken({ ticketId, ticketStatus, ticketCreatedAt, ownerId, mode, onCountChange, onLocked }: ActionsTakenProps) {
+function ActionsTaken({
+  ticketId,
+  ticketStatus,
+  ticketCreatedAt,
+  ownerId,
+  mode,
+  onCountChange,
+  onLocked,
+  onChanged,
+}: ActionsTakenProps) {
   const { user } = useAuth()
   const wide = useMediaQuery('(min-width: 992px)')
 
@@ -845,9 +859,11 @@ function ActionsTaken({ ticketId, ticketStatus, ticketCreatedAt, ownerId, mode, 
     }
   }, [listEndpoint])
 
+  // A status change re-reads the list too: cancelling the ticket cancels its
+  // open follow-ups on the server (BR-16), and this list must show that.
   useEffect(() => {
     void fetchActions()
-  }, [fetchActions, reloadToken])
+  }, [fetchActions, reloadToken, ticketStatus])
 
   useEffect(() => {
     if (!writable) return
@@ -882,6 +898,7 @@ function ActionsTaken({ ticketId, ticketStatus, ticketCreatedAt, ownerId, mode, 
     setExpandedId(action.id)
     setSaved(message)
     void fetchActions()
+    onChanged?.()
   }
 
   const defaultAssigneeId =

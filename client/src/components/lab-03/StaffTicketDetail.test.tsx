@@ -177,6 +177,14 @@ function stubApi(options: StubOptions = {}) {
       return new Response(JSON.stringify({ data: [] }), { status: 200 })
     }
 
+    // Lab 4: the History tab (Issue #55).
+    if (url.pathname === `/api/tickets/${TICKET_ID}/history`) {
+      return new Response(
+        JSON.stringify({ createdAt: '2026-09-10T04:15:00.000Z', createdBy: { id: 'r-1', name: 'Jennifer Anderson', role: 'Requester' }, data: [] }),
+        { status: 200 },
+      )
+    }
+
     if (path === '/internal-notes') {
       if (method === 'POST') {
         notes.unshift({
@@ -505,7 +513,8 @@ describe('StaffTicketDetail — tabs, notes and attachments (UI-18, AC-23, AC-24
   }
 
   // Lab 4 adds Actions Taken as the first, default tab (ui-spec.md §3.3).
-  it('shows four tabs with counts and follows the WAI-ARIA tabs pattern', async () => {
+  // Lab 4: Actions Taken first (Issue #54) and History last (Issue #55).
+  it('shows five tabs with counts and follows the WAI-ARIA tabs pattern', async () => {
     const user = userEvent.setup()
     renderDetail({ ticket: { counts: { comments: 3, internalNotes: 2, attachments: 1 }, attachments: ATTACHMENTS } })
 
@@ -516,6 +525,7 @@ describe('StaffTicketDetail — tabs, notes and attachments (UI-18, AC-23, AC-24
       'Public Comments (3)',
       'Internal Notes (2)',
       'Attachments (1)',
+      'History',
     ])
     expect(tabs[0]).toHaveAttribute('aria-selected', 'true')
 
@@ -523,7 +533,7 @@ describe('StaffTicketDetail — tabs, notes and attachments (UI-18, AC-23, AC-24
     await user.keyboard('{ArrowRight}')
     expect(screen.getAllByRole('tab')[1]).toHaveAttribute('aria-selected', 'true')
     await user.keyboard('{End}')
-    expect(screen.getAllByRole('tab')[3]).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getAllByRole('tab')[4]).toHaveAttribute('aria-selected', 'true')
   })
 
   it('renders the Internal Notes panel with its own styling and composer', async () => {

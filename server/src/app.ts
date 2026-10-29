@@ -738,6 +738,42 @@ app.get('/api/tickets/:id/actions', requireAuth, async (req, res) => {
   }
 });
 
+// GET /api/tickets/:id/history — status history, oldest first (Lab 4
+// api-spec.md §3.5, FR-06, BR-18, AC-16, AD-12). Same access rule as the two
+// lists above. There is no write route: rows are appended only inside the
+// workflow transactions in `staffRoutes.ts`.
+//
+// Ticket creation is not stored; `createdAt` and `createdBy` (the Requester)
+// let the UI draw it as the first row.
+app.get('/api/tickets/:id/history', requireAuth, async (req, res) => {
+  try {
+    const ticket = await loadTicketAccess(res, String(req.params.id));
+    if (!ticket) return;
+
+    const [origin, changes] = await Promise.all([
+      prisma.ticket.findFirst({
+        where: { id: ticket.id },
+        select: { createdAt: true, requester: { select: { id: true, name: true, role: true } } }
+      }),
+      prisma.ticketStatusChange.findMany({
+        where: { ticketId: ticket.id },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        select: {
+          id: true,
+          fromStatus: true,
+          toStatus: true,
+          createdAt: true,
+          changedBy: { select: { id: true, name: true, role: true } }
+        }
+      })
+    ]);
+
+    res.json({ createdAt: origin?.createdAt, createdBy: origin?.requester, data: changes });
+  } catch (error) {
+    sendInternalError(res, 'GET /api/tickets/:id/history', error);
+  }
+});
+
 // POST /api/tickets/:id/comments — append one Public Comment (api-spec.md
 // §3.7, BR-22, BR-23, AC-14). Requester (own ticket) or IT Staff; an
 // Administrator is refused by the role gate before any lookup (BR-17).

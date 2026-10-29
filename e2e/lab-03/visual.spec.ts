@@ -205,14 +205,16 @@ test.describe('Detail states (R-11, R-15, R-16, R-20)', () => {
   test('confirmation dialog on mobile (R-16)', async ({ page }) => {
     await page.setViewportSize(VIEWPORTS.mobile)
     await loginAs(page, IT_STAFF)
-    await page.goto(`/staff/tickets/${await seededTicketId(page)}`)
+    // Lab 4: …900008 has an open follow-up, so the resolution gate keeps
+    // Resolved out of its choices; …900004 (Open, one Action) still offers it.
+    await page.goto(`/staff/tickets/${await seededTicketId(page, 'TKT-2026-900004')}`)
     await page.getByLabel('Current Status').selectOption('Resolved')
     const dialog = page.getByRole('dialog')
     await expect(dialog).toContainText(/Resolved/)
     await shot(page, 'staff-ticket-detail/confirm-mobile.png', { fullPage: false })
     // Cancelled, so the seeded ticket keeps its state.
     await dialog.getByRole('button', { name: /cancel/i }).click()
-    await expect(page.getByLabel('Current Status')).toHaveValue('InProgress')
+    await expect(page.getByLabel('Current Status')).toHaveValue('Open')
   })
 
   test('Users validation and 409 under Email (R-20)', async ({ page }) => {
