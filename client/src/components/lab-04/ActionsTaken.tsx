@@ -31,7 +31,10 @@ import {
  * their own handling: `409 STALE_UPDATE` (someone else edited first — keep the
  * typed text, offer Reload), `409 TICKET_LOCKED` (the ticket was resolved
  * meanwhile — the parent reloads and the panel turns read-only), and a network
- * failure (keep everything, say so, let the user retry).
+ * failure (keep everything, say so, let the user retry). `403` and `404` are
+ * refusals, not outages (L3 ui-spec.md §2 Forbidden / Not found): they are
+ * named as such, the server's message is shown, and no Retry is offered,
+ * because trying again cannot change the answer.
  */
 
 export interface ActionUser {
@@ -129,6 +132,17 @@ function valuesFrom(action: Action): FormValues {
 }
 
 /** The BR-05 / BR-06 rules, applied before sending. */
+/** The wording for a `403` / `404` on a write, or null for any other status. */
+function refusalMessage(status: number, serverMessage: string | undefined): string | null {
+  if (status === 403) {
+    return `Access denied: ${serverMessage ?? "you don't have permission to change actions on this ticket."}`
+  }
+  if (status === 404) {
+    return `Not found: ${serverMessage ?? 'this action or ticket no longer exists.'} Reload the page to see the latest list.`
+  }
+  return null
+}
+
 function validate(values: FormValues, min: string, max: string): FieldErrors {
   const errors: FieldErrors = {}
   const description = values.description.trim()
@@ -340,7 +354,11 @@ function ActionForm({
         return
       }
 
-      setFormError(error?.message ?? 'The action could not be saved. Please try again.')
+      setFormError(
+        refusalMessage(res.status, error?.message) ??
+          error?.message ??
+          'The action could not be saved. Please try again.',
+      )
     } catch {
       setFormError('Could not reach the server. Your action has not been saved — your text is still here, so you can try again.')
     } finally {
@@ -756,6 +774,12 @@ function ActionView({
 // The panel
 // ---------------------------------------------------------------------------
 
+/** Why the list did not load; only `failed` is worth a Retry. */
+interface LoadFailure {
+  kind: 'forbidden' | 'not-found' | 'failed'
+  message: string
+}
+
 interface PendingClose {
   action: Action
   status: 'Completed' | 'Cancelled'
@@ -774,7 +798,7 @@ function ActionsTaken({ ticketId, ticketStatus, ticketCreatedAt, ownerId, mode, 
   const writeEndpoint = `/api/staff/tickets/${ticketId}/actions`
 
   const [actions, setActions] = useState<Action[] | null>(null)
-  const [loadError, setLoadError] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState<LoadFailure | null>(null)
   const [reloadToken, setReloadToken] = useState(0)
   const [assignees, setAssignees] = useState<Assignee[]>([])
 
@@ -798,7 +822,16 @@ function ActionsTaken({ ticketId, ticketStatus, ticketCreatedAt, ownerId, mode, 
       const res = await apiFetch(listEndpoint)
       if (!res.ok) {
         const error = await readApiError(res)
-        setLoadError(error?.message ?? 'Actions could not be loaded.')
+        // A refusal also drops any list shown before it: nothing the server
+        // now withholds stays on screen.
+        if (res.status === 403 || res.status === 404) setActions(null)
+        setLoadError(
+          res.status === 403
+            ? { kind: 'forbidden', message: error?.message ?? "You don't have access to the actions on this ticket." }
+            : res.status === 404
+              ? { kind: 'not-found', message: error?.message ?? 'This ticket could not be found.' }
+              : { kind: 'failed', message: error?.message ?? 'Something went wrong. Please try again.' },
+        )
         return null
       }
       const body = (await res.json()) as { data: Action[] }
@@ -807,7 +840,7 @@ function ActionsTaken({ ticketId, ticketStatus, ticketCreatedAt, ownerId, mode, 
       countRef.current?.(body.data.length)
       return body.data
     } catch {
-      setLoadError('Could not reach the server. Please check your connection and try again.')
+      setLoadError({ kind: 'failed', message: 'Could not reach the server. Please check your connection and try again.' })
       return null
     }
   }, [listEndpoint])
@@ -893,7 +926,11 @@ function ActionsTaken({ ticketId, ticketStatus, ticketCreatedAt, ownerId, mode, 
         return
       }
       if (error?.code === 'TICKET_LOCKED') onLocked?.()
-      setCloseError(error?.message ?? 'The follow-up could not be updated. Please try again.')
+      setCloseError(
+        refusalMessage(res.status, error?.message) ??
+          error?.message ??
+          'The follow-up could not be updated. Please try again.',
+      )
     } catch {
       setCloseError('Could not reach the server. Nothing was changed.')
     } finally {
@@ -903,6 +940,7 @@ function ActionsTaken({ ticketId, ticketStatus, ticketCreatedAt, ownerId, mode, 
 
   const openFollowUps = actions?.filter((action) => action.followUp.status === 'Open').length ?? 0
   const headingId = requesterView ? 'work-done-heading' : 'actions-heading'
+  const refused = loadError !== null && loadError.kind !== 'failed'
 
   const viewButtons = (action: Action) =>
     writable ? (
@@ -992,7 +1030,7 @@ function ActionsTaken({ ticketId, ticketStatus, ticketCreatedAt, ownerId, mode, 
             </p>
           )}
         </div>
-        {writable && !creating && (
+        {writable && !creating && !refused && (
           <button
             type="button"
             className="zg-btn zg-btn-primary"
@@ -1019,7 +1057,7 @@ function ActionsTaken({ ticketId, ticketStatus, ticketCreatedAt, ownerId, mode, 
         </p>
       )}
 
-      {creating && writable && (
+      {creating && writable && !refused && (
         <ActionForm
           kind="create"
           ticketCreatedAt={ticketCreatedAt}
@@ -1034,11 +1072,25 @@ function ActionsTaken({ ticketId, ticketStatus, ticketCreatedAt, ownerId, mode, 
         />
       )}
 
-      {loadError && (
+      {loadError && loadError.kind !== 'failed' && (
+        <div
+          className={loadError.kind === 'forbidden' ? 'zg-state zg-state-denied' : 'zg-state'}
+          data-testid={loadError.kind === 'forbidden' ? 'actions-denied' : 'actions-not-found'}
+          role="alert"
+        >
+          <span className="zg-state-icon" aria-hidden="true">
+            {loadError.kind === 'forbidden' ? '🔒' : '🔍'}
+          </span>
+          <p className="zg-state-title">{loadError.kind === 'forbidden' ? 'Access denied' : 'Not found'}</p>
+          <p className="zg-state-text">{loadError.message}</p>
+        </div>
+      )}
+
+      {loadError?.kind === 'failed' && (
         <div className="zg-callout zg-callout-error" role="alert">
           <span aria-hidden="true">⚠️</span>
           <div>
-            {loadError}{' '}
+            {loadError.message}{' '}
             <button type="button" className="zg-link-button" onClick={reload}>
               Retry
             </button>

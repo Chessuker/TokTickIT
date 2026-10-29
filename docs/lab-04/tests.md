@@ -125,7 +125,7 @@ The handout's example rows keep their ids: **API-03** (create a valid Action, AC
 | UI-05 | UI | AC-07 | Mark done / cancel follow-up with confirm; switch disabled when on; closed follow-up fields disabled | Correct PATCH body; UI state per ui-spec §3.3 | `client/src/components/lab-04/ActionsTaken.test.tsx` | Pass |
 | UI-06 | UI | AC-03, AC-08 | Requester "Work done by IT": entries shown, no buttons; empty text | As stated | `client/src/components/lab-04/ActionsTaken.test.tsx` | Pass |
 | UI-07 | UI | AC-09 | Locked Ticket: no Record button, hint shown; late `409 TICKET_LOCKED` switches panel to read-only | As stated | `client/src/components/lab-04/ActionsTaken.test.tsx` | Pass |
-| UI-08 | UI | AC-27 | Network failure on create and edit | Safe-failure callout focused; values kept; Retry works | `client/src/components/lab-04/ActionsTaken.test.tsx` | Pass |
+| UI-08 | UI | AC-27 | Network failure on create and edit; `403` / `404` / `500` on the list; `403` on save and on a follow-up change | Safe-failure callout focused; values kept; Retry works. `403` → "Access denied" with the server message (or a fallback), no Retry, no list, no Record action; `404` → "Not found", no Retry; `500` → safe failure with Retry; `403` on a write keeps the values and is not worded as a network problem (L3 ui-spec.md §2) | `client/src/components/lab-04/ActionsTaken.test.tsx` | Pass |
 | UI-09 | UI | AC-12, AC-14 | Status select lists only `permittedTransitions`; gate hint bullets for each `unmet` value link to the fix | As stated | `client/src/components/lab-04/TicketWorkflow.test.tsx` | Planned |
 | UI-10 | UI | AC-14, AC-16 | Successful status change refreshes header badge, operations card, tab counts and History without reload; Cancel dialog mentions open follow-ups | As stated | `client/src/components/lab-04/TicketWorkflow.test.tsx` | Planned |
 | UI-11 | UI | AC-17 | `409 STALE_UPDATE` on status/owner/IT Priority sends `expectedVersion`, then shows callout and Reload | As stated | `client/src/components/lab-04/TicketWorkflow.test.tsx` | Planned |
@@ -377,6 +377,14 @@ Turned to Pass: UNIT-10, UI-01 … UI-08, UI-23, E2E-01, E2E-02; R-07 … R-10 c
 Two deliberate mutations to `ActionsTaken.tsx`: giving every retry a new `clientRequestId` failed the BR-10 retry test. Removing the in-flight ref guard was **not** caught at first, because `userEvent.dblClick` lets React re-render between the clicks and the disabled button does the work. A test that fires two submits in the same tick was added; it fails without the guard.
 
 Found by looking at the captured screenshots and fixed: the expanded Action row was clipped at the right edge on desktop. The shared `.zg-table` has `min-width: 66rem` for the queue's ten columns, which is wider than a table inside a tab card. The Actions table now has its own fixed column widths and no minimum, and its badges never wrap inside the pill.
+
+Review follow-up on the #54 PR (2026-10-29): a `403` on the list showed the same callout and Retry as a network failure. The panel now renders `403` as "Access denied" and `404` as "Not found" (L3 ui-spec.md §2) with the server message, no Retry, no list and no Record action; network and `5xx` keep the safe failure with Retry; a `403` / `404` on a save or a follow-up change is named as such in the form or dialog callout, with the typed values kept. Six tests were added under UI-08. All three suites were re-run on the final code, after re-seeding:
+
+```
+$ npm run test:client     Test Files  14 passed (14)    Tests  277 passed (277)
+$ npm run test:server     Test Files  19 passed (19)    Tests  768 passed (768)
+$ npm run test:e2e        92 passed (2.4m)              # 83 Lab 2/3 + 9 Lab 4
+```
 
 ### Final run
 

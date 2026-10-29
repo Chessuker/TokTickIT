@@ -70,6 +70,8 @@ interface StubOptions {
   refuseNext?: { status: number; code: string; message: string; fields?: Record<string, string> }
   /** Make the next write fail at the network level. */
   failNext?: boolean
+  /** Answer every list read with this status (the message is optional, as servers vary). */
+  refuseList?: { status: number; code: string; message?: string }
 }
 
 function stubApi(options: StubOptions = {}) {
@@ -88,6 +90,10 @@ function stubApi(options: StubOptions = {}) {
     }
 
     const list = () => new Response(JSON.stringify({ data: state.actions }), { status: 200 })
+    if (method === 'GET' && options.refuseList) {
+      const { status, code, message } = options.refuseList
+      return new Response(JSON.stringify({ error: { code, message } }), { status })
+    }
     if (method === 'GET') return list()
 
     writes.push({ method, url: url.pathname, body })
@@ -650,5 +656,85 @@ describe('safe failure (UI-08, AC-27)', () => {
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
     await user.click(screen.getByRole('button', { name: 'Discard' }))
     expect(screen.queryByTestId('action-form')).toBeNull()
+  })
+})
+
+describe('forbidden, not found and server failure (UI-08, L3 ui-spec.md §2)', () => {
+  it('shows a 403 on the list as Access denied with the server message, and nothing else', async () => {
+    renderPanel({
+      actions: [PLAIN],
+      refuseList: { status: 403, code: 'FORBIDDEN', message: 'Only IT Staff and Administrators can view this.' },
+    })
+
+    const denied = await screen.findByTestId('actions-denied')
+    expect(denied).toHaveAttribute('role', 'alert')
+    expect(denied).toHaveTextContent('Access denied')
+    expect(denied).toHaveTextContent('Only IT Staff and Administrators can view this.')
+    // Not worded as an outage, and nothing to retry or act on.
+    expect(denied).not.toHaveTextContent(/could not reach|connection|try again/i)
+    expect(screen.queryByRole('button', { name: /retry/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /record action/i })).toBeNull()
+    expect(screen.queryByTestId('actions-list')).toBeNull()
+    expect(screen.queryByText('Re-created the Outlook profile.')).toBeNull()
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+
+  it('falls back to its own wording when a 403 carries no message (Requester view)', async () => {
+    renderPanel({ user: JENNIFER, actions: [PLAIN], props: { mode: 'requester' }, refuseList: { status: 403, code: 'FORBIDDEN' } })
+
+    const denied = await screen.findByTestId('actions-denied')
+    expect(denied).toHaveTextContent("You don't have access to the actions on this ticket.")
+    expect(within(screen.getByTestId('work-done')).queryAllByRole('button')).toHaveLength(0)
+  })
+
+  it('shows a 404 as Not found, without Retry', async () => {
+    renderPanel({ refuseList: { status: 404, code: 'NOT_FOUND', message: 'Ticket not found.' } })
+
+    const missing = await screen.findByTestId('actions-not-found')
+    expect(missing).toHaveTextContent('Not found')
+    expect(missing).toHaveTextContent('Ticket not found.')
+    expect(screen.queryByRole('button', { name: /retry/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /record action/i })).toBeNull()
+  })
+
+  it('keeps Retry for a server failure, which may pass on its own', async () => {
+    renderPanel({ refuseList: { status: 500, code: 'INTERNAL' } })
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Something went wrong. Please try again.')
+    expect(within(alert).getByRole('button', { name: /retry/i })).toBeInTheDocument()
+    expect(screen.queryByTestId('actions-denied')).toBeNull()
+  })
+
+  it('names a 403 on save as Access denied, keeps every value and leaves the ticket alone', async () => {
+    const user = userEvent.setup()
+    const { onLocked } = renderPanel({
+      refuseNext: { status: 403, code: 'FORBIDDEN', message: 'Your account can no longer record actions.' },
+    })
+    await screen.findByTestId('no-actions')
+    await user.click(screen.getByRole('button', { name: /record action/i }))
+    await user.type(screen.getByLabelText(/^Action Description/), 'Checked the switch port')
+    await user.type(screen.getByLabelText(/^Result/), 'Port flapping')
+    await user.click(screen.getByRole('button', { name: 'Save action' }))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Access denied: Your account can no longer record actions.')
+    expect(alert).not.toHaveTextContent(/could not reach/i)
+    expect(alert).toHaveFocus()
+    expect(screen.getByLabelText(/^Action Description/)).toHaveValue('Checked the switch port')
+    expect(screen.getByLabelText(/^Result/)).toHaveValue('Port flapping')
+    expect(onLocked).not.toHaveBeenCalled()
+  })
+
+  it('names a 403 on a follow-up change as Access denied inside the dialog', async () => {
+    const user = userEvent.setup()
+    renderPanel({ actions: [WITH_OPEN_FOLLOW_UP], refuseNext: { status: 403, code: 'FORBIDDEN', message: 'Not allowed.' } })
+    const card = await screen.findByTestId('action-card')
+
+    await user.click(within(card).getByRole('button', { name: 'Mark follow-up done' }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Mark as done' }))
+
+    expect(await within(screen.getByRole('dialog')).findByRole('alert')).toHaveTextContent('Access denied: Not allowed.')
+    expect(screen.getByText('Follow-up open')).toBeInTheDocument()
   })
 })

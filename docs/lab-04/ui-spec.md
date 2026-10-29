@@ -123,7 +123,7 @@ Tabs become: **Actions Taken (n)** · Public Comments (n) · Internal Notes (n) 
 | Complete / cancel follow-up | Confirmation dialog: "Mark this follow-up as done?" / "Cancel this follow-up?" (red confirm), then a PATCH with `followUpStatus`. On success the badge changes and the gate hint (§3.4) updates |
 | Stale edit | §2 Stale update; the typed edits stay in the form, **Reload** fetches the latest Action, and the user can re-apply and save |
 | Administrator | Same controls as IT Staff (AD-02). The assignee select still lists only IT Staff |
-| States | Loading (skeleton rows) · Empty: "No actions recorded yet." + **Record action** (or the locked line) · Safe failure with Retry · Not found / Forbidden as L3 §3.5 |
+| States | Loading (skeleton rows) · Empty: "No actions recorded yet." + **Record action** (or the locked line) · Safe failure with Retry (network or `5xx`) · Forbidden (`403`) / Not found (`404`) as L3 §2 Feedback states, inside the panel: lock / search icon, "Access denied" / "Not found", the server message (or a fallback), and no Retry, list or Record action, since trying again cannot change the answer · A `403` / `404` on a save or follow-up change is shown in that form's or dialog's error callout as "Access denied: …" / "Not found: …", with the typed values kept (clarified in the Issue #54 review) |
 
 ### 3.4 Workflow additions — Staff Ticket Detail operations card
 
