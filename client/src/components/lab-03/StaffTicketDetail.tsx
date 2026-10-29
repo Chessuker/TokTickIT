@@ -13,6 +13,7 @@ import {
 import { statusLabel } from '../../ticketStatus'
 import CommentsPanel from './CommentsPanel'
 import InternalNotesPanel from './InternalNotesPanel'
+import ActionsTaken from '../lab-04/ActionsTaken'
 
 /**
  * IT Staff Ticket Detail (ui-spec.md §3.5, api-spec.md §3.10, §3.12 – §3.17 —
@@ -95,7 +96,8 @@ interface Confirmation {
 }
 
 const IT_PRIORITIES = ['Low', 'Medium', 'High'] as const
-const TABS = ['comments', 'notes', 'attachments'] as const
+// Actions Taken is first and the default (Lab 4 ui-spec.md §3.3).
+const TABS = ['actions', 'comments', 'notes', 'attachments'] as const
 type Tab = (typeof TABS)[number]
 
 /** Status targets the spec asks the UI to confirm before sending (BR-18 ⚠). */
@@ -150,8 +152,10 @@ function StaffTicketDetail() {
   const [confirming, setConfirming] = useState(false)
   const [confirmError, setConfirmError] = useState<string | null>(null)
 
-  const [tab, setTab] = useState<Tab>('comments')
+  const [tab, setTab] = useState<Tab>(() => (location.hash === '#comments' ? 'comments' : 'actions'))
+  const [actionCount, setActionCount] = useState<number | null>(null)
   const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({
+    actions: null,
     comments: null,
     notes: null,
     attachments: null,
@@ -629,6 +633,7 @@ function StaffTicketDetail() {
         <div className="zg-tabs" role="tablist" aria-label="Ticket activity" onKeyDown={onTabKeyDown}>
           {(
             [
+              ['actions', actionCount === null ? 'Actions Taken' : `Actions Taken (${actionCount})`],
               ['comments', `Public Comments (${ticket.counts.comments})`],
               ['notes', `Internal Notes (${ticket.counts.internalNotes})`],
               ['attachments', `Attachments (${ticket.counts.attachments})`],
@@ -651,6 +656,20 @@ function StaffTicketDetail() {
               {label}
             </button>
           ))}
+        </div>
+
+        <div role="tabpanel" id="panel-actions" aria-labelledby="tab-actions" hidden={tab !== 'actions'}>
+          {tab === 'actions' && (
+            <ActionsTaken
+              ticketId={ticket.id}
+              ticketStatus={ticket.status}
+              ticketCreatedAt={ticket.createdAt}
+              ownerId={ticket.owner?.id ?? null}
+              mode="staff"
+              onCountChange={setActionCount}
+              onLocked={reload}
+            />
+          )}
         </div>
 
         <div role="tabpanel" id="panel-comments" aria-labelledby="tab-comments" hidden={tab !== 'comments'}>

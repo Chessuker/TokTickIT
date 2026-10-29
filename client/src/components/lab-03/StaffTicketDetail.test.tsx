@@ -172,6 +172,11 @@ function stubApi(options: StubOptions = {}) {
       return new Response(JSON.stringify({ data: options.comments ?? [] }), { status: 200 })
     }
 
+    // Lab 4: the Actions Taken tab, now first and selected by default.
+    if (path === '/actions') {
+      return new Response(JSON.stringify({ data: [] }), { status: 200 })
+    }
+
     if (path === '/internal-notes') {
       if (method === 'POST') {
         notes.unshift({
@@ -499,12 +504,15 @@ describe('StaffTicketDetail — tabs, notes and attachments (UI-18, AC-23, AC-24
     createdAt: '2026-09-14T09:45:00.000Z',
   }
 
-  it('shows three tabs with counts and follows the WAI-ARIA tabs pattern', async () => {
+  // Lab 4 adds Actions Taken as the first, default tab (ui-spec.md §3.3).
+  it('shows four tabs with counts and follows the WAI-ARIA tabs pattern', async () => {
     const user = userEvent.setup()
     renderDetail({ ticket: { counts: { comments: 3, internalNotes: 2, attachments: 1 }, attachments: ATTACHMENTS } })
 
-    const tabs = await screen.findAllByRole('tab')
+    await screen.findByTestId('no-actions')
+    const tabs = screen.getAllByRole('tab')
     expect(tabs.map((tab) => tab.textContent)).toEqual([
+      'Actions Taken (0)',
       'Public Comments (3)',
       'Internal Notes (2)',
       'Attachments (1)',
@@ -515,7 +523,7 @@ describe('StaffTicketDetail — tabs, notes and attachments (UI-18, AC-23, AC-24
     await user.keyboard('{ArrowRight}')
     expect(screen.getAllByRole('tab')[1]).toHaveAttribute('aria-selected', 'true')
     await user.keyboard('{End}')
-    expect(screen.getAllByRole('tab')[2]).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getAllByRole('tab')[3]).toHaveAttribute('aria-selected', 'true')
   })
 
   it('renders the Internal Notes panel with its own styling and composer', async () => {
@@ -556,7 +564,8 @@ describe('StaffTicketDetail — tabs, notes and attachments (UI-18, AC-23, AC-24
     renderDetail()
 
     await screen.findAllByRole('tab')
-    expect(screen.getByLabelText('Add public comment')).toBeInTheDocument()
+    await user.click(screen.getByRole('tab', { name: /public comments/i }))
+    expect(await screen.findByLabelText('Add public comment')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Post Comment' })).toBeInTheDocument()
     // The note composer is not on screen at the same time.
     expect(screen.queryByLabelText('Add internal note')).toBeNull()
@@ -642,6 +651,8 @@ describe('StaffTicketDetail — busy states (V-09)', () => {
     const user = userEvent.setup()
     const fetchMock = renderDetail()
     await screen.findAllByRole('tab')
+    await user.click(screen.getByRole('tab', { name: /public comments/i }))
+    await screen.findByLabelText('Add public comment')
     let release = holdWrites(fetchMock)
 
     await user.type(screen.getByLabelText('Add public comment'), 'On it.')
