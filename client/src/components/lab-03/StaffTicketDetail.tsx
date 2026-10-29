@@ -183,6 +183,7 @@ function StaffTicketDetail() {
   /** The change the server refused as stale, still shown in its control (AC-17). */
   const [stale, setStale] = useState<{ control: Exclude<Control, null>; value: string } | null>(null)
   const [reloading, setReloading] = useState(false)
+  const [reloadError, setReloadError] = useState<string | null>(null)
 
   const [tab, setTab] = useState<Tab>(() => (location.hash === '#comments' ? 'comments' : 'actions'))
   const [actionCount, setActionCount] = useState<number | null>(null)
@@ -269,14 +270,22 @@ function StaffTicketDetail() {
   /**
    * Re-reads the ticket without the full-screen loading state, so the gate,
    * the counts and the version follow an Action or a stale Reload while the
-   * user stays where they are. A failure keeps the copy on screen.
+   * user stays where they are. A failure keeps the copy on screen and is
+   * answered as a message, so a caller that depends on the fresh copy (the
+   * stale Reload) can tell the user; the others ignore it, and the next
+   * operation reports the outage against its own control.
    */
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (): Promise<{ ok: true } | { ok: false; message: string }> => {
     try {
       const res = await apiFetch(`/api/staff/tickets/${id}`)
-      if (res.ok) setTicket((await res.json()) as StaffTicketDetailData)
+      if (res.ok) {
+        setTicket((await res.json()) as StaffTicketDetailData)
+        return { ok: true }
+      }
+      const error = await readApiError(res)
+      return { ok: false, message: error?.message ?? 'Something went wrong. Please try again.' }
     } catch {
-      // The next operation will report the outage against its own control.
+      return { ok: false, message: 'Could not reach the server. Please check your connection and try again.' }
     }
   }, [id])
 
@@ -301,6 +310,7 @@ function StaffTicketDetail() {
       setControlError(null)
       setNotice(null)
       setStale(null)
+      setReloadError(null)
 
       try {
         const res = await apiJson(`/api/staff/tickets/${id}${path}`, method, {
@@ -345,10 +355,22 @@ function StaffTicketDetail() {
     if (stale) staleReloadRef.current?.focus()
   }, [stale])
 
+  /**
+   * The stale state ends only when the latest version is actually on screen.
+   * If the re-read fails, the callout and the user's choice stay, with the
+   * reason, and Reload can be tried again (Issue #55 review).
+   */
   const reloadAfterStale = async () => {
     setReloading(true)
-    await refresh()
+    setReloadError(null)
+    const outcome = await refresh()
     setReloading(false)
+
+    if (!outcome.ok) {
+      setReloadError(`Reload failed: ${outcome.message}`)
+      staleReloadRef.current?.focus()
+      return
+    }
     setStale(null)
   }
 
@@ -744,6 +766,11 @@ function StaffTicketDetail() {
                 Someone else changed this ticket after you opened it. Reload to see the latest version. Your
                 change was not saved.
               </p>
+              {reloadError && (
+                <p className="zg-field-error mb-2" data-testid="stale-reload-error">
+                  {reloadError}
+                </p>
+              )}
               <button
                 type="button"
                 ref={staleReloadRef}

@@ -128,7 +128,7 @@ The handout's example rows keep their ids: **API-03** (create a valid Action, AC
 | UI-08 | UI | AC-27 | Network failure on create and edit; `403` / `404` / `500` on the list; `403` on save and on a follow-up change | Safe-failure callout focused; values kept; Retry works. `403` → "Access denied" with the server message (or a fallback), no Retry, no list, no Record action; `404` → "Not found", no Retry; `500` → safe failure with Retry; `403` on a write keeps the values and is not worded as a network problem (L3 ui-spec.md §2) | `client/src/components/lab-04/ActionsTaken.test.tsx` | Pass |
 | UI-09 | UI | AC-12, AC-14 | Status select lists only `permittedTransitions`; gate hint bullets for each `unmet` value link to the fix | As stated | `client/src/components/lab-04/TicketWorkflow.test.tsx` | Pass |
 | UI-10 | UI | AC-14, AC-16 | Successful status change refreshes header badge, operations card, tab counts and History without reload; Cancel dialog mentions open follow-ups | As stated | `client/src/components/lab-04/TicketWorkflow.test.tsx` | Pass |
-| UI-11 | UI | AC-17 | `409 STALE_UPDATE` on status/owner/IT Priority sends `expectedVersion`, then shows callout and Reload | As stated | `client/src/components/lab-04/TicketWorkflow.test.tsx` | Pass |
+| UI-11 | UI | AC-17 | `409 STALE_UPDATE` on status/owner/IT Priority sends `expectedVersion`, then shows callout and Reload; Reload that fails with `500` or a network error | As stated; a failed Reload keeps the callout and the chosen value, says "Reload failed: …", and can be retried — the stale state ends only when the latest ticket loads | `client/src/components/lab-04/TicketWorkflow.test.tsx` | Pass |
 | UI-12 | UI | AC-16 | History tab: synthetic Created row, chronological rows, legacy line when empty, no controls | As stated | `client/src/components/lab-04/TicketWorkflow.test.tsx` | Pass |
 | UI-13 | UI | AC-02, AC-20, AC-29 | Requester dashboard cards: values, `href`s from the API, accessible names (singular/plural), "None right now" on zero, "Reply needed" cue | As stated | `client/src/components/lab-04/RequesterDashboard.test.tsx` | Planned |
 | UI-14 | UI | AC-23 | Requester lists: ≤ 5 rows, Bangkok times, each row links to `/tickets/:id`, empty messages | As stated | `client/src/components/lab-04/RequesterDashboard.test.tsx` | Planned |
@@ -415,6 +415,14 @@ Deliberate mutations, each caught: skipping the gate on Resolve (4 server tests 
 Found by the new E2E and fixed: after a Cancel, the Actions tab still showed "Follow-up open", because the list was not re-read when the ticket's status changed. It is now (and UI-10 covers it). Found in the screenshots and fixed: a wrapped gate-hint link put its list bullet on the second line, and on mobile the "·" before a history time wrapped onto its own line.
 
 Earlier suites changed for the gate, the version check and the History tab: see "Documented changes to earlier suites" above (one Lab 3 server test file, one Lab 3 client test, two Lab 3 E2E specs, one Lab 4 E2E selector).
+
+Review follow-up on the #55 PR (2026-10-29): Reload after a stale answer cleared the callout and the user's choice even when re-reading the ticket failed. `refresh()` now reports whether it loaded the latest copy; on a `500` or a network error the callout, the highlighted choice and the focus on Reload stay, with "Reload failed: {reason}", and the stale state ends only after a successful re-read. Two tests were added under UI-11 (500, network error: fail, fail again, then succeed); making Reload clear the state regardless makes both fail. Re-run on the final code, after re-seeding:
+
+```
+$ npm run test:client     Test Files  15 passed (15)    Tests  301 passed (301)
+$ npm run test:server     Test Files  21 passed (21)    Tests  835 passed (835)
+$ npm run test:e2e        97 passed (2.8m)
+```
 
 ### Final run
 

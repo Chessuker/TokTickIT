@@ -66,6 +66,8 @@ function stubApi(initial: Partial<State> = {}) {
   const writes: { path: string; body: Record<string, unknown> }[] = []
   /** Actions recorded through the panel, in the Action shape the list returns. */
   const listed: Record<string, unknown>[] = []
+  /** Makes the next detail reads fail, as a `500` or at the network level. */
+  const control: { failDetail: 'server' | 'network' | null } = { failDetail: null }
 
   const gate = () => {
     const unmet: string[] = []
@@ -147,7 +149,13 @@ function stubApi(initial: Partial<State> = {}) {
       return json({ data: listed })
     }
 
-    if (path === '' && method === 'GET') return json(detail())
+    if (path === '' && method === 'GET') {
+      if (control.failDetail === 'server') {
+        return json({ error: { code: 'INTERNAL_ERROR', message: 'Something went wrong. Please try again.' } }, 500)
+      }
+      if (control.failDetail === 'network') throw new TypeError('Failed to fetch')
+      return json(detail())
+    }
 
     writes.push({ path, body })
 
@@ -182,7 +190,7 @@ function stubApi(initial: Partial<State> = {}) {
     return json(detail())
   })
 
-  return { state, writes, fetchMock }
+  return { state, writes, fetchMock, control }
 }
 
 function renderDetail(initial: Partial<State> = {}, user: SessionUser = PRIYA) {
@@ -429,6 +437,48 @@ describe('stale updates (UI-11, AC-17, BR-19)', () => {
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel' }))
     expect(await screen.findByTestId('resolution-gate-hint')).toHaveTextContent('1 open follow-up is completed or cancelled')
     expect(statusOptions()).not.toContain('Resolved')
+  })
+})
+
+describe('stale Reload that fails (UI-11, Issue #55 review)', () => {
+  it.each([
+    ['a 500', 'server', 'Reload failed: Something went wrong. Please try again.'],
+    ['a network error', 'network', 'Reload failed: Could not reach the server.'],
+  ] as const)('after %s keeps the callout and the choice, says so, and clears only on a successful retry', async (_label, failure, message) => {
+    const user = userEvent.setup()
+    const { state, control } = renderDetail()
+    await screen.findByLabelText('IT Priority')
+    state.version = 4
+    state.itPriority = 'Low'
+
+    await user.selectOptions(screen.getByLabelText('IT Priority'), 'High')
+    const callout = await screen.findByTestId('stale-callout')
+
+    // The re-read fails: nothing about the conflict is cleared.
+    control.failDetail = failure
+    await user.click(within(callout).getByRole('button', { name: 'Reload' }))
+
+    expect(await within(callout).findByTestId('stale-reload-error')).toHaveTextContent(message)
+    expect(screen.getByTestId('stale-callout')).toHaveTextContent('Someone else changed this ticket after you opened it.')
+    expect(screen.getByLabelText('IT Priority')).toHaveValue('High')
+    expect(screen.getByLabelText('IT Priority')).toHaveClass('is-stale')
+    const reload = within(callout).getByRole('button', { name: 'Reload' })
+    expect(reload).toBeEnabled()
+    expect(reload).toHaveFocus()
+
+    // A second failure still clears nothing.
+    await user.click(reload)
+    expect(await within(callout).findByTestId('stale-reload-error')).toHaveTextContent(message)
+    expect(screen.getByTestId('stale-callout')).toBeInTheDocument()
+
+    // The server is back: the retry succeeds and only now the stale state ends.
+    control.failDetail = null
+    await user.click(within(callout).getByRole('button', { name: 'Reload' }))
+
+    await waitFor(() => expect(screen.queryByTestId('stale-callout')).toBeNull())
+    expect(screen.queryByTestId('stale-reload-error')).toBeNull()
+    expect(screen.getByLabelText('IT Priority')).toHaveValue('Low')
+    expect(screen.getByLabelText('IT Priority')).not.toHaveClass('is-stale')
   })
 })
 
