@@ -47,6 +47,8 @@ test.describe('IT Staff ticket operations (E2E-05)', () => {
     await expect(page.getByLabel('Current Status')).toHaveValue('InProgress')
 
     // --- A public comment and a private note ------------------------------
+    // Lab 4: Actions Taken is now the default tab, so open Public Comments first.
+    await page.getByRole('tab', { name: /public comments/i }).click()
     await page.getByLabel('Add public comment').fill('We are replacing the battery today.')
     await page.getByRole('button', { name: 'Post Comment' }).click()
     await expect(page.getByTestId('comment-list')).toContainText('We are replacing the battery today.')
@@ -157,6 +159,9 @@ test.describe('IT Staff ticket operations (E2E-05)', () => {
     await expect(page.getByTestId('operational-readonly')).toBeVisible()
     await expect(page.getByLabel('Current Status')).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Claim' })).toHaveCount(0)
+    // Open the tab first (Lab 4 default is Actions Taken), so "no composer" is a real check.
+    await page.getByRole('tab', { name: /public comments/i }).click()
+    await expect(page.getByTestId('comment-list').or(page.getByTestId('no-comments'))).toBeVisible()
     await expect(page.getByLabel('Add public comment')).toHaveCount(0)
 
     await page.getByRole('tab', { name: /internal notes/i }).click()
@@ -236,6 +241,8 @@ test.describe('IT Staff ticket operations (E2E-05)', () => {
     await row.getByRole('link', { name: /open ticket/i }).click()
     await expect(page.getByTestId('ticket-fields')).toBeVisible()
     await expect(page.getByTestId('requester-resolved')).toContainText('Requester reports resolved')
+    // Lab 4: Actions Taken is the default tab on the staff detail.
+    await page.getByRole('tab', { name: /public comments/i }).click()
     await expect(page.getByTestId('comment-list')).toContainText('The laptop has been fine since yesterday.')
     await expect(page.getByTestId('comment-list')).toContainText(REQUESTER_A.name)
   })

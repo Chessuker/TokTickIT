@@ -41,7 +41,7 @@ The handout's example rows keep their ids: **API-03** (create a valid Action, AC
 | UNIT-07 | Unit | AC-20 | Queue parser: `followUp=mine`, `requesterResolved=true`, invalid values, combination with Lab 3 parameters | Parsed / `400` naming the parameter | `server/tests/lab-03/queueQuery.test.ts` (extended) | Planned |
 | UNIT-08 | Unit | BR-30, AC-25 | Seed run twice against the upsert-only fake client | No `create`/`delete*` calls; same keys both runs; Tickets with 0, 1 and ≥ 3 Actions; at least one open follow-up per active IT Staff; Ploy has no Tickets | `server/tests/seed.test.ts` (extended) | Pass |
 | UNIT-09 | Unit | BR-08, BR-18, AC-16 | Static check of `server/src/**`: no `ticketStatusChange.update*` / `delete*`, no `ticketAction.delete*` | No match | `server/tests/lab-04/appendOnly.test.ts` | Pass |
-| UNIT-10 | Unit | BR-25, AD-11 | `formatBangkok` and `toUtcIso` across midnight UTC and month end | `2026-10-02T17:30Z` → "3 Oct 2026, 00:30"; round trip exact | `client/src/components/lab-04/dates.test.ts` | Planned |
+| UNIT-10 | Unit | BR-25, AD-11 | `formatBangkok` and `toUtcIso` across midnight UTC and month end | `2026-10-02T17:30Z` → "3 Oct 2026, 00:30"; round trip exact | `client/src/components/lab-04/dates.test.ts` | Pass |
 
 ### API — Actions Taken (`server/tests/lab-04/actions-taken.api.test.ts`)
 
@@ -118,14 +118,14 @@ The handout's example rows keep their ids: **API-03** (create a valid Action, AC
 
 | Test ID | Type | Requirement / AC | What It Tests | Expected Result | Automated Test File Path | Final Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| UI-01 | UI | AC-11, AC-03 | Actions list: columns, server order kept, "Owner" tag, follow-up badges, inactive assignee flag, caption "Visible to the requester" | Rendered from mocked data | `client/src/components/lab-04/ActionsTaken.test.tsx` | Planned |
-| UI-02 | UI | AC-04 | Create mode: required fields, follow-up switch reveals note + assignee, server `fields` mapped, values kept on error | Errors under the right fields; values preserved | `client/src/components/lab-04/ActionsTaken.test.tsx` | Planned |
-| UI-03 | UI | AC-10 | Save double-clicked; retry after network error | One `fetch`; the same `clientRequestId` on the retry; busy state | `client/src/components/lab-04/ActionsTaken.test.tsx` | Planned |
-| UI-04 | UI | AC-06 | Edit mode prefilled; Performed by read-only; PATCH carries `version`; `409 STALE_UPDATE` | Callout + Reload; typed edits kept | `client/src/components/lab-04/ActionsTaken.test.tsx` | Planned |
-| UI-05 | UI | AC-07 | Mark done / cancel follow-up with confirm; switch disabled when on; closed follow-up fields disabled | Correct PATCH body; UI state per ui-spec §3.3 | `client/src/components/lab-04/ActionsTaken.test.tsx` | Planned |
-| UI-06 | UI | AC-03, AC-08 | Requester "Work done by IT": entries shown, no buttons; empty text | As stated | `client/src/components/lab-04/ActionsTaken.test.tsx` | Planned |
-| UI-07 | UI | AC-09 | Locked Ticket: no Record button, hint shown; late `409 TICKET_LOCKED` switches panel to read-only | As stated | `client/src/components/lab-04/ActionsTaken.test.tsx` | Planned |
-| UI-08 | UI | AC-27 | Network failure on create and edit | Safe-failure callout focused; values kept; Retry works | `client/src/components/lab-04/ActionsTaken.test.tsx` | Planned |
+| UI-01 | UI | AC-11, AC-03 | Actions list: columns, server order kept, "Owner" tag, follow-up badges, inactive assignee flag, caption "Visible to the requester" | Rendered from mocked data | `client/src/components/lab-04/ActionsTaken.test.tsx` | Pass |
+| UI-02 | UI | AC-04 | Create mode: required fields, follow-up switch reveals note + assignee, server `fields` mapped, values kept on error | Errors under the right fields; values preserved | `client/src/components/lab-04/ActionsTaken.test.tsx` | Pass |
+| UI-03 | UI | AC-10 | Save double-clicked; retry after network error | One `fetch`; the same `clientRequestId` on the retry; busy state | `client/src/components/lab-04/ActionsTaken.test.tsx` | Pass |
+| UI-04 | UI | AC-06 | Edit mode prefilled; Performed by read-only; PATCH carries `version`; `409 STALE_UPDATE` | Callout + Reload; typed edits kept | `client/src/components/lab-04/ActionsTaken.test.tsx` | Pass |
+| UI-05 | UI | AC-07 | Mark done / cancel follow-up with confirm; switch disabled when on; closed follow-up fields disabled | Correct PATCH body; UI state per ui-spec §3.3 | `client/src/components/lab-04/ActionsTaken.test.tsx` | Pass |
+| UI-06 | UI | AC-03, AC-08 | Requester "Work done by IT": entries shown, no buttons; empty text | As stated | `client/src/components/lab-04/ActionsTaken.test.tsx` | Pass |
+| UI-07 | UI | AC-09 | Locked Ticket: no Record button, hint shown; late `409 TICKET_LOCKED` switches panel to read-only | As stated | `client/src/components/lab-04/ActionsTaken.test.tsx` | Pass |
+| UI-08 | UI | AC-27 | Network failure on create and edit | Safe-failure callout focused; values kept; Retry works | `client/src/components/lab-04/ActionsTaken.test.tsx` | Pass |
 | UI-09 | UI | AC-12, AC-14 | Status select lists only `permittedTransitions`; gate hint bullets for each `unmet` value link to the fix | As stated | `client/src/components/lab-04/TicketWorkflow.test.tsx` | Planned |
 | UI-10 | UI | AC-14, AC-16 | Successful status change refreshes header badge, operations card, tab counts and History without reload; Cancel dialog mentions open follow-ups | As stated | `client/src/components/lab-04/TicketWorkflow.test.tsx` | Planned |
 | UI-11 | UI | AC-17 | `409 STALE_UPDATE` on status/owner/IT Priority sends `expectedVersion`, then shows callout and Reload | As stated | `client/src/components/lab-04/TicketWorkflow.test.tsx` | Planned |
@@ -140,7 +140,7 @@ The handout's example rows keep their ids: **API-03** (create a valid Action, AC
 | UI-20 | UI | AC-20 | My Tickets reads `status` (repeated) and `sort` from the URL, shows chips, Clear resets URL | Correct `fetch` query; chips shown | `client/src/components/MyTickets.test.tsx` (extended) | Planned |
 | UI-21 | UI | AC-20 | Queue reads `followUp=mine` and `requesterResolved=true`, shows removable chips | As stated | `client/src/components/lab-03/StaffTicketQueue.test.tsx` (extended) | Planned |
 | UI-22 | UI | AC-26 | Every Lab 2/3 client suite re-run | All pass; only the role-home expectations change | `client/src/components/**/*.test.tsx` | Planned |
-| UI-23 | UI | V-07, V-17 | `Badges.tsx` renders the three follow-up badges with class, text and icon | Snapshot of classes and text | `client/src/components/lab-03/Badges.test.tsx` (extended) | Planned |
+| UI-23 | UI | V-07, V-17 | `Badges.tsx` renders the three follow-up badges with class, text and icon | Snapshot of classes and text | `client/src/components/lab-03/Badges.test.tsx` (extended) | Pass |
 
 ### UI style, responsive and accessibility
 
@@ -164,8 +164,8 @@ The handout's example rows keep their ids: **API-03** (create a valid Action, AC
 
 | Test ID | Type | Requirement / AC | What It Tests | Expected Result | Automated Test File Path | Final Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| E2E-01 | E2E | AC-04, AC-06, AC-09 | Priya opens a Ticket → Record action with an empty form (errors under fields) → valid save → edit → second browser context edits the same Action first → stale callout → Reload → save. Then a Resolved Ticket shows no Record button | As stated | `e2e/lab-04/actions-taken-flow.spec.ts` | Planned |
-| E2E-02 | E2E | AC-03, AC-05, AC-07, AC-11 | Chen owns a Ticket; Priya records an Action with follow-up assigned to Nattapong; assigning to inactive Robert is refused; Nattapong marks it done; Chen records a second Action; Jennifer (Requester) sees both read-only under "Work done by IT" in the same order | As stated | `e2e/lab-04/actions-taken-flow.spec.ts` | Planned |
+| E2E-01 | E2E | AC-04, AC-06, AC-09 | Priya opens a Ticket → Record action with an empty form (errors under fields) → valid save → edit → second browser context edits the same Action first → stale callout → Reload → save. Then a Resolved Ticket shows no Record button | As stated | `e2e/lab-04/actions-taken-flow.spec.ts` | Pass |
+| E2E-02 | E2E | AC-03, AC-05, AC-07, AC-11 | Chen owns a Ticket; Priya records an Action with follow-up assigned to Nattapong; assigning to inactive Robert is refused; Nattapong marks it done; Chen records a second Action; Jennifer (Requester) sees both read-only under "Work done by IT" in the same order | As stated | `e2e/lab-04/actions-taken-flow.spec.ts` | Pass |
 | E2E-03 | E2E | AC-12 … AC-16, AC-18 | Resolve blocked (hint lists conditions) → record Action / complete follow-up → Resolve (confirm) → History shows rows → Close → Reopen → Resolve blocked until a new Action → Cancel another Ticket with an open follow-up (dialog mentions it). Requester "appears resolved" leaves status unchanged | As stated | `e2e/lab-04/ticket-resolution.spec.ts` | Planned |
 | E2E-04 | E2E | AC-17 | Two IT Staff contexts on one Ticket; A changes status; B changes IT Priority from the stale page | B sees the stale callout; after Reload B's change applies; nothing lost | `e2e/lab-04/ticket-resolution.spec.ts` | Planned |
 | E2E-05 | E2E | AC-02, AC-19, AC-20, AC-22, AC-23 | Jennifer, Priya and admin log in → land on Dashboard (nav item current) → for every card, click it and compare the list total with the card value → list rows open details | All equal; landing correct | `e2e/lab-04/dashboards.spec.ts` | Planned |
@@ -225,10 +225,10 @@ Captured by `CAPTURE=1 npx playwright test e2e/lab-04/visual.spec.ts` (E2E-07) o
 | R-04 | IT Staff Dashboard (Priya) | Desktop / Tablet / Mobile | | `staff-dashboard/dashboard-{desktop,tablet,mobile}.png` |
 | R-05 | Administrator Dashboard | Desktop / Mobile | | `staff-dashboard/admin-{desktop,mobile}.png` |
 | R-06 | Staff Dashboard failure / forbidden (Requester URL) | Desktop | | `staff-dashboard/{failure,forbidden}.png` |
-| R-07 | Actions Taken list | Desktop / Tablet / Mobile | | `actions-taken/list-{desktop,tablet,mobile}.png` |
-| R-08 | Actions Taken create mode with follow-up + validation | Desktop / Mobile | | `actions-taken/create-{desktop,mobile}.png` |
-| R-09 | Actions Taken view / edit mode; stale conflict | Desktop | | `actions-taken/{view,edit,stale}.png` |
-| R-10 | Requester "Work done by IT" | Desktop / Mobile | | `actions-taken/requester-{desktop,mobile}.png` |
+| R-07 | Actions Taken list | Desktop / Tablet / Mobile | Pass — fixed in Issue #54 (expanded row clipped at the right edge; see the #54 log) | `actions-taken/list-{desktop,tablet,mobile}.png` |
+| R-08 | Actions Taken create mode with follow-up + validation | Desktop / Tablet / Mobile | Pass | `actions-taken/create-{desktop,tablet,mobile}.png`, `create-validation-desktop.png` |
+| R-09 | Actions Taken view / edit mode; stale conflict | Desktop | Pass | `actions-taken/{view,edit,stale}-desktop.png` |
+| R-10 | Requester "Work done by IT" | Desktop / Tablet / Mobile | Pass | `actions-taken/requester-{desktop,tablet,mobile}.png` |
 | R-11 | Resolution gate hint; Cancel dialog with follow-ups | Desktop / Mobile | | `workflow/{gate-hint,cancel-dialog}-{desktop,mobile}.png` |
 | R-12 | History tab (Staff) and Requester status history | Desktop / Mobile | | `workflow/history-{desktop,mobile}.png` |
 | R-13 | My Tickets drilled down (chips from URL) | Desktop / Mobile | | `requester-dashboard/drilldown-{desktop,mobile}.png` |
@@ -263,6 +263,9 @@ Kept here so API-36 / UI-22 / E2E-08 can show that the earlier suites ran unchan
 
 | Suite | Change | Why |
 | --- | --- | --- |
+| `client/src/components/lab-03/StaffTicketDetail.test.tsx` (Issue #54) | Fake server answers `GET …/actions` with an empty list; the tab test expects four tabs with Actions Taken first and selected; the two composer tests click the Public Comments tab first | Actions Taken is the first, default tab (ui-spec.md §3.3). Without the stub the panel showed its load-error alert, which collided with the tests' "the one alert" queries |
+| `client/src/components/TicketDetail.test.tsx` (Issue #54) | Fake server answers `GET /api/tickets/:id/actions` with an empty list | The Requester detail now shows "Work done by IT" (ui-spec.md §3.6) |
+| `e2e/lab-03/staff-ticket-flow.spec.ts` (Issue #54) | Three steps click the Public Comments tab before using it on the staff detail. The Administrator check now opens that tab before asserting there is no composer, so it still tests something | Same default-tab change. All other steps are unchanged |
 | `server/tests/seed.test.ts` (Issue #53) | Fake client gains `ticketAction` and `ticketStatusChange` upsert delegates; expected requester count 5 → 6 (`REQUESTERS` length too); the row-count, call-count and duplicate-key checks include the two new tables. Every Lab 2/3 assertion is otherwise unchanged; the Lab 4 cases (UNIT-08) are a new `describe` block | Ploy is a sixth Requester (specification.md §7), and the seed now writes Actions and history |
 
 ### Migration and regression evidence (AC-24) — recorded 2026-10-08
@@ -360,6 +363,20 @@ $ npx playwright test     83 passed (2.1m)              # Lab 2/3 suites on the 
 Turned to Pass: UNIT-01, UNIT-02, UNIT-08, UNIT-09, API-01 … API-13, INT-03, MIG-01, MIG-02, MIG-03. Server tests went from 656 to 763 (+107). The only change to an earlier suite is `seed.test.ts` (table above). Before the suite was trusted, two deliberate mutations were made to `actionRoutes.ts` (skip the version check; take `performedById` from the body); API-04 and API-08 each failed, and the file was restored.
 
 Review fix on PR #60 (2026-10-28): the `actionAt` lower bound rounded `createdAt` down to the minute, so it accepted up to 59 s before the ticket existed. It now compares exactly; five boundary tests were added (UNIT-01 ×4, API-05 ×1), and reinstating the rounding makes three of them fail. `npm run test:server` → 19 files, **768 passed (768)**.
+
+#### Issue #54 — Actions Taken UI (2026-10-29)
+
+```
+$ npm run test:server     Test Files  19 passed (19)    Tests  768 passed (768)
+$ npm run test:client     Test Files  14 passed (14)    Tests  271 passed (271)
+$ npx playwright test     92 passed (2.3m)              # 83 Lab 2/3 + 9 Lab 4 (E2E-01, E2E-02, screenshot matrix)
+```
+
+Turned to Pass: UNIT-10, UI-01 … UI-08, UI-23, E2E-01, E2E-02; R-07 … R-10 captured with `CAPTURE=1 npx playwright test e2e/lab-04` into `artifacts/lab-04/screenshots/actions-taken/` (13 images). Client tests went from 231 to 271 (+40).
+
+Two deliberate mutations to `ActionsTaken.tsx`: giving every retry a new `clientRequestId` failed the BR-10 retry test. Removing the in-flight ref guard was **not** caught at first, because `userEvent.dblClick` lets React re-render between the clicks and the disabled button does the work. A test that fires two submits in the same tick was added; it fails without the guard.
+
+Found by looking at the captured screenshots and fixed: the expanded Action row was clipped at the right edge on desktop. The shared `.zg-table` has `min-width: 66rem` for the queue's ten columns, which is wider than a table inside a tab card. The Actions table now has its own fixed column widths and no minimum, and its badges never wrap inside the pill.
 
 ### Final run
 

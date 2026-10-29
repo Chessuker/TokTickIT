@@ -62,6 +62,27 @@ export function OwnerName({ owner }: { owner: { name: string } | null }) {
   return <span className="zg-owner">{owner.name}</span>
 }
 
+const FOLLOW_UP_PRESENTATION: Record<string, { label: string; icon: string; className: string }> = {
+  Open: { label: 'Follow-up open', icon: 'bi-clock', className: 'zg-badge-followup-open' },
+  Completed: { label: 'Follow-up done', icon: 'bi-check-circle', className: 'zg-badge-followup-completed' },
+  Cancelled: { label: 'Follow-up cancelled', icon: 'bi-x-circle', className: 'zg-badge-followup-cancelled' },
+}
+
+/**
+ * A follow-up's state (Lab 4 ui-spec.md §1.2, BR-07). Text and icon carry the
+ * meaning, the colour only repeats it (V-17); `null` (no follow-up) renders
+ * nothing.
+ */
+export function FollowUpBadge({ status }: { status: string | null }) {
+  if (!status) return null
+  const presentation = FOLLOW_UP_PRESENTATION[status] ?? { label: status, icon: 'bi-dot', className: '' }
+  return (
+    <span className={`zg-badge ${presentation.className}`}>
+      <i className={`bi ${presentation.icon}`} aria-hidden="true" /> {presentation.label}
+    </span>
+  )
+}
+
 /**
  * The Requester's "this looks fixed" indication (BR-21). Shown wherever the
  * ticket header is, with the full timestamp on hover; rendered only once

@@ -10,6 +10,7 @@ import {
   StatusBadge,
 } from './Badges'
 import CommentsPanel from './lab-03/CommentsPanel'
+import ActionsTaken from './lab-04/ActionsTaken'
 import {
   ALLOWED_MIME_TYPES,
   ALLOWED_TYPES_LABEL,
@@ -641,6 +642,17 @@ function TicketDetail() {
             </p>
           )}
         </div>
+      </div>
+
+      {/* Lab 4 ui-spec.md §3.6: the same Actions as IT Staff see, read-only (BR-04). */}
+      <div className="mt-3 mb-4">
+        <ActionsTaken
+          ticketId={ticket.id}
+          ticketStatus={ticket.status}
+          ticketCreatedAt={ticket.createdAt}
+          ownerId={ticket.owner?.id ?? null}
+          mode="requester"
+        />
       </div>
 
       <CommentsPanel ticketId={ticket.id} canComment={user?.role !== 'Administrator'} />
