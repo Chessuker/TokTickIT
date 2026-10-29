@@ -86,12 +86,12 @@ L3 §2 `StaffTicketDetail`, plus:
 {
   "version": 4,
   "counts": { "comments": 3, "internalNotes": 2, "attachments": 1, "actions": 3, "openFollowUps": 1 },
-  "resolutionGate": { "ok": false, "unmet": ["OPEN_FOLLOW_UPS"] },
+  "resolutionGate": { "ok": false, "unmet": ["OPEN_FOLLOW_UPS"], "reopenedAt": null },
   "permittedTransitions": ["WaitingForRequester", "Cancelled"]
 }
 ```
 
-`permittedTransitions` now also leaves out `Resolved` while `resolutionGate.ok` is `false` (BR-14). For an Administrator it is still `[]`, and `resolutionGate` is still returned for information.
+`permittedTransitions` now also leaves out `Resolved` while `resolutionGate.ok` is `false` (BR-14). For an Administrator it is still `[]`, and `resolutionGate` is still returned for information. `unmet` is always in the order `OWNER`, `ACTION_SINCE_REOPEN`, `OPEN_FOLLOW_UPS`. `reopenedAt` is when the Ticket last entered `Reopened` (from the history), or `null`; Actions must be created strictly after it to count (BR-14(b)), and the UI uses it to say "since the ticket was reopened" (added in Issue #55).
 
 ### DashboardTicket
 
@@ -281,7 +281,7 @@ Response gains `version`, `counts.actions`, `counts.openFollowUps` and `resoluti
 | --- | --- |
 | Body | Each accepts an optional `expectedVersion` (integer ≥ 0). Not an integer → `400 fields.expectedVersion` |
 | Check | After the existing role/existence checks and before the existing rule checks: if `expectedVersion` is present and ≠ `Ticket.version` → `409 STALE_UPDATE` with `current.version` |
-| Write | The update is conditional on `version` (and, for status, on the status read). On success `version` increments |
+| Write | One transaction. Its first statement bumps `version` only where `version` and `status` still equal the values read; if it matches no row, the transaction stops and the answer is `409 STALE_UPDATE` with `current.version`, with or without `expectedVersion`. Then the Lab 3 update, then the history row and (on Cancel) the follow-up cancellations. On success `version` has incremented once |
 | History | Claim/assign that turns `New` into `Open`, and every status change, insert one `TicketStatusChange` in the same transaction (BR-18) |
 | Status → Resolved | After the Lab 3 matrix and owner checks, the gate is evaluated (BR-14). If it is closed → `409 RESOLUTION_BLOCKED` with `unmet`. The owner condition is reported as `OWNER` inside `unmet`, but the existing L3 owner check runs first, so its Lab 3 `409 INVALID_TRANSITION` answer is unchanged and the Lab 3 tests still pass |
 | Status → Cancelled | Also sets every `Open` follow-up on the Ticket to `Cancelled` in the same transaction (BR-16) |

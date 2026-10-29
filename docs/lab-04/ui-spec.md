@@ -133,15 +133,16 @@ Tabs become: **Actions Taken (n)** · Public Comments (n) · Internal Notes (n) 
 | Gate hint | When `resolutionGate.ok` is false and the Ticket is in a status from which Resolved is in the matrix: `.zg-callout-info` "Resolve is unavailable until:" followed by one bullet per `unmet` value: "an owner is assigned" · "at least one action is recorded since the ticket was reopened" (or "…is recorded" if never reopened) · "{n} open follow-up(s) are completed or cancelled" — each bullet links to the place to fix it (owner select / Actions Taken tab) |
 | Confirmations | Lab 3 dialogs kept (Resolved, Closed, Cancelled). The Cancel dialog adds "{n} open follow-up(s) will be cancelled." when n > 0 (BR-16) |
 | After success | Header `StatusBadge`, operations card, gate hint, tab counts and History refresh from the response and a history re-fetch, with no full page reload (AC-14) |
-| Stale | `409 STALE_UPDATE` on status/owner/IT Priority: the select keeps the user's choice highlighted, and the §2 callout offers **Reload** (AC-17) |
+| Stale | `409 STALE_UPDATE` on status/owner/IT Priority (or claim): the select keeps the user's choice highlighted (`.zg-select.is-stale`, amber), the §2 callout appears at the bottom of the operations card with "Your change was not saved.", and focus moves to its **Reload** button (AC-17). A confirmation dialog closes on a stale answer, because the callout is where the user decides. Reload re-reads the ticket in place; the user then applies their choice again on top of the latest version |
+| Re-read in place | Recording or editing an Action, or closing a follow-up, re-reads the ticket without the loading screen, so the gate hint and the status choices follow the work. A late `409 RESOLUTION_BLOCKED` is shown in the dialog and the ticket is re-read the same way (Issue #55) |
 | Requester-resolved | Lab 3 indicator kept in the header; on the operations card it also shows "Requester reports resolved on {date} — review the actions before resolving" |
 
 ### 3.5 History tab (Staff and Requester Ticket Detail)
 
 | Element | Specification |
 | --- | --- |
-| Layout | Vertical timeline, oldest at top. First row "Created by {requester}" at Ticket `createdAt`. Then one row per change: `StatusBadge(from)` → `StatusBadge(to)` · {name} + `RoleBadge` · time |
-| Legacy | When the Ticket predates Lab 4 and has no stored rows: muted line "Status history is recorded from Lab 4 onward." under the Created row |
+| Layout | Vertical timeline, oldest at top. First row "Created by {requester}" at Ticket `createdAt`. Then one row per change: `StatusBadge(from)` → `StatusBadge(to)`, then {name} + `RoleBadge`, then the time on its own line (Bangkok). The arrow carries a visually hidden "to" for screen readers |
+| Legacy | When the Ticket predates Lab 4 and has no stored rows: muted line "Status history is recorded from Lab 4 onward." under the Created row. The client decides this as "no rows and the status is not `New`": every change since Lab 4 writes a row, so only an older Ticket can have moved without one |
 | Read-only | No controls of any kind (BR-18) |
 | Requester | Shown as a collapsible "Status history" section below "Work done by IT" (§3.6) |
 | States | Loading, safe failure with Retry |

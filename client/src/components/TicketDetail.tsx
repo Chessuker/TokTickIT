@@ -11,6 +11,7 @@ import {
 } from './Badges'
 import CommentsPanel from './lab-03/CommentsPanel'
 import ActionsTaken from './lab-04/ActionsTaken'
+import TicketHistory from './lab-04/TicketHistory'
 import {
   ALLOWED_MIME_TYPES,
   ALLOWED_TYPES_LABEL,
@@ -653,6 +654,11 @@ function TicketDetail() {
           ownerId={ticket.owner?.id ?? null}
           mode="requester"
         />
+      </div>
+
+      {/* Lab 4 ui-spec.md §3.5, §3.6: status history, collapsed by default (AD-12). */}
+      <div className="mb-4">
+        <TicketHistory ticketId={ticket.id} ticketStatus={ticket.status} collapsible />
       </div>
 
       <CommentsPanel ticketId={ticket.id} canComment={user?.role !== 'Administrator'} />

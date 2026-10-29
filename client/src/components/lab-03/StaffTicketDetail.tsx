@@ -14,6 +14,8 @@ import { statusLabel } from '../../ticketStatus'
 import CommentsPanel from './CommentsPanel'
 import InternalNotesPanel from './InternalNotesPanel'
 import ActionsTaken from '../lab-04/ActionsTaken'
+import TicketHistory from '../lab-04/TicketHistory'
+import { formatBangkok } from '../lab-04/dates'
 
 /**
  * IT Staff Ticket Detail (ui-spec.md §3.5, api-spec.md §3.10, §3.12 – §3.17 —
@@ -31,6 +33,17 @@ import ActionsTaken from '../lab-04/ActionsTaken'
  * 3. An Administrator sees the same screen with the controls rendered as
  *    values (BR-17). Not disabled inputs — values, because there is nothing
  *    to enable.
+ *
+ * Lab 4 (Issue #55, ui-spec.md §3.4, §3.5) adds three things on top:
+ *
+ * - Every operation sends the `version` it was based on. A `409 STALE_UPDATE`
+ *   keeps the user's choice on screen and offers Reload instead of reverting
+ *   silently (AC-17).
+ * - While the resolution gate is closed, the server leaves Resolved out of
+ *   `permittedTransitions`; the screen says which conditions are missing and
+ *   links to the place to fix each (AC-12). Recording an Action re-reads the
+ *   ticket, so the gate follows the work without a page reload.
+ * - A History tab, re-read whenever the ticket's version moves (AC-14, AC-16).
  */
 
 interface UserRef {
@@ -67,11 +80,17 @@ interface StaffTicketDetailData {
   resolvedAt: string | null
   closedAt: string | null
   attachments: Attachment[]
-  counts: { comments: number; internalNotes: number; attachments: number }
+  counts: { comments: number; internalNotes: number; attachments: number; actions?: number; openFollowUps?: number }
   permittedTransitions: string[]
   createdAt: string
   updatedAt: string
+  /** Lab 4 (BR-19): sent back as `expectedVersion` with every operation. */
+  version?: number
+  /** Lab 4 (BR-14): why Resolved is missing from `permittedTransitions`. */
+  resolutionGate?: { ok: boolean; unmet: GateCondition[]; reopenedAt: string | null }
 }
+
+type GateCondition = 'OWNER' | 'ACTION_SINCE_REOPEN' | 'OPEN_FOLLOW_UPS'
 
 interface Assignee {
   id: string
@@ -92,16 +111,26 @@ interface Confirmation {
   message: string
   /** Rendered with the error fill for the destructive ones. */
   danger?: boolean
-  run: () => Promise<void>
+  run: () => Promise<SaveOutcome>
 }
 
+/** What one operation came back with, so a confirmation dialog knows whether to close. */
+type SaveOutcome = 'ok' | 'stale' | 'error'
+
 const IT_PRIORITIES = ['Low', 'Medium', 'High'] as const
-// Actions Taken is first and the default (Lab 4 ui-spec.md §3.3).
-const TABS = ['actions', 'comments', 'notes', 'attachments'] as const
+// Actions Taken is first and the default (Lab 4 ui-spec.md §3.3); History last (§3.5).
+const TABS = ['actions', 'comments', 'notes', 'attachments', 'history'] as const
 type Tab = (typeof TABS)[number]
 
 /** Status targets the spec asks the UI to confirm before sending (BR-18 ⚠). */
 const CONFIRMED_TARGETS = ['Resolved', 'Closed', 'Cancelled']
+
+/**
+ * The statuses from which the matrix leads to Resolved (Lab 4 specification.md
+ * §5). Used only to decide whether the gate hint is relevant; the server still
+ * decides what is permitted.
+ */
+const RESOLVABLE_FROM = ['Open', 'InProgress', 'WaitingForRequester', 'Reopened']
 
 function formatDateTime(value: string | null): string {
   if (!value) return '—'
@@ -151,6 +180,9 @@ function StaffTicketDetail() {
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null)
   const [confirming, setConfirming] = useState(false)
   const [confirmError, setConfirmError] = useState<string | null>(null)
+  /** The change the server refused as stale, still shown in its control (AC-17). */
+  const [stale, setStale] = useState<{ control: Exclude<Control, null>; value: string } | null>(null)
+  const [reloading, setReloading] = useState(false)
 
   const [tab, setTab] = useState<Tab>(() => (location.hash === '#comments' ? 'comments' : 'actions'))
   const [actionCount, setActionCount] = useState<number | null>(null)
@@ -159,7 +191,14 @@ function StaffTicketDetail() {
     comments: null,
     notes: null,
     attachments: null,
+    history: null,
   })
+  const ownerSelectRef = useRef<HTMLSelectElement | null>(null)
+  const staleReloadRef = useRef<HTMLButtonElement | null>(null)
+
+  /** The version every operation is based on: the one on screen right now. */
+  const versionRef = useRef<number | undefined>(undefined)
+  versionRef.current = ticket?.version
 
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
   const [downloadError, setDownloadError] = useState<string | null>(null)
@@ -228,44 +267,92 @@ function StaffTicketDetail() {
   const reload = useCallback(() => setReloadToken((token) => token + 1), [])
 
   /**
+   * Re-reads the ticket without the full-screen loading state, so the gate,
+   * the counts and the version follow an Action or a stale Reload while the
+   * user stays where they are. A failure keeps the copy on screen.
+   */
+  const refresh = useCallback(async () => {
+    try {
+      const res = await apiFetch(`/api/staff/tickets/${id}`)
+      if (res.ok) setTicket((await res.json()) as StaffTicketDetailData)
+    } catch {
+      // The next operation will report the outage against its own control.
+    }
+  }, [id])
+
+  /**
    * Sends one operational change and replaces the ticket with the server's
    * answer, so `permittedTransitions`, the timestamps and the counts all come
    * from the same read. A `409` leaves the ticket untouched and reports
    * against the control that caused it, which is what makes the select snap
-   * back to the real value (ui-spec.md §3.5).
+   * back to the real value (ui-spec.md §3.5). `STALE_UPDATE` is the exception:
+   * the user's choice stays in the control and the stale callout offers Reload
+   * (Lab 4 ui-spec.md §2, §3.4).
    */
   const save = useCallback(
-    async (control: Exclude<Control, null>, path: string, method: string, body?: unknown) => {
+    async (
+      control: Exclude<Control, null>,
+      path: string,
+      method: string,
+      body: Record<string, unknown>,
+      value: string,
+    ): Promise<SaveOutcome> => {
       setBusy(control)
       setControlError(null)
       setNotice(null)
+      setStale(null)
 
       try {
-        const res = await apiJson(`/api/staff/tickets/${id}${path}`, method, body)
+        const res = await apiJson(`/api/staff/tickets/${id}${path}`, method, {
+          ...body,
+          ...(versionRef.current !== undefined ? { expectedVersion: versionRef.current } : {}),
+        })
 
         if (res.ok) {
           setTicket((await res.json()) as StaffTicketDetailData)
-          return
+          return 'ok'
         }
 
         const error = await readApiError(res)
+
+        if (res.status === 409 && error?.code === 'STALE_UPDATE') {
+          setStale({ control, value })
+          return 'stale'
+        }
+
         const fieldMessage = error?.fields ? Object.values(error.fields)[0] : undefined
         setControlError({
           control,
           message: fieldMessage ?? error?.message ?? 'The change could not be saved.',
         })
 
+        // The gate closed under the screen (someone opened a follow-up, say):
+        // re-read it so the hint and the status choices match the refusal.
+        if (res.status === 409 && error?.code === 'RESOLUTION_BLOCKED') void refresh()
         if (res.status === 404) setFailure({ status: 404, message: 'Ticket not found.' })
+        return 'error'
       } catch {
         setControlError({ control, message: 'Could not reach the server. The change was not saved.' })
+        return 'error'
       } finally {
         setBusy(null)
       }
     },
-    [id],
+    [id, refresh],
   )
 
-  const claim = () => void save('owner', '/claim', 'POST')
+  useEffect(() => {
+    if (stale) staleReloadRef.current?.focus()
+  }, [stale])
+
+  const reloadAfterStale = async () => {
+    setReloading(true)
+    await refresh()
+    setReloading(false)
+    setStale(null)
+  }
+
+  const claim = () => void save('owner', '/claim', 'POST', {}, user?.id ?? '')
 
   const changeOwner = (ownerId: string) => {
     const next = ownerId === '' ? null : ownerId
@@ -277,32 +364,38 @@ function StaffTicketDetail() {
       setConfirmation({
         title: 'Reassign this ticket?',
         message: `${ticket.owner.name} is the current owner. ${target?.name ?? 'The new owner'} will take it over.`,
-        run: () => save('owner', '/owner', 'PATCH', { ownerId: next }),
+        run: () => save('owner', '/owner', 'PATCH', { ownerId: next }, ownerId),
       })
       return
     }
 
-    void save('owner', '/owner', 'PATCH', { ownerId: next })
+    void save('owner', '/owner', 'PATCH', { ownerId: next }, ownerId)
   }
 
   const changeItPriority = (itPriority: string) =>
-    void save('itPriority', '/it-priority', 'PATCH', { itPriority })
+    void save('itPriority', '/it-priority', 'PATCH', { itPriority }, itPriority)
 
   const changeStatus = (status: string) => {
     if (CONFIRMED_TARGETS.includes(status)) {
+      const openFollowUps = ticket?.counts.openFollowUps ?? 0
+      const followUpLine =
+        status === 'Cancelled' && openFollowUps > 0
+          ? ` ${openFollowUps} open follow-up${openFollowUps === 1 ? '' : 's'} will be cancelled.`
+          : ''
+
       setConfirmation({
         title: `Mark as ${statusLabel(status)}?`,
         message:
           status === 'Cancelled'
-            ? 'The ticket is closed to further work and the requester will see it as cancelled.'
+            ? `The ticket is closed to further work and the requester will see it as cancelled.${followUpLine}`
             : `The ticket moves to ${statusLabel(status)} and the requester will see the new status.`,
         danger: status === 'Cancelled',
-        run: () => save('status', '/status', 'PATCH', { status }),
+        run: () => save('status', '/status', 'PATCH', { status }, status),
       })
       return
     }
 
-    void save('status', '/status', 'PATCH', { status })
+    void save('status', '/status', 'PATCH', { status }, status)
   }
 
   const runConfirmation = async () => {
@@ -310,16 +403,26 @@ function StaffTicketDetail() {
     setConfirming(true)
     setConfirmError(null)
 
-    await confirmation.run()
+    const outcome = await confirmation.run()
     setConfirming(false)
 
-    // `save` reports through `controlError`; read it back on the next tick via
-    // the functional form so the dialog stays open on a refusal.
-    setControlError((current) => {
-      if (current) setConfirmError(current.message)
-      else setConfirmation(null)
-      return current
-    })
+    // A refusal stays in the dialog. A stale answer closes it: the stale
+    // callout on the operations card is where the user decides what to do.
+    if (outcome === 'error') {
+      setControlError((current) => {
+        if (current) setConfirmError(current.message)
+        return current
+      })
+      return
+    }
+    setConfirmation(null)
+  }
+
+  /** The gate hint's links: each takes the user to the place to fix it (ui-spec.md §3.4). */
+  const goToOwner = () => ownerSelectRef.current?.focus()
+  const goToActions = () => {
+    setTab('actions')
+    tabRefs.current.actions?.focus()
   }
 
   /**
@@ -422,6 +525,16 @@ function StaffTicketDetail() {
   const errorFor = (control: Control) =>
     controlError?.control === control ? controlError.message : null
 
+  /** A stale control keeps showing what the user chose, marked as not saved. */
+  const shown = (control: Exclude<Control, null>, current: string) =>
+    stale?.control === control ? stale.value : current
+  const staleClass = (control: Exclude<Control, null>) =>
+    stale?.control === control ? 'zg-select is-stale' : 'zg-select'
+
+  const gate = ticket.resolutionGate
+  const showGateHint = isStaff && gate !== undefined && !gate.ok && RESOLVABLE_FROM.includes(ticket.status)
+  const openFollowUps = ticket.counts.openFollowUps ?? 0
+
   return (
     <section>
       <div className="zg-page-head">
@@ -464,8 +577,9 @@ function StaffTicketDetail() {
               <div className="zg-ops-control">
                 <select
                   id="ticket-owner"
-                  className="zg-select"
-                  value={ticket.owner?.id ?? ''}
+                  ref={ownerSelectRef}
+                  className={staleClass('owner')}
+                  value={shown('owner', ticket.owner?.id ?? '')}
                   disabled={busy !== null}
                   onChange={(event) => changeOwner(event.target.value)}
                 >
@@ -509,8 +623,8 @@ function StaffTicketDetail() {
               </label>
               <select
                 id="ticket-it-priority"
-                className="zg-select"
-                value={ticket.itPriority}
+                className={staleClass('itPriority')}
+                value={shown('itPriority', ticket.itPriority)}
                 disabled={busy !== null}
                 onChange={(event) => changeItPriority(event.target.value)}
               >
@@ -538,8 +652,9 @@ function StaffTicketDetail() {
               </label>
               <select
                 id="ticket-status"
-                className="zg-select"
-                value={ticket.status}
+                className={staleClass('status')}
+                value={shown('status', ticket.status)}
+                aria-describedby={showGateHint ? 'resolution-gate-hint' : undefined}
                 disabled={busy !== null}
                 onChange={(event) => changeStatus(event.target.value)}
               >
@@ -558,6 +673,42 @@ function StaffTicketDetail() {
                 <p className="zg-hint" data-testid="owner-required-hint">
                   Assign an owner first to move this ticket to In Progress or Resolved.
                 </p>
+              )}
+              {/*
+               * Lab 4 BR-14: why Resolved is missing. One bullet per unmet
+               * condition, each a link to where it is fixed (ui-spec.md §3.4).
+               * Not an error — the ticket is fine, it just is not done yet.
+               */}
+              {showGateHint && gate && (
+                <div className="zg-callout zg-callout-info zg-gate-hint" id="resolution-gate-hint" data-testid="resolution-gate-hint">
+                  <i className="bi bi-info-circle" aria-hidden="true" />
+                  <div>
+                    <p className="mb-1">Resolve is unavailable until:</p>
+                    <ul className="mb-0">
+                      {gate.unmet.map((condition) => (
+                        <li key={condition}>
+                          {condition === 'OWNER' && (
+                            <button type="button" className="zg-link-button" onClick={goToOwner}>
+                              an owner is assigned
+                            </button>
+                          )}
+                          {condition === 'ACTION_SINCE_REOPEN' && (
+                            <button type="button" className="zg-link-button" onClick={goToActions}>
+                              {gate.reopenedAt
+                                ? 'at least one action is recorded since the ticket was reopened'
+                                : 'at least one action is recorded'}
+                            </button>
+                          )}
+                          {condition === 'OPEN_FOLLOW_UPS' && (
+                            <button type="button" className="zg-link-button" onClick={goToActions}>
+                              {openFollowUps} open follow-up{openFollowUps === 1 ? ' is' : 's are'} completed or cancelled
+                            </button>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
               )}
               {busy === 'status' && (
                 <p className="zg-hint" role="status">
@@ -583,6 +734,34 @@ function StaffTicketDetail() {
               <StatusBadge status={ticket.status} />
             </ReadOnlyField>
           </dl>
+        )}
+
+        {stale && (
+          <div className="zg-callout zg-callout-warning mt-3" role="alert" data-testid="stale-callout">
+            <span aria-hidden="true">⚠️</span>
+            <div>
+              <p className="mb-2">
+                Someone else changed this ticket after you opened it. Reload to see the latest version. Your
+                change was not saved.
+              </p>
+              <button
+                type="button"
+                ref={staleReloadRef}
+                className="zg-btn zg-btn-primary zg-btn-sm"
+                onClick={() => void reloadAfterStale()}
+                disabled={reloading}
+              >
+                {reloading ? 'Reloading...' : 'Reload'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {ticket.requesterResolvedAt && RESOLVABLE_FROM.includes(ticket.status) && (
+          <p className="zg-hint mt-3" data-testid="requester-resolved-note">
+            Requester reports resolved on {formatBangkok(ticket.requesterResolvedAt)} — review the actions before
+            resolving.
+          </p>
         )}
 
         {notice && (
@@ -633,10 +812,16 @@ function StaffTicketDetail() {
         <div className="zg-tabs" role="tablist" aria-label="Ticket activity" onKeyDown={onTabKeyDown}>
           {(
             [
-              ['actions', actionCount === null ? 'Actions Taken' : `Actions Taken (${actionCount})`],
+              [
+                'actions',
+                (actionCount ?? ticket.counts.actions) === undefined
+                  ? 'Actions Taken'
+                  : `Actions Taken (${actionCount ?? ticket.counts.actions})`,
+              ],
               ['comments', `Public Comments (${ticket.counts.comments})`],
               ['notes', `Internal Notes (${ticket.counts.internalNotes})`],
               ['attachments', `Attachments (${ticket.counts.attachments})`],
+              ['history', 'History'],
             ] as [Tab, string][]
           ).map(([value, label]) => (
             <button
@@ -668,7 +853,14 @@ function StaffTicketDetail() {
               mode="staff"
               onCountChange={setActionCount}
               onLocked={reload}
+              onChanged={() => void refresh()}
             />
+          )}
+        </div>
+
+        <div role="tabpanel" id="panel-history" aria-labelledby="tab-history" hidden={tab !== 'history'}>
+          {tab === 'history' && (
+            <TicketHistory ticketId={ticket.id} ticketStatus={ticket.status} refreshKey={ticket.version} />
           )}
         </div>
 

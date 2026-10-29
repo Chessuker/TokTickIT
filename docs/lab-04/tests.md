@@ -34,8 +34,8 @@ The handout's example rows keep their ids: **API-03** (create a valid Action, AC
 | --- | --- | --- | --- | --- | --- | --- |
 | UNIT-01 | Unit | BR-05, AC-04 | Action field rules: missing/empty/whitespace description and result, lengths at 0/1/max/max+1, `actionAt` missing, unparsable, +4 min, +6 min, before Ticket `createdAt` including the exact boundary (start of the same minute and 1 ms before → refused; exactly `createdAt` and the next whole minute → accepted, on create and edit); attachment notes 500/501 and `""` → `null` | Exactly the failing field named in `fields`; valid input normalised (trimmed) | `server/tests/lab-04/actionRules.test.ts` | Pass |
 | UNIT-02 | Unit | BR-06, BR-07, AC-07 | Follow-up rules: required ⇒ note + assignee; not required with note/assignee given; open → Completed/Cancelled; closed → anything; required true → false; false → true on edit | Accepted / `400` field / `409` reason exactly per BR-06/BR-07 | `server/tests/lab-04/actionRules.test.ts` | Pass |
-| UNIT-03 | Unit | BR-14, BR-17, AC-12, AC-13 | Resolution gate: every combination of owner / actions since reopen / open follow-ups; never-reopened vs reopened with older and newer Actions | `ok` only when all three hold; `unmet` lists exactly the failing ones, in fixed order | `server/tests/lab-04/resolutionGate.test.ts` | Planned |
-| UNIT-04 | Unit | BR-13, BR-14, AC-14 | Transition matrix (L3 UNIT-02 retained) plus `permittedTransitions` with the gate closed and open | Matrix unchanged from Lab 3; `Resolved` omitted iff the gate is closed | `server/tests/lab-03/ticketWorkflow.test.ts` (extended) | Planned |
+| UNIT-03 | Unit | BR-14, BR-17, AC-12, AC-13 | Resolution gate: every combination of owner / actions since reopen / open follow-ups; never-reopened vs reopened with older and newer Actions | `ok` only when all three hold; `unmet` lists exactly the failing ones, in fixed order | `server/tests/lab-04/resolutionGate.test.ts` | Pass |
+| UNIT-04 | Unit | BR-13, BR-14, AC-14 | Transition matrix (L3 UNIT-02 retained) plus `permittedTransitions` with the gate closed and open | Matrix unchanged from Lab 3; `Resolved` omitted iff the gate is closed | `server/tests/lab-04/resolutionGate.test.ts` (the Lab 3 matrix test is unchanged and still passes) | Pass |
 | UNIT-05 | Unit | BR-22 … BR-27, AC-19, AC-20 | Dashboard metric definitions: each metric's Prisma `where` and its `href` produced from one definition; active-status set; Administrator nulls | Snapshot of `where` + `href` per metric; the queue/list parser re-reads each `href` into the same filter | `server/tests/lab-04/dashboardMetrics.test.ts` | Planned |
 | UNIT-06 | Unit | AC-20 | Requester list parser: repeatable `status`, single `status` (Lab 2 compatibility), invalid value, `sort=updatedAt:desc` | Parsed list / `400 fields.status` | `server/tests/lab-04/ticketListQuery.test.ts` | Planned |
 | UNIT-07 | Unit | AC-20 | Queue parser: `followUp=mine`, `requesterResolved=true`, invalid values, combination with Lab 3 parameters | Parsed / `400` naming the parameter | `server/tests/lab-03/queueQuery.test.ts` (extended) | Planned |
@@ -65,15 +65,15 @@ The handout's example rows keep their ids: **API-03** (create a valid Action, AC
 
 | Test ID | Type | Requirement / AC | What It Tests | Expected Result | Automated Test File Path | Final Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| API-14 | API | AC-12, BR-14 | Resolve an owned Ticket with zero Actions | `409 RESOLUTION_BLOCKED`, `unmet: ["ACTION_SINCE_REOPEN"]`; status unchanged | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| API-15 | API | AC-12, BR-14 | Resolve with an open follow-up; complete it; resolve again. `GET` detail before and after | `409 unmet: ["OPEN_FOLLOW_UPS"]` → `200`; `permittedTransitions` lacks then has `Resolved`; `resolutionGate` matches | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| API-16 | API | AC-13, BR-17 | Reopened Ticket whose only Actions predate the reopen; then one new Action | `409 ACTION_SINCE_REOPEN` → `200` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| API-17 | API | AC-14, BR-13 | Representative allowed and refused pairs through the API (full matrix in UNIT-04); unassigned Resolve keeps the Lab 3 answer | Allowed `200`; refused `409 INVALID_TRANSITION`; unassigned → L3 `409 INVALID_TRANSITION` (owner) unchanged | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| API-18 | API | AC-17, BR-19 | Claim, owner, it-priority, status with stale `expectedVersion`; with current; without; non-integer | `409 STALE_UPDATE` + `current.version` / `200` and `version + 1` / `200` (Lab 3 behaviour) / `400` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| API-19 | API | AC-16, BR-18 | History rows written on status change, on claim of a New Ticket (auto Open), on assign of New, on Cancel; `GET /api/tickets/:id/history` as owner, other Requester, IT Staff | One row each, in the same transaction, correct from/to/actor; `200` oldest first with `createdAt`/`createdBy` / `403` / `200` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| API-20 | API | AC-18, BR-16 | Cancel a Ticket holding two open and one completed follow-up | Two become `Cancelled` with closer = canceller; completed untouched | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| API-21 | API | AC-15, BR-15 | Requester resolution indication on own active Ticket; Requester `PATCH status` | `200`, status unchanged, `requesterResolvedAt` set / `403` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| API-22 | API | AC-14, BR-13 | Administrator status / owner / it-priority / claim; Administrator Action create | `403` ×4 / `201` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
+| API-14 | API | AC-12, BR-14 | Resolve an owned Ticket with zero Actions | `409 RESOLUTION_BLOCKED`, `unmet: ["ACTION_SINCE_REOPEN"]`; status unchanged | `server/tests/lab-04/ticket-workflow.api.test.ts` | Pass |
+| API-15 | API | AC-12, BR-14 | Resolve with an open follow-up; complete it; resolve again. `GET` detail before and after | `409 unmet: ["OPEN_FOLLOW_UPS"]` → `200`; `permittedTransitions` lacks then has `Resolved`; `resolutionGate` matches | `server/tests/lab-04/ticket-workflow.api.test.ts` | Pass |
+| API-16 | API | AC-13, BR-17 | Reopened Ticket whose only Actions predate the reopen; then one new Action | `409 ACTION_SINCE_REOPEN` → `200` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Pass |
+| API-17 | API | AC-14, BR-13 | Representative allowed and refused pairs through the API (full matrix in UNIT-04); unassigned Resolve keeps the Lab 3 answer | Allowed `200`; refused `409 INVALID_TRANSITION`; unassigned → L3 `409 INVALID_TRANSITION` (owner) unchanged | `server/tests/lab-04/ticket-workflow.api.test.ts` | Pass |
+| API-18 | API | AC-17, BR-19 | Claim, owner, it-priority, status with stale `expectedVersion`; with current; without; non-integer | `409 STALE_UPDATE` + `current.version` / `200` and `version + 1` / `200` (Lab 3 behaviour) / `400` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Pass |
+| API-19 | API | AC-16, BR-18 | History rows written on status change, on claim of a New Ticket (auto Open), on assign of New, on Cancel; `GET /api/tickets/:id/history` as owner, other Requester, IT Staff | One row each, in the same transaction, correct from/to/actor; `200` oldest first with `createdAt`/`createdBy` / `403` / `200` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Pass |
+| API-20 | API | AC-18, BR-16 | Cancel a Ticket holding two open and one completed follow-up | Two become `Cancelled` with closer = canceller; completed untouched | `server/tests/lab-04/ticket-workflow.api.test.ts` | Pass |
+| API-21 | API | AC-15, BR-15 | Requester resolution indication on own active Ticket; Requester `PATCH status` | `200`, status unchanged, `requesterResolvedAt` set / `403` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Pass |
+| API-22 | API | AC-14, BR-13 | Administrator status / owner / it-priority / claim; Administrator Action create | `403` ×4 / `201` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Pass |
 
 ### API — Requester dashboard (`server/tests/lab-04/requester-dashboard.api.test.ts`)
 
@@ -111,7 +111,7 @@ The handout's example rows keep their ids: **API-03** (create a valid Action, AC
 | Test ID | Type | Requirement / AC | What It Tests | Expected Result | Automated Test File Path | Final Status |
 | --- | --- | --- | --- | --- | --- | --- |
 | INT-01 | Integration | AC-19, AC-02, BR-21 | On the seeded database, call both dashboards (as Jennifer, Ploy, Priya, admin) and run the raw SQL for every metric | Every API value equals its SQL value; output saved for Answer Part 5 | `server/scripts/verify-lab04-dashboards.ts` | Planned |
-| INT-02 | Integration | AC-17, BR-19 | Two concurrent status PATCHes with the same `expectedVersion` | Exactly one `200`, one `409 STALE_UPDATE`; one history row | `server/scripts/verify-lab04-concurrency.ts` | Planned |
+| INT-02 | Integration | AC-17, BR-19 | Two concurrent status PATCHes with the same `expectedVersion` | Exactly one `200`, one `409 STALE_UPDATE`; one history row | `server/scripts/verify-lab04-concurrency.ts` | Pass |
 | INT-03 | Integration | BR-06, DB-03 | Raw `INSERT` violating the follow-up `CHECK` | Rejected by PostgreSQL | `server/scripts/verify-lab04-concurrency.ts` | Pass |
 
 ### UI component (`client/src/components/lab-04/`)
@@ -126,10 +126,10 @@ The handout's example rows keep their ids: **API-03** (create a valid Action, AC
 | UI-06 | UI | AC-03, AC-08 | Requester "Work done by IT": entries shown, no buttons; empty text | As stated | `client/src/components/lab-04/ActionsTaken.test.tsx` | Pass |
 | UI-07 | UI | AC-09 | Locked Ticket: no Record button, hint shown; late `409 TICKET_LOCKED` switches panel to read-only | As stated | `client/src/components/lab-04/ActionsTaken.test.tsx` | Pass |
 | UI-08 | UI | AC-27 | Network failure on create and edit; `403` / `404` / `500` on the list; `403` on save and on a follow-up change | Safe-failure callout focused; values kept; Retry works. `403` → "Access denied" with the server message (or a fallback), no Retry, no list, no Record action; `404` → "Not found", no Retry; `500` → safe failure with Retry; `403` on a write keeps the values and is not worded as a network problem (L3 ui-spec.md §2) | `client/src/components/lab-04/ActionsTaken.test.tsx` | Pass |
-| UI-09 | UI | AC-12, AC-14 | Status select lists only `permittedTransitions`; gate hint bullets for each `unmet` value link to the fix | As stated | `client/src/components/lab-04/TicketWorkflow.test.tsx` | Planned |
-| UI-10 | UI | AC-14, AC-16 | Successful status change refreshes header badge, operations card, tab counts and History without reload; Cancel dialog mentions open follow-ups | As stated | `client/src/components/lab-04/TicketWorkflow.test.tsx` | Planned |
-| UI-11 | UI | AC-17 | `409 STALE_UPDATE` on status/owner/IT Priority sends `expectedVersion`, then shows callout and Reload | As stated | `client/src/components/lab-04/TicketWorkflow.test.tsx` | Planned |
-| UI-12 | UI | AC-16 | History tab: synthetic Created row, chronological rows, legacy line when empty, no controls | As stated | `client/src/components/lab-04/TicketWorkflow.test.tsx` | Planned |
+| UI-09 | UI | AC-12, AC-14 | Status select lists only `permittedTransitions`; gate hint bullets for each `unmet` value link to the fix | As stated | `client/src/components/lab-04/TicketWorkflow.test.tsx` | Pass |
+| UI-10 | UI | AC-14, AC-16 | Successful status change refreshes header badge, operations card, tab counts and History without reload; Cancel dialog mentions open follow-ups | As stated | `client/src/components/lab-04/TicketWorkflow.test.tsx` | Pass |
+| UI-11 | UI | AC-17 | `409 STALE_UPDATE` on status/owner/IT Priority sends `expectedVersion`, then shows callout and Reload | As stated | `client/src/components/lab-04/TicketWorkflow.test.tsx` | Pass |
+| UI-12 | UI | AC-16 | History tab: synthetic Created row, chronological rows, legacy line when empty, no controls | As stated | `client/src/components/lab-04/TicketWorkflow.test.tsx` | Pass |
 | UI-13 | UI | AC-02, AC-20, AC-29 | Requester dashboard cards: values, `href`s from the API, accessible names (singular/plural), "None right now" on zero, "Reply needed" cue | As stated | `client/src/components/lab-04/RequesterDashboard.test.tsx` | Planned |
 | UI-14 | UI | AC-23 | Requester lists: ≤ 5 rows, Bangkok times, each row links to `/tickets/:id`, empty messages | As stated | `client/src/components/lab-04/RequesterDashboard.test.tsx` | Planned |
 | UI-15 | UI | AC-21 | Requester dashboard loading skeleton, `totalTickets: 0` empty panel, failure + Retry, Refresh keeps old values while loading | As stated | `client/src/components/lab-04/RequesterDashboard.test.tsx` | Planned |
@@ -166,8 +166,8 @@ The handout's example rows keep their ids: **API-03** (create a valid Action, AC
 | --- | --- | --- | --- | --- | --- | --- |
 | E2E-01 | E2E | AC-04, AC-06, AC-09 | Priya opens a Ticket → Record action with an empty form (errors under fields) → valid save → edit → second browser context edits the same Action first → stale callout → Reload → save. Then a Resolved Ticket shows no Record button | As stated | `e2e/lab-04/actions-taken-flow.spec.ts` | Pass |
 | E2E-02 | E2E | AC-03, AC-05, AC-07, AC-11 | Chen owns a Ticket; Priya records an Action with follow-up assigned to Nattapong; assigning to inactive Robert is refused; Nattapong marks it done; Chen records a second Action; Jennifer (Requester) sees both read-only under "Work done by IT" in the same order | As stated | `e2e/lab-04/actions-taken-flow.spec.ts` | Pass |
-| E2E-03 | E2E | AC-12 … AC-16, AC-18 | Resolve blocked (hint lists conditions) → record Action / complete follow-up → Resolve (confirm) → History shows rows → Close → Reopen → Resolve blocked until a new Action → Cancel another Ticket with an open follow-up (dialog mentions it). Requester "appears resolved" leaves status unchanged | As stated | `e2e/lab-04/ticket-resolution.spec.ts` | Planned |
-| E2E-04 | E2E | AC-17 | Two IT Staff contexts on one Ticket; A changes status; B changes IT Priority from the stale page | B sees the stale callout; after Reload B's change applies; nothing lost | `e2e/lab-04/ticket-resolution.spec.ts` | Planned |
+| E2E-03 | E2E | AC-12 … AC-16, AC-18 | Resolve blocked (hint lists conditions) → record Action / complete follow-up → Resolve (confirm) → History shows rows → Close → Reopen → Resolve blocked until a new Action → Cancel another Ticket with an open follow-up (dialog mentions it). Requester "appears resolved" leaves status unchanged | As stated | `e2e/lab-04/ticket-resolution.spec.ts` | Pass |
+| E2E-04 | E2E | AC-17 | Two IT Staff contexts on one Ticket; A changes status; B changes IT Priority from the stale page | B sees the stale callout; after Reload B's change applies; nothing lost | `e2e/lab-04/ticket-resolution.spec.ts` | Pass |
 | E2E-05 | E2E | AC-02, AC-19, AC-20, AC-22, AC-23 | Jennifer, Priya and admin log in → land on Dashboard (nav item current) → for every card, click it and compare the list total with the card value → list rows open details | All equal; landing correct | `e2e/lab-04/dashboards.spec.ts` | Planned |
 | E2E-06 | E2E | AC-21 | Ploy's empty dashboard with Create Ticket; Requester `fetch` to `/api/staff/dashboard` from the page → `403`; API stopped → safe failure + Retry | As stated | `e2e/lab-04/dashboards.spec.ts` | Planned |
 | E2E-07 | E2E | AC-28, AC-29, AC-31 | Runs STY-01 … STY-04 and captures the screenshot matrix (§4); backend stopped once for the health/safe-failure capture | Every check passes | `e2e/lab-04/visual.spec.ts` | Planned |
@@ -229,8 +229,8 @@ Captured by `CAPTURE=1 npx playwright test e2e/lab-04/visual.spec.ts` (E2E-07) o
 | R-08 | Actions Taken create mode with follow-up + validation | Desktop / Tablet / Mobile | Pass | `actions-taken/create-{desktop,tablet,mobile}.png`, `create-validation-desktop.png` |
 | R-09 | Actions Taken view / edit mode; stale conflict | Desktop | Pass | `actions-taken/{view,edit,stale}-desktop.png` |
 | R-10 | Requester "Work done by IT" | Desktop / Tablet / Mobile | Pass | `actions-taken/requester-{desktop,tablet,mobile}.png` |
-| R-11 | Resolution gate hint; Cancel dialog with follow-ups | Desktop / Mobile | | `workflow/{gate-hint,cancel-dialog}-{desktop,mobile}.png` |
-| R-12 | History tab (Staff) and Requester status history | Desktop / Mobile | | `workflow/history-{desktop,mobile}.png` |
+| R-11 | Resolution gate hint; Cancel dialog with follow-ups; stale ticket operation | Desktop / Mobile (stale: Desktop) | Pass — fixed in Issue #55 (a wrapped gate-hint link put its bullet on the second line) | `workflow/{gate-hint,cancel-dialog}-{desktop,mobile}.png`, `workflow/stale-desktop.png` |
+| R-12 | History tab (Staff) and Requester status history | Desktop / Mobile | Pass — fixed in Issue #55 (the "·" before the time wrapped onto its own line on mobile) | `workflow/history-{desktop,mobile}.png`, `workflow/requester-history-{desktop,mobile}.png` |
 | R-13 | My Tickets drilled down (chips from URL) | Desktop / Mobile | | `requester-dashboard/drilldown-{desktop,mobile}.png` |
 | R-14 | Queue drilled down (`followUp=mine`) | Desktop / Mobile | | `staff-dashboard/drilldown-{desktop,mobile}.png` |
 | R-15 | Lab 2/3 screens re-checked (Login, Change Password, Create Ticket, My Tickets, Ticket Detail, Queue, Staff Detail, Users) | All three | | `regression/*.png` |
@@ -266,6 +266,11 @@ Kept here so API-36 / UI-22 / E2E-08 can show that the earlier suites ran unchan
 | `client/src/components/lab-03/StaffTicketDetail.test.tsx` (Issue #54) | Fake server answers `GET …/actions` with an empty list; the tab test expects four tabs with Actions Taken first and selected; the two composer tests click the Public Comments tab first | Actions Taken is the first, default tab (ui-spec.md §3.3). Without the stub the panel showed its load-error alert, which collided with the tests' "the one alert" queries |
 | `client/src/components/TicketDetail.test.tsx` (Issue #54) | Fake server answers `GET /api/tickets/:id/actions` with an empty list | The Requester detail now shows "Work done by IT" (ui-spec.md §3.6) |
 | `e2e/lab-03/staff-ticket-flow.spec.ts` (Issue #54) | Three steps click the Public Comments tab before using it on the staff detail. The Administrator check now opens that tab before asserting there is no composer, so it still tests something | Same default-tab change. All other steps are unchanged |
+| `server/tests/lab-03/staff-ticket-detail.api.test.ts` (Issue #55) | The mocked client gains `ticket.updateMany` (answers `{ count: 1 }`), `ticketStatusChange.create` and `ticketAction.updateMany`. The ticket fixture gains `version: 0`, one Action with no follow-up and no reopen row. The detail test's `counts` expectation adds `actions: 1, openFollowUps: 0`. Every assertion on `prisma.ticket.update` data is unchanged | Each workflow write is now a transaction: a conditional version bump, the Lab 3 update, a history row (BR-18, BR-19). The one Action keeps the resolution gate open, so every Lab 3 transition is still permitted. `counts` gained two fields (api-spec.md §4.1, additive) |
+| `client/src/components/lab-03/StaffTicketDetail.test.tsx` (Issue #55) | The tab test expects five tabs, with History last; End selects the fifth. The fake server answers `GET /api/tickets/:id/history` | History tab (ui-spec.md §3.5) |
+| `e2e/lab-03/staff-ticket-flow.spec.ts` (Issue #55) | The E2E-05 journey records one Action before Resolve, after checking that Resolved is not offered yet. The owner-rule test expects Resolved to stay out after Claim (no Action yet) and the gate hint to say so | Resolution gate (BR-14): a ticket with no Action cannot be resolved |
+| `e2e/lab-03/visual.spec.ts` (Issue #55) | R-16 (confirmation dialog on mobile) opens `TKT-2026-900004` (Open, one Action) instead of `…900008`, and expects `Open` after dismissing | `…900008` has an open follow-up, so Resolved is not offered there any more. The screenshot is the same dialog |
+| `e2e/lab-04/actions-taken-flow.spec.ts` (Issue #55) | The screenshot test closes the edit form with `{ name: 'Cancel', exact: true }` | The gate hint has a "…completed or cancelled" link, which a substring match also found |
 | `server/tests/seed.test.ts` (Issue #53) | Fake client gains `ticketAction` and `ticketStatusChange` upsert delegates; expected requester count 5 → 6 (`REQUESTERS` length too); the row-count, call-count and duplicate-key checks include the two new tables. Every Lab 2/3 assertion is otherwise unchanged; the Lab 4 cases (UNIT-08) are a new `describe` block | Ploy is a sixth Requester (specification.md §7), and the seed now writes Actions and history |
 
 ### Migration and regression evidence (AC-24) — recorded 2026-10-08
@@ -385,6 +390,31 @@ $ npm run test:client     Test Files  14 passed (14)    Tests  277 passed (277)
 $ npm run test:server     Test Files  19 passed (19)    Tests  768 passed (768)
 $ npm run test:e2e        92 passed (2.4m)              # 83 Lab 2/3 + 9 Lab 4
 ```
+
+#### Issue #55 — Ticket workflow, resolution gate and stale updates (2026-10-29)
+
+```
+$ npm run test:server     Test Files  21 passed (21)    Tests  835 passed (835)
+$ npm run test:client     Test Files  15 passed (15)    Tests  299 passed (299)
+$ npm run test:e2e        97 passed (2.6m)              # 83 Lab 2/3 + 14 Lab 4 (E2E-01 … E2E-04, two screenshot matrices)
+$ npx tsx scripts/verify-lab04-concurrency.ts
+INT-03 PASSED: 3 consistent rows accepted, 9 inconsistent rows rejected by PostgreSQL; nothing left behind.
+INT-02 — two simultaneous status changes
+  ticket TKT-2026-000007 (version 0); Chen Wei and E2E New Staff mui000uc at once
+  ok   same expectedVersion: answers 200 + 409 (STALE_UPDATE), history rows 1
+  ok   no expectedVersion (Lab 3 client): answers 200 + 409 (STALE_UPDATE), history rows 1
+INT-02 PASSED: each race applied exactly once with one history row; the ticket is back as it was.
+```
+
+Turned to Pass: UNIT-03, UNIT-04, API-14 … API-22, INT-02, UI-09 … UI-12, E2E-03, E2E-04; R-11, R-12 captured with `CAPTURE=1 npx playwright test e2e/lab-04/ticket-resolution.spec.ts` into `artifacts/lab-04/screenshots/workflow/` (9 images). Server tests went from 768 to 835 (+67); client tests from 277 to 299 (+22). INT-02 sends the two requests through the real route against PostgreSQL at the same moment; both answers were `STALE_UPDATE`, not `INVALID_TRANSITION`, which shows both requests had read the same version before either wrote.
+
+How the server does it: every claim / owner / IT Priority / status write is one transaction whose first statement is `UPDATE "Ticket" SET version = version + 1 WHERE id = $1 AND version = $read AND status = $read`. If it matches no row, the transaction stops and the answer is `409 STALE_UPDATE`. The Lab 3 update, the history row (BR-18) and, on Cancel, the follow-up cancellations (BR-16) follow inside the same transaction.
+
+Deliberate mutations, each caught: skipping the gate on Resolve (4 server tests fail), dropping `version` from the conditional write (20), counting an Action created at the same instant as the reopen (`>=` for `>`, 1), not cancelling follow-ups on Cancel (1); on the client, not sending `expectedVersion` (4 UI tests fail), reverting a stale control silently (3), not re-reading the ticket after an Action (1).
+
+Found by the new E2E and fixed: after a Cancel, the Actions tab still showed "Follow-up open", because the list was not re-read when the ticket's status changed. It is now (and UI-10 covers it). Found in the screenshots and fixed: a wrapped gate-hint link put its list bullet on the second line, and on mobile the "·" before a history time wrapped onto its own line.
+
+Earlier suites changed for the gate, the version check and the History tab: see "Documented changes to earlier suites" above (one Lab 3 server test file, one Lab 3 client test, two Lab 3 E2E specs, one Lab 4 E2E selector).
 
 ### Final run
 

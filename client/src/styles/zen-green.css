@@ -2636,3 +2636,117 @@ body {
     transform: translateX(1.45rem);
   }
 }
+
+/* ==========================================================================
+ * Lab 4 — Ticket workflow and History (docs/lab-04/ui-spec.md §3.4, §3.5)
+ * ========================================================================== */
+
+/* A control whose change was refused as stale keeps the user's choice, marked. */
+.zg-select.is-stale {
+  border-color: var(--zg-warning);
+  background-color: var(--zg-warning-bg);
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
+}
+
+.zg-gate-hint {
+  margin-top: 0.6rem;
+  font-size: 0.875rem;
+}
+
+.zg-gate-hint ul {
+  padding-left: 1.1rem;
+}
+
+.zg-gate-hint .zg-link-button {
+  /* Top-aligned, so the list bullet sits on the first line when the link wraps. */
+  vertical-align: top;
+  font-weight: 600;
+  text-align: left;
+}
+
+/* History timeline: oldest at the top, one dot per row on a shared rail. */
+.zg-history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
+.zg-history-row {
+  position: relative;
+  display: flex;
+  gap: 0.75rem;
+  padding: 0 0 1rem;
+}
+
+.zg-history-row:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 0.42rem;
+  top: 1.1rem;
+  bottom: 0;
+  width: 2px;
+  background: var(--zg-border);
+}
+
+.zg-history-dot {
+  flex: 0 0 auto;
+  width: 0.85rem;
+  height: 0.85rem;
+  margin-top: 0.3rem;
+  border-radius: 50%;
+  background: var(--zg-secondary);
+  border: 2px solid var(--zg-surface);
+  box-shadow: 0 0 0 1px var(--zg-secondary);
+}
+
+.zg-history-body {
+  min-width: 0;
+}
+
+.zg-history-change {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.zg-history-arrow {
+  color: var(--zg-text-muted);
+}
+
+.zg-history-meta,
+.zg-history-time {
+  color: var(--zg-text-muted);
+  font-size: 0.875rem;
+}
+
+.zg-history-meta {
+  margin-top: 0.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.zg-history-legacy {
+  margin: 0.35rem 0 0;
+  font-size: 0.875rem;
+}
+
+/* The Requester's collapsible "Status history" heading. */
+.zg-disclosure {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.zg-disclosure:focus-visible {
+  outline: 3px solid var(--zg-secondary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

@@ -277,7 +277,8 @@ test.describe('Actions Taken screenshots (R-07 … R-10, V-03)', () => {
         await page.getByRole('button', { name: 'Edit' }).click()
         await expect(page.getByTestId('action-form')).toBeVisible()
         await shot(page, 'edit-desktop.png')
-        await page.getByRole('button', { name: 'Cancel' }).click()
+        // Exact: the #55 gate hint has a "…completed or cancelled" link too.
+        await page.getByRole('button', { name: 'Cancel', exact: true }).click()
       }
 
       await page.getByRole('button', { name: /record action/i }).click()

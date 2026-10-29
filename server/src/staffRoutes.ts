@@ -24,11 +24,14 @@ import {
   checkTransition,
   isTerminal,
   isTicketStatus,
+  openFollowUpCount,
   permittedTransitions,
+  resolutionBlockedMessage,
+  resolutionGate,
   statusLabel,
   timestampsFor
 } from './ticketWorkflow.js';
-import type { TicketStatusValue } from './ticketWorkflow.js';
+import type { GateInput, TicketStatusValue } from './ticketWorkflow.js';
 
 /** Narrows an unvalidated body value to one of the three IT priorities (BR-16). */
 function isItPriority(value: unknown): value is ItPriorityValue {
@@ -171,7 +174,18 @@ const STAFF_TICKET_DETAIL_SELECT = {
   relatedSystem: { select: { id: true, name: true } },
   requester: { select: { id: true, name: true, email: true, department: true, role: true } },
   attachments: STAFF_DETAIL_ATTACHMENTS,
-  _count: { select: { comments: true, internalNotes: true } }
+  _count: { select: { comments: true, internalNotes: true } },
+  // Lab 4: the optimistic-concurrency token (BR-19) and the two inputs of the
+  // resolution gate (BR-14). A ticket has few Actions, so reading two columns
+  // of each is cheaper than a second round trip for the counts.
+  version: true,
+  actions: { select: { createdAt: true, followUpStatus: true } },
+  statusChanges: {
+    where: { toStatus: 'Reopened' as const },
+    orderBy: [{ createdAt: 'desc' as const }, { id: 'desc' as const }],
+    take: 1,
+    select: { createdAt: true }
+  }
 };
 
 interface StaffTicketRow {
@@ -180,7 +194,19 @@ interface StaffTicketRow {
   priority: unknown;
   attachments: AttachmentRow[];
   _count: { comments: number; internalNotes: number };
+  version?: number;
+  actions?: GateInput['actions'];
+  statusChanges?: { createdAt: Date }[];
   [key: string]: unknown;
+}
+
+/** The gate's view of a loaded ticket (Lab 4 BR-14). */
+function gateInput(ticket: StaffTicketRow): GateInput {
+  return {
+    hasOwner: ticket.ownerId !== null,
+    actions: ticket.actions ?? [],
+    lastReopenedAt: ticket.statusChanges?.[0]?.createdAt ?? null
+  };
 }
 
 /**
@@ -193,20 +219,28 @@ interface StaffTicketRow {
  * client having to know the rule.
  */
 function toStaffTicketDetail(ticket: StaffTicketRow, res: Response) {
-  const { priority, ownerId, attachments, _count, ...rest } = ticket;
+  const { priority, ownerId, attachments, _count, actions, statusChanges, ...rest } = ticket;
   const rows = attachments ?? [];
   const isStaff = getSessionUser(res).role === 'ITStaff';
+  const input = gateInput(ticket);
+  const gate = resolutionGate(input);
 
   return {
     ...rest,
+    version: ticket.version ?? 0,
     requestedPriority: priority,
     attachments: rows.map(toAttachmentResponse),
     counts: {
       comments: _count.comments,
       internalNotes: _count.internalNotes,
-      attachments: rows.filter((row) => !row.isRemoved).length
+      attachments: rows.filter((row) => !row.isRemoved).length,
+      actions: input.actions.length,
+      openFollowUps: openFollowUpCount(input.actions)
     },
-    permittedTransitions: isStaff ? permittedTransitions(ticket.status, ownerId !== null) : []
+    // Returned to Administrators too, for information (Lab 4 api-spec.md §2).
+    // `reopenedAt` lets the UI word BR-14(b) as "since the ticket was reopened".
+    resolutionGate: { ...gate, reopenedAt: input.lastReopenedAt },
+    permittedTransitions: isStaff ? permittedTransitions(ticket.status, ownerId !== null, gate.ok) : []
   };
 }
 
@@ -254,6 +288,127 @@ function refuseIfTerminal(res: Response, status: TicketStatusValue, action: stri
   return true;
 }
 
+// ---------------------------------------------------------------------------
+// Optimistic concurrency and status history (Lab 4 BR-16, BR-18, BR-19;
+// api-spec.md §1.4, §4.2).
+// ---------------------------------------------------------------------------
+
+/**
+ * Reads the optional `expectedVersion` (AD-07). Answers the `400` itself and
+ * returns `false` when it did; otherwise the value, or `undefined` if absent.
+ */
+function readExpectedVersion(res: Response, body: unknown): number | undefined | false {
+  const raw = (body as { expectedVersion?: unknown } | undefined)?.expectedVersion;
+  if (raw === undefined) return undefined;
+
+  if (typeof raw !== 'number' || !Number.isInteger(raw) || raw < 0) {
+    sendValidationFailed(res, { expectedVersion: 'expectedVersion must be a whole number of 0 or more.' });
+    return false;
+  }
+  return raw;
+}
+
+const STALE_MESSAGE = 'Someone else changed this ticket after you opened it. Reload to see the latest version.';
+
+/**
+ * BR-19: refuses a write based on an old copy. Runs after the ticket is loaded
+ * and before any rule check, so a stale client hears "reload" rather than a
+ * rule refusal about a state it never saw. Returns `true` when it answered.
+ */
+function refuseIfStale(res: Response, ticket: StaffTicketRow, expected: number | undefined): boolean {
+  const current = ticket.version ?? 0;
+  if (expected === undefined || expected === current) return false;
+
+  sendError(res, 409, 'STALE_UPDATE', STALE_MESSAGE, undefined, { current: { version: current } });
+  return true;
+}
+
+/** Thrown inside a workflow transaction when the conditional write matched nothing. */
+class StaleWrite extends Error {}
+
+interface WorkflowWrite {
+  /** The columns the Lab 3 route has always written. */
+  data: Record<string, unknown>;
+  /** Appends one `TicketStatusChange` (BR-18) when the status moves. */
+  statusChange?: { from: TicketStatusValue; to: TicketStatusValue };
+  /** BR-16: a Cancel also cancels every open follow-up on the ticket. */
+  cancelFollowUps?: true;
+}
+
+/**
+ * One workflow change, all or nothing.
+ *
+ * The first statement is the concurrency check: it bumps `version` only if
+ * both the version and the status are still the ones this request read. If
+ * another request got there first, nothing matches, the transaction rolls
+ * back, and the caller answers `409 STALE_UPDATE`, so two simultaneous changes
+ * can never both apply, with or without `expectedVersion` (BR-19). The history
+ * row and the follow-up cancellations are written in the same transaction, so
+ * they exist exactly when the change does (BR-16, BR-18).
+ */
+async function writeWorkflow(ticket: StaffTicketRow, callerId: string, write: WorkflowWrite) {
+  const ticketId = ticket.id as string;
+
+  await prisma.$transaction(async (tx) => {
+    const claimed = await tx.ticket.updateMany({
+      where: { id: ticketId, version: ticket.version, status: ticket.status },
+      data: { version: { increment: 1 } }
+    });
+    if (claimed.count === 0) throw new StaleWrite();
+
+    await tx.ticket.update({ where: { id: ticketId }, data: write.data, select: { id: true } });
+
+    if (write.statusChange) {
+      await tx.ticketStatusChange.create({
+        data: {
+          ticketId,
+          fromStatus: write.statusChange.from,
+          toStatus: write.statusChange.to,
+          changedById: callerId
+        },
+        select: { id: true }
+      });
+    }
+
+    if (write.cancelFollowUps) {
+      await tx.ticketAction.updateMany({
+        where: { ticketId, followUpStatus: 'Open' },
+        data: {
+          followUpStatus: 'Cancelled',
+          followUpClosedAt: new Date(),
+          followUpClosedById: callerId,
+          updatedById: callerId,
+          // An Action edit form open on one of these is now out of date.
+          version: { increment: 1 }
+        }
+      });
+    }
+  });
+}
+
+/**
+ * Runs `writeWorkflow` and answers: the fresh detail on success, or
+ * `409 STALE_UPDATE` with the current version if the conditional write lost.
+ */
+async function applyAndRespond(res: Response, ticket: StaffTicketRow, write: WorkflowWrite) {
+  try {
+    await writeWorkflow(ticket, getSessionUser(res).id, write);
+  } catch (error) {
+    if (!(error instanceof StaleWrite)) throw error;
+
+    const latest = await prisma.ticket.findFirst({
+      where: { id: ticket.id as string },
+      select: { version: true }
+    });
+    sendError(res, 409, 'STALE_UPDATE', STALE_MESSAGE, undefined, {
+      current: { version: latest?.version ?? 0 }
+    });
+    return;
+  }
+
+  await respondWithDetail(res, ticket.id as string);
+}
+
 // GET /api/staff/tickets/:id — one ticket for the staff screens (api-spec.md
 // §3.10, AC-24). Readable by IT Staff and Administrators alike.
 staffRouter.get('/tickets/:id', async (req, res) => {
@@ -276,23 +431,25 @@ staffRouter.get('/tickets/:id', async (req, res) => {
 // somebody picks it up (BR-31).
 staffRouter.post('/tickets/:id/claim', staffOnly, async (req, res) => {
   try {
+    const expected = readExpectedVersion(res, req.body);
+    if (expected === false) return;
+
     const ticket = await loadStaffTicket(res, String(req.params.id));
     if (!ticket) return;
 
+    if (refuseIfStale(res, ticket, expected)) return;
     if (refuseIfTerminal(res, ticket.status, 'be claimed')) return;
 
     const caller = getSessionUser(res);
+    const opens = ticket.status === 'New';
 
-    await prisma.ticket.update({
-      where: { id: ticket.id as string },
+    await applyAndRespond(res, ticket, {
       data: {
         ownerId: caller.id,
-        ...(ticket.status === 'New' ? { status: 'Open' as const } : {})
+        ...(opens ? { status: 'Open' as const } : {})
       },
-      select: { id: true }
+      ...(opens ? { statusChange: { from: 'New' as const, to: 'Open' as const } } : {})
     });
-
-    await respondWithDetail(res, ticket.id as string);
   } catch (error) {
     sendInternalError(res, 'POST /api/staff/tickets/:id/claim', error);
   }
@@ -315,9 +472,13 @@ staffRouter.patch('/tickets/:id/owner', staffOnly, async (req, res) => {
       return;
     }
 
+    const expected = readExpectedVersion(res, body);
+    if (expected === false) return;
+
     const ticket = await loadStaffTicket(res, String(req.params.id));
     if (!ticket) return;
 
+    if (refuseIfStale(res, ticket, expected)) return;
     if (refuseIfTerminal(res, ticket.status, 'change owner')) return;
 
     // BR-31: an InProgress ticket is somebody's work in hand; dropping the
@@ -347,17 +508,16 @@ staffRouter.patch('/tickets/:id/owner', staffOnly, async (req, res) => {
       }
     }
 
-    await prisma.ticket.update({
-      where: { id: ticket.id as string },
+    // Assigning a New ticket opens it, exactly as claiming does (BR-31).
+    const opens = rawOwnerId !== null && ticket.status === 'New';
+
+    await applyAndRespond(res, ticket, {
       data: {
         ownerId: rawOwnerId,
-        // Assigning a New ticket opens it, exactly as claiming does (BR-31).
-        ...(rawOwnerId !== null && ticket.status === 'New' ? { status: 'Open' as const } : {})
+        ...(opens ? { status: 'Open' as const } : {})
       },
-      select: { id: true }
+      ...(opens ? { statusChange: { from: 'New' as const, to: 'Open' as const } } : {})
     });
-
-    await respondWithDetail(res, ticket.id as string);
   } catch (error) {
     sendInternalError(res, 'PATCH /api/staff/tickets/:id/owner', error);
   }
@@ -380,18 +540,16 @@ staffRouter.patch('/tickets/:id/it-priority', staffOnly, async (req, res) => {
       return;
     }
 
+    const expected = readExpectedVersion(res, req.body);
+    if (expected === false) return;
+
     const ticket = await loadStaffTicket(res, String(req.params.id));
     if (!ticket) return;
 
+    if (refuseIfStale(res, ticket, expected)) return;
     if (refuseIfTerminal(res, ticket.status, 'change IT priority')) return;
 
-    await prisma.ticket.update({
-      where: { id: ticket.id as string },
-      data: { itPriority: raw },
-      select: { id: true }
-    });
-
-    await respondWithDetail(res, ticket.id as string);
+    await applyAndRespond(res, ticket, { data: { itPriority: raw } });
   } catch (error) {
     sendInternalError(res, 'PATCH /api/staff/tickets/:id/it-priority', error);
   }
@@ -415,8 +573,13 @@ staffRouter.patch('/tickets/:id/status', staffOnly, async (req, res) => {
       return;
     }
 
+    const expected = readExpectedVersion(res, req.body);
+    if (expected === false) return;
+
     const ticket = await loadStaffTicket(res, String(req.params.id));
     if (!ticket) return;
+
+    if (refuseIfStale(res, ticket, expected)) return;
 
     const check = checkTransition(ticket.status, raw, ticket.ownerId !== null);
 
@@ -425,8 +588,26 @@ staffRouter.patch('/tickets/:id/status', staffOnly, async (req, res) => {
       return;
     }
 
-    await prisma.ticket.update({
-      where: { id: ticket.id as string },
+    // Lab 4 BR-14: the gate runs after the Lab 3 matrix and owner checks, so an
+    // unassigned Resolve keeps its Lab 3 answer (api-spec.md §4.2).
+    if (raw === 'Resolved') {
+      const input = gateInput(ticket);
+      const gate = resolutionGate(input);
+
+      if (!gate.ok) {
+        sendError(
+          res,
+          409,
+          'RESOLUTION_BLOCKED',
+          resolutionBlockedMessage(gate, openFollowUpCount(input.actions), input.lastReopenedAt !== null),
+          undefined,
+          { unmet: gate.unmet }
+        );
+        return;
+      }
+    }
+
+    await applyAndRespond(res, ticket, {
       data: {
         status: raw,
         ...timestampsFor(raw, new Date(), {
@@ -434,10 +615,9 @@ staffRouter.patch('/tickets/:id/status', staffOnly, async (req, res) => {
           closedAt: (ticket.closedAt as Date | null) ?? null
         })
       },
-      select: { id: true }
+      statusChange: { from: ticket.status, to: raw },
+      ...(raw === 'Cancelled' ? { cancelFollowUps: true as const } : {})
     });
-
-    await respondWithDetail(res, ticket.id as string);
   } catch (error) {
     sendInternalError(res, 'PATCH /api/staff/tickets/:id/status', error);
   }

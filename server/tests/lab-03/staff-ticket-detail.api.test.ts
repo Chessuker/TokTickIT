@@ -3,9 +3,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('../../src/db.js', () => ({
   prisma: {
     session: { findUnique: vi.fn(), delete: vi.fn() },
-    ticket: { findFirst: vi.fn(), update: vi.fn() },
+    // Lab 4 (Issue #55): `updateMany` is the version check, and the history
+    // row and the follow-up cancellations share the transaction.
+    ticket: { findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     user: { findFirst: vi.fn(), findMany: vi.fn() },
     ticketInternalNote: { findMany: vi.fn(), create: vi.fn() },
+    ticketStatusChange: { create: vi.fn() },
+    ticketAction: { updateMany: vi.fn() },
     $transaction: vi.fn()
   }
 }));
@@ -51,6 +55,11 @@ function ticketRow(overrides: Record<string, unknown> = {}) {
     ownerId: PRIYA.id,
     attachments: [],
     _count: { comments: 3, internalNotes: 2 },
+    // Lab 4 (Issue #55): one Action with no follow-up, so the resolution gate
+    // is open and every Lab 3 transition below is still permitted.
+    version: 0,
+    actions: [{ createdAt: new Date('2026-09-12T02:00:00.000Z'), followUpStatus: null }],
+    statusChanges: [],
     ...overrides
   };
 }
@@ -98,6 +107,7 @@ beforeEach(() => {
   );
   vi.mocked(prisma.ticket.findFirst).mockResolvedValue(ticketRow() as never);
   vi.mocked(prisma.ticket.update).mockResolvedValue({ id: TICKET_ID } as never);
+  vi.mocked(prisma.ticket.updateMany).mockResolvedValue({ count: 1 } as never);
   vi.mocked(prisma.user.findFirst).mockResolvedValue({ id: CHEN_ID } as never);
   vi.mocked(prisma.ticketInternalNote.findMany).mockResolvedValue([] as never);
 });
@@ -122,7 +132,8 @@ describe('GET /api/staff/tickets/:id (API-31, AC-24)', () => {
       department: 'Registrar',
       role: 'Requester'
     });
-    expect(res.body.counts).toEqual({ comments: 3, internalNotes: 2, attachments: 1 });
+    // Lab 4 adds `actions` and `openFollowUps` (api-spec.md §4.1, additive).
+    expect(res.body.counts).toEqual({ comments: 3, internalNotes: 2, attachments: 1, actions: 1, openFollowUps: 0 });
     expect(res.body.permittedTransitions).toEqual([
       'InProgress',
       'WaitingForRequester',
