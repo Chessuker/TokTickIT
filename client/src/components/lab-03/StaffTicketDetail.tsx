@@ -15,6 +15,7 @@ import CommentsPanel from './CommentsPanel'
 import InternalNotesPanel from './InternalNotesPanel'
 import ActionsTaken from '../lab-04/ActionsTaken'
 import TicketHistory from '../lab-04/TicketHistory'
+import Modal from '../Modal'
 import { formatBangkok } from '../lab-04/dates'
 
 /**
@@ -131,19 +132,6 @@ const CONFIRMED_TARGETS = ['Resolved', 'Closed', 'Cancelled']
  * decides what is permitted.
  */
 const RESOLVABLE_FROM = ['Open', 'InProgress', 'WaitingForRequester', 'Reopened']
-
-function formatDateTime(value: string | null): string {
-  if (!value) return '—'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '—'
-  return date.toLocaleString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
 
 /** One read-only row of the ticket (ui-spec.md §3.5 "Read-only group"). */
 function ReadOnlyField({
@@ -818,13 +806,13 @@ function StaffTicketDetail() {
               <span className="zg-muted"> · {ticket.requester.department}</span>
             ) : null}
           </ReadOnlyField>
-          <ReadOnlyField label="Created">{formatDateTime(ticket.createdAt)}</ReadOnlyField>
-          <ReadOnlyField label="Updated">{formatDateTime(ticket.updatedAt)}</ReadOnlyField>
+          <ReadOnlyField label="Created">{formatBangkok(ticket.createdAt)}</ReadOnlyField>
+          <ReadOnlyField label="Updated">{formatBangkok(ticket.updatedAt)}</ReadOnlyField>
           {ticket.resolvedAt && (
-            <ReadOnlyField label="Resolved">{formatDateTime(ticket.resolvedAt)}</ReadOnlyField>
+            <ReadOnlyField label="Resolved">{formatBangkok(ticket.resolvedAt)}</ReadOnlyField>
           )}
           {ticket.closedAt && (
-            <ReadOnlyField label="Closed">{formatDateTime(ticket.closedAt)}</ReadOnlyField>
+            <ReadOnlyField label="Closed">{formatBangkok(ticket.closedAt)}</ReadOnlyField>
           )}
           <ReadOnlyField label="Summary" wide>
             {ticket.summary}
@@ -943,7 +931,7 @@ function StaffTicketDetail() {
                     <li key={file.id} className="zg-file-row">
                       <span className="zg-file-name">{file.fileName}</span>
                       <span className="zg-file-size">{formatBytes(file.sizeBytes)}</span>
-                      <span className="zg-file-size">Uploaded {formatDateTime(file.uploadedAt)}</span>
+                      <span className="zg-file-size">Uploaded {formatBangkok(file.uploadedAt)}</span>
                       <span className="zg-file-actions">
                         <button
                           type="button"
@@ -974,7 +962,7 @@ function StaffTicketDetail() {
                         <span className="zg-badge zg-badge-removed">Removed</span>
                         <span className="zg-file-size">{formatBytes(file.sizeBytes)}</span>
                         <span className="zg-file-removed-meta">
-                          Removed {formatDateTime(file.removedAt)} — {file.removedReason}
+                          Removed {formatBangkok(file.removedAt)} — {file.removedReason}
                         </span>
                       </li>
                     ))}
@@ -987,48 +975,53 @@ function StaffTicketDetail() {
       </div>
 
       {confirmation && (
-        <div className="zg-modal-backdrop" role="presentation">
-          <div className="zg-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
-            <h2 className="zg-section-title" id="confirm-title">
-              {confirmation.title}
-            </h2>
-            <p className="zg-hint">{confirmation.message}</p>
+        <Modal
+          labelledBy="confirm-title"
+          onEscape={() => {
+            if (confirming) return
+            setConfirmation(null)
+            setConfirmError(null)
+          }}
+        >
+          <h2 className="zg-section-title" id="confirm-title">
+            {confirmation.title}
+          </h2>
+          <p className="zg-hint">{confirmation.message}</p>
 
-            {confirmError && (
-              <p className="zg-field-error" role="alert">
-                {confirmError}
-              </p>
-            )}
+          {confirmError && (
+            <p className="zg-field-error" role="alert">
+              {confirmError}
+            </p>
+          )}
 
-            <div className="zg-actions">
-              <button
-                type="button"
-                className={confirmation.danger ? 'zg-btn zg-btn-danger' : 'zg-btn zg-btn-primary'}
-                onClick={() => void runConfirmation()}
-                disabled={confirming}
-              >
-                {confirming ? (
-                  <>
-                    <span className="zg-spinner-sm" aria-hidden="true" /> Saving...
-                  </>
-                ) : (
-                  'Confirm'
-                )}
-              </button>
-              <button
-                type="button"
-                className="zg-btn zg-btn-secondary"
-                onClick={() => {
-                  setConfirmation(null)
-                  setConfirmError(null)
-                }}
-                disabled={confirming}
-              >
-                Cancel
-              </button>
-            </div>
+          <div className="zg-actions">
+            <button
+              type="button"
+              className={confirmation.danger ? 'zg-btn zg-btn-danger' : 'zg-btn zg-btn-primary'}
+              onClick={() => void runConfirmation()}
+              disabled={confirming}
+            >
+              {confirming ? (
+                <>
+                  <span className="zg-spinner-sm" aria-hidden="true" /> Saving...
+                </>
+              ) : (
+                'Confirm'
+              )}
+            </button>
+            <button
+              type="button"
+              className="zg-btn zg-btn-secondary"
+              onClick={() => {
+                setConfirmation(null)
+                setConfirmError(null)
+              }}
+              disabled={confirming}
+            >
+              Cancel
+            </button>
           </div>
-        </div>
+        </Modal>
       )}
     </section>
   )

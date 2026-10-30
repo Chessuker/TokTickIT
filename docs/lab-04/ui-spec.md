@@ -180,27 +180,29 @@ Unchanged: Desktop ≥ 992 px, Tablet 768 – 991 px, Mobile < 768 px; no horizo
 
 ## 5. Visual and Accessibility Checklist
 
-Lab 3's V-01 … V-14 are re-run on **every** screen (Lab 2, 3 and 4) as the final regression. V-15 … V-20 are new. Filled in by Issue #58 against the running stack on a freshly seeded database, at 1280 / 820 / 375 px. Every row names its evidence: an automated check in `e2e/lab-04/visual.spec.ts` (E2E-07), a component test, or screenshots under `artifacts/lab-04/screenshots/`.
+Lab 3's V-01 … V-14 are re-run on **every** screen (Lab 2, 3 and 4) as the final regression. V-15 … V-20 are new. Filled in by Issue #57 against the running stack on a seeded database; Issue #58 re-runs the same checks on a freshly migrated and seeded database for the release. Every row names its evidence: an automated check in `e2e/lab-04/visual.spec.ts` (STY-01 … STY-04), a component test, or screenshots under `artifacts/lab-04/screenshots/`.
+
+☑ = checked at that width. A row marked ☑ at every width with "width-independent" is behaviour the stylesheet does not change between breakpoints (colours, labels, request handling), checked once. ☐ = not yet checked at that width; Issue #58 adds those runs.
 
 | # | Item | Desktop | Tablet | Mobile | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| V-01 | Font family, sizes, weights consistent across all screens | ☐ | ☐ | ☐ | |
-| V-02 | Cards, tables, padding reuse `.zg-card` / `.zg-table`; no one-off styles | ☐ | ☐ | ☐ | |
-| V-03 | No horizontal page overflow on any screen | ☐ | ☐ | ☐ | |
-| V-04 | No clipped or truncated badges, buttons, metric values or table columns | ☐ | ☐ | ☐ | |
-| V-05 | Visible focus ring on every interactive element, including metric cards and tabs | ☐ | ☐ | ☐ | |
-| V-06 | Every input has an accessible label; switches have `role="switch"` + `aria-checked` | ☐ | ☐ | ☐ | |
-| V-07 | Contrast ≥ 4.5:1 for all text and badges, including the new follow-up badges | ☐ | ☐ | ☐ | |
-| V-08 | Validation messages under the correct field on every form (Action create/edit added) | ☐ | ☐ | ☐ | |
-| V-09 | Busy state and single submission on every primary button | ☐ | ☐ | ☐ | |
-| V-10 | Role navigation renders only the role's links; Dashboard first and marked current | ☐ | ☐ | ☐ | |
-| V-11 | Editable vs read-only unambiguous (Action view vs edit mode; operations card) | ☐ | ☐ | ☐ | |
-| V-12 | Public Comments, Internal Notes and Actions Taken visibly distinct (white / amber / green-bordered, captions) | ☐ | ☐ | ☐ | |
-| V-13 | Badges consistent across Dashboard, Queue, My Tickets, both details, Users | ☐ | ☐ | ☐ | |
-| V-14 | No overlap between sticky header, menus, dialogs, sticky form bar and content | ☐ | ☐ | ☐ | |
-| V-15 | Every metric card is a single link whose accessible name has label + value; zero shows "None right now" | ☐ | ☐ | ☐ | |
-| V-16 | Every card's drill-down list total equals the card value | ☐ | ☐ | ☐ | |
-| V-17 | Status, follow-up, priority and role cues have text/icon as well as colour | ☐ | ☐ | ☐ | |
-| V-18 | Dialogs trap focus, close on Escape, and return focus to the trigger | ☐ | ☐ | ☐ | |
-| V-19 | No console errors or warnings on each role's happy path; no broken links (all `href`s resolve) | ☐ | ☐ | ☐ | |
-| V-20 | No placeholder text, lorem ipsum, "TODO", debug output or obsolete Lab 1/2 UI anywhere | ☐ | ☐ | ☐ | |
+| V-01 | Font family, sizes, weights consistent across all screens | ☑ | ☑ | ☑ | One stylesheet (`zen-green.css`) and one font stack; screenshots at all three widths in `actions-taken/`, `workflow/`, `requester-dashboard/`, `staff-dashboard/` reviewed |
+| V-02 | Cards, tables, padding reuse `.zg-card` / `.zg-table`; no one-off styles | ☑ | ☑ | ☑ | Every Lab 4 panel is a `.zg-card`; the Actions table is `.zg-table` with its own column widths (#54); dashboards reuse cards and `.zg-chip` |
+| V-03 | No horizontal page overflow on any screen | ☑ | ☑ | ☑ | STY-01: every screen of every role at 1280 / 820 / 375, `scrollWidth ≤ innerWidth`; every Lab 4 E2E capture checks it too |
+| V-04 | No clipped or truncated badges, buttons, metric values or table columns | ☑ | ☑ | ☑ | STY-01: no element's box leaves its card on any screen; fixes from screenshots in #54 (Actions row), #55 (gate-hint bullet, history line), #56 (status badge as card label, 2 × 2 tablet cards) |
+| V-05 | Visible focus ring on every interactive element, including metric cards and tabs | ☑ | ☐ | ☐ | STY-02: focus ring on the first 30 stops of both dashboards and on every stop of the Actions Taken tab + create form. Found and fixed in #57: the date input's calendar button had no ring |
+| V-06 | Every input has an accessible label; switches have `role="switch"` + `aria-checked` | ☑ | ☑ | ☑ | STY-02 (dashboards, Actions form: every input/select/textarea/button/switch/tab named; switch has `aria-checked`) + Lab 3 E2E-07 V-06 check; width-independent |
+| V-07 | Contrast ≥ 4.5:1 for all text and badges, including the new follow-up badges | ☑ | ☑ | ☑ | STY-03: every badge on both dashboards, Actions tab, History tab and Queue ≥ 4.5:1 (60+ badges incl. all follow-up badges) + Lab 3 V-07 check; width-independent |
+| V-08 | Validation messages under the correct field on every form (Action create/edit added) | ☑ | ☑ | ☑ | UI-02, UI-04, Lab 2/3 form tests; `actions-taken/create-{desktop,tablet,mobile}.png`, `create-validation-desktop.png` |
+| V-09 | Busy state and single submission on every primary button | ☑ | ☑ | ☑ | `SingleSubmit.test.tsx`: two same-tick submits send one request on Login, Change Password, Create Ticket, Public Comment, Create User (all five sent two before #57); UI-03 for Actions; width-independent |
+| V-10 | Role navigation renders only the role's links; Dashboard first and marked current | ☑ | ☑ | ☑ | UI-19; E2E-05 / dashboard screenshot matrix checks Dashboard first and `aria-current` at all three widths (mobile through the Menu sheet) |
+| V-11 | Editable vs read-only unambiguous (Action view vs edit mode; operations card) | ☑ | ☑ | ☑ | UI-04, UI-07; Administrator read-only operations (Lab 3 UI); `actions-taken/{view,edit}-desktop.png`, `list-{tablet,mobile}.png` |
+| V-12 | Public Comments, Internal Notes and Actions Taken visibly distinct (white / amber / green-bordered, captions) | ☑ | ☑ | ☑ | Actions panel green-bordered with "Visible to the requester" caption; Lab 3 `notes-vs-comments.png`; `actions-taken/list-*.png` |
+| V-13 | Badges consistent across Dashboard, Queue, My Tickets, both details, Users | ☑ | ☑ | ☑ | All badges come from `Badges.tsx`; status badges are the dashboard status-card labels; screenshots of every screen |
+| V-14 | No overlap between sticky header, menus, dialogs, sticky form bar and content | ☑ | ☐ | ☑ | `workflow/cancel-dialog-{desktop,mobile}.png`, Lab 3 `confirm-mobile.png`, Actions form sticky bar on mobile (`create-mobile.png`) |
+| V-15 | Every metric card is a single link whose accessible name has label + value; zero shows "None right now" | ☑ | ☑ | ☑ | UI-13, UI-16, UI-18 (names, "None right now"), STY-02 (every card name is "label: value …"); width-independent |
+| V-16 | Every card's drill-down list total equals the card value | ☑ | ☑ | ☑ | E2E-05 follows every card for three roles; API-28, API-33; INT-01 (76 checks against SQL); width-independent |
+| V-17 | Status, follow-up, priority and role cues have text/icon as well as colour | ☑ | ☑ | ☑ | STY-03 (every badge has text), UI-23 (follow-up badges: text + icon); width-independent |
+| V-18 | Dialogs trap focus, close on Escape, and return focus to the trigger | ☑ | ☑ | ☑ | `Modal.test.tsx` + STY-02. Found and fixed in #57: none of the five dialogs kept Tab inside; all now use one `Modal` frame (trap, Escape, focus returned); width-independent |
+| V-19 | No console errors or warnings on each role's happy path; no broken links (all `href`s resolve) | ☑ | ☐ | ☐ | STY-04: no console error or warning on each role's path through every screen; every in-app link from the shell and dashboards lands on its own route |
+| V-20 | No placeholder text, lorem ipsum, "TODO", debug output or obsolete Lab 1/2 UI anywhere | ☑ | ☐ | ☐ | STY-04: no "TODO", "lorem", "placeholder", "FIXME", "undefined", "NaN" or "[object Object]" in any screen's text; the Lab 2 one-value status dropdown was replaced in #56 |

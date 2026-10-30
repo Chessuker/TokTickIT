@@ -40,7 +40,12 @@ body {
 }
 
 /* Focus ring — V-05: visible on every interactive element. */
-.zg-app :focus-visible {
+.zg-app :focus-visible,
+/* A datetime-local input has a calendar-picker button inside its own shadow
+   tree. When Tab reaches that button the input matches neither :focus nor
+   :focus-visible, only :focus-within, so without this the stop shows no ring
+   at all (found by STY-02 in Issue #57). */
+.zg-app input[type='datetime-local']:focus-within {
   outline: 2px solid var(--zg-secondary);
   outline-offset: 2px;
   border-radius: 4px;

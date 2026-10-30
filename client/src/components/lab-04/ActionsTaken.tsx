@@ -4,6 +4,7 @@ import { apiFetch, apiJson, readApiError } from '../../apiClient'
 import { useAuth } from '../../context/auth'
 import { useMediaQuery } from '../../useMediaQuery'
 import { FollowUpBadge } from '../Badges'
+import Modal from '../Modal'
 import {
   defaultActionInput,
   formatBangkok,
@@ -1218,56 +1219,46 @@ function ActionsTaken({
       )}
 
       {pendingClose && (
-        <div className="zg-modal-backdrop" role="presentation">
-          <div
-            className="zg-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="followup-confirm-title"
-            onKeyDown={(event) => {
-              if (event.key === 'Escape' && !closing) dismissClose()
-            }}
-          >
-            <h2 className="zg-section-title" id="followup-confirm-title">
-              {pendingClose.status === 'Completed' ? 'Mark this follow-up as done?' : 'Cancel this follow-up?'}
-            </h2>
-            <p className="zg-hint">“{pendingClose.action.followUp.note}”</p>
-            <p className="zg-hint">
-              {pendingClose.status === 'Completed'
-                ? 'It will be recorded as done by you, now. This cannot be undone.'
-                : 'It will be recorded as cancelled by you, now. This cannot be undone; a new need is a new action.'}
+        <Modal labelledBy="followup-confirm-title" onEscape={() => !closing && dismissClose()}>
+          <h2 className="zg-section-title" id="followup-confirm-title">
+            {pendingClose.status === 'Completed' ? 'Mark this follow-up as done?' : 'Cancel this follow-up?'}
+          </h2>
+          <p className="zg-hint">“{pendingClose.action.followUp.note}”</p>
+          <p className="zg-hint">
+            {pendingClose.status === 'Completed'
+              ? 'It will be recorded as done by you, now. This cannot be undone.'
+              : 'It will be recorded as cancelled by you, now. This cannot be undone; a new need is a new action.'}
+          </p>
+
+          {closeError && (
+            <p className="zg-field-error" role="alert">
+              {closeError}
             </p>
+          )}
 
-            {closeError && (
-              <p className="zg-field-error" role="alert">
-                {closeError}
-              </p>
-            )}
-
-            <div className="zg-actions">
-              <button
-                type="button"
-                ref={confirmButtonRef}
-                className={pendingClose.status === 'Cancelled' ? 'zg-btn zg-btn-danger' : 'zg-btn zg-btn-primary'}
-                onClick={() => void confirmClose()}
-                disabled={closing}
-              >
-                {closing ? (
-                  <>
-                    <span className="zg-spinner-sm" aria-hidden="true" /> Saving...
-                  </>
-                ) : pendingClose.status === 'Completed' ? (
-                  'Mark as done'
-                ) : (
-                  'Cancel follow-up'
-                )}
-              </button>
-              <button type="button" className="zg-btn zg-btn-secondary" onClick={dismissClose} disabled={closing}>
-                Keep it open
-              </button>
-            </div>
+          <div className="zg-actions">
+            <button
+              type="button"
+              ref={confirmButtonRef}
+              className={pendingClose.status === 'Cancelled' ? 'zg-btn zg-btn-danger' : 'zg-btn zg-btn-primary'}
+              onClick={() => void confirmClose()}
+              disabled={closing}
+            >
+              {closing ? (
+                <>
+                  <span className="zg-spinner-sm" aria-hidden="true" /> Saving...
+                </>
+              ) : pendingClose.status === 'Completed' ? (
+                'Mark as done'
+              ) : (
+                'Cancel follow-up'
+              )}
+            </button>
+            <button type="button" className="zg-btn zg-btn-secondary" onClick={dismissClose} disabled={closing}>
+              Keep it open
+            </button>
           </div>
-        </div>
+        </Modal>
       )}
     </section>
   )

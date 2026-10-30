@@ -1,6 +1,6 @@
 # TokTickIT
 
-TokTickIT is a full-stack IT ticketing portal built with a React + Express + PostgreSQL stack. Requesters sign in, raise tickets with attachments and follow them; IT Staff and Administrators get their own areas. Every request is authorised on the server from a session cookie.
+TokTickIT is a full-stack IT ticketing portal built with a React + Express + PostgreSQL stack. Requesters sign in, raise tickets with attachments and follow them; IT Staff work the queue, record the actions they take and resolve tickets through a guarded workflow; Administrators manage accounts. Every role lands on its own dashboard. Every request is authorised on the server from a session cookie.
 
 ## Table of contents
 
@@ -11,6 +11,7 @@ TokTickIT is a full-stack IT ticketing portal built with a React + Express + Pos
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Usage](#usage)
+- [Demo walkthrough](#demo-walkthrough)
 - [Available scripts](#available-scripts)
 - [Tests](#tests)
 - [Lab documentation](#lab-documentation)
@@ -19,12 +20,16 @@ TokTickIT is a full-stack IT ticketing portal built with a React + Express + Pos
 ## Features
 
 - **Authentication (Lab 3)** — email + password login, bcrypt-hashed passwords, an `httpOnly` session cookie backed by a `Session` table, logout that revokes the session, login throttling, and a forced password change for accounts on an initial password. Every protected endpoint checks the session and role on the server.
-- **Roles** — Requester, IT Staff and Administrator, each with its own navigation and home screen; the wrong role gets a Forbidden state in the UI and a `403` from the API.
+- **Roles** — Requester, IT Staff and Administrator, each with its own navigation; every role lands on `/dashboard` after login. The wrong role gets a Forbidden state in the UI and a `403` from the API.
+- **Dashboards (Lab 4)** — a Requester sees counts of their own open, waiting-for-them, resolved and closed tickets plus three short lists; IT Staff see unassigned work, their own tickets and open follow-ups, counts by status and IT Priority, urgent and recently updated tickets and their recent actions; Administrators get the same view without the "my" cards plus user-account counts. Every number is computed by the server on each request, and every card links to the list it counts — the list's total always equals the card.
+- **Actions Taken (Lab 4)** — IT Staff and Administrators record what was done on a ticket (date/time, description, result, attachment notes) with an optional follow-up assigned to an active IT Staff member and closed as done or cancelled. Performed by is set by the server, entries are never deleted, an edit made from an old copy is refused with a Reload prompt, and the Requester sees the same list read-only as "Work done by IT".
+- **Ticket workflow (Lab 4)** — a ticket can be Resolved only with an owner, an action recorded since it was last reopened and no open follow-up; the screen says which condition is missing. Every status change is written to an append-only history shown to staff and the Requester, and two people changing the same ticket at once cannot overwrite each other (`409 STALE_UPDATE`).
 - **Requester ticketing (Lab 2)** — create tickets, list and search your own tickets, open a read-only detail view, and attach, download or soft-remove files. Ownership is enforced from the session identity.
 - **Public Comments and "Problem appears resolved" (Lab 3)** — a Requester comments on their own ticket and IT Staff on any ticket; the thread is readable by all three roles, newest first, and bodies are stored and rendered as plain text. A Requester can flag an open ticket as "appears resolved" (`requesterResolvedAt`) without touching its status.
 - **IT Staff Ticket Queue (Lab 3)** — every ticket in the system with search, status / IT priority / owner / category filters, sortable columns and pagination, all done server-side (`GET /api/staff/tickets`). The queue state lives in the URL so a filtered view can be shared or returned to. Administrators see the same list read-only.
 - **IT Staff ticket operations (Lab 3)** — claim, assign or unassign an owner, set an IT Priority independent of what the requester asked for, and move the ticket through a server-enforced status workflow (`New → Open → In Progress → … → Closed`, with `Reopened` and `Cancelled`). Public Comments reach the requester; Internal Notes never do. Administrators see the same screen read-only.
 - **Administrator user management (Lab 3)** — one screen to search the directory, filter by role, create an account with a one-time initial password, edit name, email, role and activation, and hand out a new initial password. Nobody is ever deleted: deactivation retires an account and signs it out immediately, and the server refuses both self-deactivation and removing the last active administrator.
+- **Consistent feedback (Lab 4 hardening)** — loading, validation, success, empty, forbidden, not-found, conflict and safe-failure states look and behave the same on every screen; no form sends twice on a double submit; forms keep what was typed after a recoverable failure; every dialog keeps keyboard focus inside and returns it; every date is shown in Bangkok time.
 - **Live health check** — `GET /api/health` runs `SELECT 1` against Postgres and returns `200`/`ok` or `503`/`error` based on real DB connectivity.
 
 ## Tech stack
@@ -34,28 +39,36 @@ TokTickIT is a full-stack IT ticketing portal built with a React + Express + Pos
 | Frontend | React 19, TypeScript, Vite, Bootstrap 5 |
 | Backend | Node.js, Express, TypeScript |
 | Database / ORM | PostgreSQL, Prisma |
-| Testing | Vitest, React Testing Library (frontend), Vitest + Supertest (backend) |
+| Testing | Vitest, React Testing Library (frontend), Vitest + Supertest (backend), Playwright (end-to-end) |
 | Linting | oxlint |
 
 ## Project structure
 
 ```
 TokTickIT/
-├── client/          # React + Vite frontend
+├── client/                    # React + Vite frontend
 │   └── src/
-│       ├── App.tsx
-│       └── components/CategoryList.tsx
-├── server/          # Express + Prisma backend
+│       ├── App.tsx            # Route table and role guards
+│       ├── components/        # Lab 2 screens, shared Badges / Modal
+│       │   ├── lab-03/        # Login, Queue, Staff Ticket Detail, Users, comments and notes
+│       │   └── lab-04/        # Dashboards, Actions Taken, History, date helpers
+│       └── styles/zen-green.css
+├── server/                    # Express + Prisma backend
 │   ├── src/
-│   │   ├── app.ts       # Express app & routes
-│   │   ├── index.ts     # Entrypoint
-│   │   ├── db.ts        # Prisma client
-│   │   └── seed.ts      # DB seed script
-│   ├── prisma/schema.prisma
-│   └── tests/app.test.ts
-├── e2e/             # Playwright end-to-end suites (lab-02 flows + lab-03/)
-├── docs/lab-0N/     # CPE334 lab write-ups (specification, API/UI spec, tests, AI usage, review)
-└── package.json     # Root scripts that fan out to client/server
+│   │   ├── app.ts             # Express app, Requester routes, health
+│   │   ├── staffRoutes.ts     # Queue, staff detail, workflow (gate, version, history)
+│   │   ├── actionRoutes.ts    # Actions Taken
+│   │   ├── dashboardRoutes.ts # Both dashboards
+│   │   ├── dashboardMetrics.ts# Each card's count and drill-down link, defined together
+│   │   ├── ticketWorkflow.ts  # Transition matrix and resolution gate
+│   │   └── seed.ts            # Idempotent seed
+│   ├── prisma/                # schema.prisma, migrations, rollback/
+│   ├── scripts/               # Migration, integration and performance checks against PostgreSQL
+│   └── tests/                 # Unit and API suites (lab-03/, lab-04/)
+├── e2e/                       # Playwright suites (Lab 2 flows, lab-03/, lab-04/)
+├── artifacts/lab-0N/          # Screenshots captured by the E2E suites
+├── docs/lab-0N/               # CPE334 lab write-ups (specification, API/UI spec, tests, AI usage, review)
+└── package.json               # Root scripts that fan out to client/server
 ```
 
 ## Requirements
@@ -116,7 +129,7 @@ npm run dev:server   # http://localhost:5000
 npm run dev:client   # http://localhost:5173
 ```
 
-Open `http://localhost:5173` in a browser and sign in with one of the accounts below.
+Open `http://localhost:5173` in a browser and sign in with one of the accounts below. Every role lands on its dashboard.
 
 ### Local development accounts
 
@@ -142,6 +155,18 @@ The seed also creates 24 sample tickets numbered `TKT-2026-900001` … `TKT-2026
 
 Lab 4 adds 22 Actions Taken (none on New tickets, one on most worked tickets, three by different IT Staff on `TKT-2026-900007`), with open follow-ups assigned to each IT Staff member, and a status history for every ticket that has moved. `TKT-2026-900019` is deliberately left with neither, to show how a ticket closed before Lab 4 looks.
 
+## Demo walkthrough
+
+A five-minute tour of the Lab 4 features on a freshly seeded database:
+
+1. **Requester dashboard** — sign in as Jennifer. Follow "Waiting for you": My Tickets opens filtered to the same tickets, and its total equals the card. Open a ticket to see "Work done by IT" and its collapsible status history.
+2. **Empty dashboard** — sign in as Ploy, who has no tickets: one panel with Create Ticket.
+3. **IT Staff dashboard** — sign in as Priya. Follow "My open follow-ups" (the Queue lists the tickets that hold them) and a row in "My recent actions" (it opens on the Actions Taken tab).
+4. **Actions Taken** — open `TKT-2026-900007`: three actions by three IT Staff, one with an open follow-up. Record an action with a follow-up assigned to Chen.
+5. **Resolution gate** — on `TKT-2026-900012` (Reopened, no action since), Resolved is missing from the status choices and the hint says why. Record an action: Resolved appears without a reload. Resolve it, then open the History tab.
+6. **Stale update** — open the same ticket as Priya in one browser and as Chen in another (or a private window). Change the status in one, then the IT Priority in the other: the second is told someone changed it first and offered Reload.
+7. **Administrator** — sign in as the System Administrator: the dashboard has no "my" cards but shows user-account counts; the Users screen and the read-only Queue work as in Lab 3.
+
 ### Upgrading a Lab 2 database
 
 The Lab 3 migration renames `RequesterUser` to `User` in place, so existing tickets and attachments keep their owners. To verify that on a database holding Lab 2 data:
@@ -165,7 +190,9 @@ npm --prefix server exec prisma db execute --file prisma/rollback/20261003000000
 npm --prefix server exec tsx scripts/verify-lab04-migration.ts after-rollback  # MIG-02
 npm run prisma:migrate                                                         # re-apply
 npm run prisma:seed
-npm --prefix server exec tsx scripts/verify-lab04-concurrency.ts               # INT-03: follow-up CHECK constraints
+npm --prefix server exec tsx scripts/verify-lab04-concurrency.ts               # INT-02, INT-03: status race, follow-up CHECK constraints
+npm --prefix server exec tsx scripts/verify-lab04-dashboards.ts                # INT-01: every dashboard number against raw SQL
+npm --prefix server exec tsx scripts/perf-lab04-smoke.ts                       # PERF-01: dashboard and Actions response times
 ```
 
 ## Available scripts
@@ -193,15 +220,23 @@ Additional server-only scripts (`npm --prefix server run ...`): `prisma:migrate`
 ```bash
 npm run test:server   # Supertest against Express, Prisma mocked — no live DB needed
 npm run test:client   # Vitest + React Testing Library
+npm run test:e2e      # Playwright: every Lab 2, 3 and 4 flow in a real browser
 ```
 
-Both suites run without a database. The Playwright end-to-end suite (`npm run test:e2e`) needs PostgreSQL migrated and seeded, and starts the API and Vite itself. See [docs/lab-03/tests.md](docs/lab-03/tests.md) for what each test covers.
+The first two run without a database. The end-to-end suite needs PostgreSQL migrated and seeded (`npm run prisma:migrate && npm run prisma:seed`), starts the API and Vite itself, and creates its own tickets; re-seed afterwards to put the sample data back. With `CAPTURE=1` the Lab 4 suites also write the screenshots under `artifacts/lab-04/screenshots/`:
+
+```bash
+CAPTURE=1 npx playwright test e2e/lab-04
+```
+
+The checks that need a real database (dashboard numbers against SQL, the concurrent status race, response times) are the scripts listed under [Upgrading a Lab 3 database](#upgrading-a-lab-3-database). See [docs/lab-04/tests.md](docs/lab-04/tests.md) for what each test covers and the latest results.
 
 ## Lab documentation
 
 This repo doubles as the CPE334 lab submissions. Each lab's contract and evidence live under `docs/`:
 
-- [`docs/lab-03/`](docs/lab-03/) — specification, API spec, UI spec, test plan, issues, AI usage, review (current sprint)
+- [`docs/lab-04/`](docs/lab-04/) — Actions Taken, workflow and dashboards: specification, API spec, UI spec, test plan, issues, AI usage, review (current sprint)
+- [`docs/lab-03/`](docs/lab-03/) — authentication, Staff Queue and ticket operations, user management
 - [`docs/lab-02/`](docs/lab-02/) — Requester ticketing sprint
 - [`docs/lab-01/`](docs/lab-01/) — project foundation
 

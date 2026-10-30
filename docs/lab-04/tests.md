@@ -102,9 +102,9 @@ The handout's example rows keep their ids: **API-03** (create a valid Action, AC
 
 | Test ID | Type | Requirement / AC | What It Tests | Expected Result | Automated Test File Path | Final Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| API-36 | API | AC-26, FR-12 | Every Lab 2 and Lab 3 server suite, re-run in the same `npm run test:server` | All pass; the only edits to them are documented in §5 | `server/tests/*.test.ts`, `server/tests/lab-03/*.test.ts` | Planned |
-| API-37 | API | AC-31 | `GET /api/health` with the db mock resolving / rejecting | `200 CONNECTED` / `503 UNREACHABLE` | `server/tests/lab-04/regression.api.test.ts` | Planned |
-| API-38 | API | AC-27, BR-28 | Each Lab 4 route with the db mock throwing | `500 INTERNAL_ERROR`, generic message, `correlationId`, no stack/SQL | `server/tests/lab-04/regression.api.test.ts` | Planned |
+| API-36 | API | AC-26, FR-12 | Every Lab 2 and Lab 3 server suite, re-run in the same `npm run test:server` | All pass; the only edits to them are documented in §5 | `server/tests/*.test.ts`, `server/tests/lab-03/*.test.ts` | Pass |
+| API-37 | API | AC-31 | `GET /api/health` with the db mock resolving / rejecting | `200 CONNECTED` / `503 UNREACHABLE` | `server/tests/lab-04/regression.api.test.ts` | Pass |
+| API-38 | API | AC-27, BR-28 | Each Lab 4 route with the db mock throwing | `500 INTERNAL_ERROR`, generic message, `correlationId`, no stack/SQL | `server/tests/lab-04/regression.api.test.ts` | Pass |
 
 ### Integration against PostgreSQL
 
@@ -139,17 +139,17 @@ The handout's example rows keep their ids: **API-03** (create a valid Action, AC
 | UI-19 | UI | AC-22 | Shell: Dashboard first per role, `aria-current`, Login and `Home` route to `/dashboard`, `from=` respected | As stated | `client/src/components/AppShell.test.tsx`, `client/src/components/lab-03/Login.test.tsx` (updated) | Pass |
 | UI-20 | UI | AC-20 | My Tickets reads `status` (repeated) and `sort` from the URL, shows chips, Clear resets URL | Correct `fetch` query; chips shown | `client/src/components/MyTickets.test.tsx` (extended) | Pass |
 | UI-21 | UI | AC-20 | Queue reads `followUp=mine` and `requesterResolved=true`, shows removable chips | As stated | `client/src/components/lab-03/StaffTicketQueue.test.tsx` (extended) | Pass |
-| UI-22 | UI | AC-26 | Every Lab 2/3 client suite re-run | All pass; only the role-home expectations change | `client/src/components/**/*.test.tsx` | Planned |
+| UI-22 | UI | AC-26 | Every Lab 2/3 client suite re-run | All pass; only the role-home expectations change | `client/src/components/**/*.test.tsx` | Pass |
 | UI-23 | UI | V-07, V-17 | `Badges.tsx` renders the three follow-up badges with class, text and icon | Snapshot of classes and text | `client/src/components/lab-03/Badges.test.tsx` (extended) | Pass |
 
 ### UI style, responsive and accessibility
 
 | Test ID | Type | Requirement / AC | What It Tests | Expected Result | Automated Test File Path | Final Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| STY-01 | UI style | AC-28, V-03, V-04, V-14 | Every Lab 2/3/4 screen at 1280 / 820 / 375: `scrollWidth === innerWidth`; no element's box escapes its card | No overflow; screenshots with `CAPTURE=1` | `e2e/lab-04/visual.spec.ts` | Planned |
-| STY-02 | Accessibility | AC-29, V-05, V-06, V-15, V-18 | First 30 tab stops on both dashboards and the Actions tab have a focus ring; every input labelled; every metric card's accessible name contains label + value; dialogs trap focus and return it | All pass | `e2e/lab-04/visual.spec.ts` | Planned |
-| STY-03 | Accessibility | AC-29, V-07, V-17 | WCAG contrast of every badge incl. follow-up badges; every status/follow-up cue has text | ≥ 4.5:1; text present | `e2e/lab-04/visual.spec.ts` | Planned |
-| STY-04 | UI style | AC-27, V-19, V-20 | Console listener on each role's happy path; crawl every in-app `href` from shell and dashboards; scan rendered text for "TODO", "lorem", "placeholder" | No console errors; every link resolves to a non-404 route; no matches | `e2e/lab-04/visual.spec.ts` | Planned |
+| STY-01 | UI style | AC-28, V-03, V-04, V-14 | Every Lab 2/3/4 screen at 1280 / 820 / 375: `scrollWidth === innerWidth`; no element's box escapes its card | No overflow; screenshots with `CAPTURE=1` | `e2e/lab-04/visual.spec.ts` | Pass |
+| STY-02 | Accessibility | AC-29, V-05, V-06, V-15, V-18 | First 30 tab stops on both dashboards and the Actions tab have a focus ring; every input labelled; every metric card's accessible name contains label + value; dialogs trap focus and return it | All pass | `e2e/lab-04/visual.spec.ts` | Pass |
+| STY-03 | Accessibility | AC-29, V-07, V-17 | WCAG contrast of every badge incl. follow-up badges; every status/follow-up cue has text | ≥ 4.5:1; text present | `e2e/lab-04/visual.spec.ts` | Pass |
+| STY-04 | UI style | AC-27, V-19, V-20 | Console listener on each role's happy path; crawl every in-app `href` from shell and dashboards; scan rendered text for "TODO", "lorem", "placeholder" | No console errors; every link resolves to a non-404 route; no matches | `e2e/lab-04/visual.spec.ts` | Pass |
 
 ### Migration, seed and performance
 
@@ -171,7 +171,7 @@ The handout's example rows keep their ids: **API-03** (create a valid Action, AC
 | E2E-05 | E2E | AC-02, AC-19, AC-20, AC-22, AC-23 | Jennifer, Priya and admin log in → land on Dashboard (nav item current) → for every card, click it and compare the list total with the card value → list rows open details | All equal; landing correct | `e2e/lab-04/dashboards.spec.ts` | Pass |
 | E2E-06 | E2E | AC-21 | Ploy's empty dashboard with Create Ticket; Requester `fetch` to `/api/staff/dashboard` from the page → `403`; API stopped → safe failure + Retry | As stated | `e2e/lab-04/dashboards.spec.ts` | Pass |
 | E2E-07 | E2E | AC-28, AC-29, AC-31 | Runs STY-01 … STY-04 and captures the screenshot matrix (§4); backend stopped once for the health/safe-failure capture | Every check passes | `e2e/lab-04/visual.spec.ts` | Planned |
-| E2E-08 | E2E | AC-26 | Every Lab 2 and Lab 3 Playwright spec on the Lab 4 build | All pass; only the role-home expectations change | `e2e/*.spec.ts`, `e2e/lab-03/*.spec.ts` | Planned |
+| E2E-08 | E2E | AC-26 | Every Lab 2 and Lab 3 Playwright spec on the Lab 4 build | All pass; only the role-home expectations change | `e2e/*.spec.ts`, `e2e/lab-03/*.spec.ts` | Pass |
 
 ---
 
@@ -267,6 +267,7 @@ Kept here so API-36 / UI-22 / E2E-08 can show that the earlier suites ran unchan
 | `client/src/components/TicketDetail.test.tsx` (Issue #54) | Fake server answers `GET /api/tickets/:id/actions` with an empty list | The Requester detail now shows "Work done by IT" (ui-spec.md §3.6) |
 | `e2e/lab-03/staff-ticket-flow.spec.ts` (Issue #54) | Three steps click the Public Comments tab before using it on the staff detail. The Administrator check now opens that tab before asserting there is no composer, so it still tests something | Same default-tab change. All other steps are unchanged |
 | `server/tests/lab-03/staff-ticket-detail.api.test.ts` (Issue #55) | The mocked client gains `ticket.updateMany` (answers `{ count: 1 }`), `ticketStatusChange.create` and `ticketAction.updateMany`. The ticket fixture gains `version: 0`, one Action with no follow-up and no reopen row. The detail test's `counts` expectation adds `actions: 1, openFollowUps: 0`. Every assertion on `prisma.ticket.update` data is unchanged | Each workflow write is now a transaction: a conditional version bump, the Lab 3 update, a history row (BR-18, BR-19). The one Action keeps the resolution gate open, so every Lab 3 transition is still permitted. `counts` gained two fields (api-spec.md §4.1, additive) |
+| `client/src/components/lab-03/CommentsPanel.test.tsx` (Issue #57) | The "older than a month" case expects `1 Jun 2026` instead of whatever `toLocaleDateString(undefined, …)` printed on the test machine | Every date now goes through the Bangkok helpers (ui-spec.md §1.5). The old expectation repeated the old code, so it passed on a Thai-locale machine with a Buddhist-era year |
 | `server/tests/lab-03/queueQuery.test.ts` (Issue #56) | The defaults test expects the two new fields `followUp: null` and `requesterResolved: false`; the Lab 4 cases (UNIT-07) are a new `describe` block | Two dashboard drill-down filters on the Queue (api-spec.md §4.3) |
 | `client/src/components/lab-03/Login.test.tsx`, `ChangePassword.test.tsx`, `RequireAuth.test.tsx`, `client/src/components/AppShell.test.tsx` (Issue #56) | Each gains a `/dashboard` route; every "lands on the role home" expectation now expects the Dashboard (Login ×6, Change Password ×1, the Forbidden state's home link, the app-name link); the three role-navigation lists start with "Dashboard". Every other assertion is unchanged | The dashboard is every role's home and first navigation item (BR-31, ui-spec.md §3.0). UI-22 / E2E-08 allow exactly this change |
 | `client/src/components/MyTickets.test.tsx` (Issue #56) | The status filter test clicks the "New" chip instead of choosing "New" in a dropdown; the three paging tests read "Showing 1 to 10 of 25 tickets" instead of "Showing 1–10 of 25 tickets" | Status is a set of chips set from the URL, and the result line matches the Queue's wording, so the total a card links to reads the same on both lists (ui-spec.md §3.7) |
@@ -454,6 +455,28 @@ Deliberate mutations to `dashboardMetrics.ts`, each caught: dropping `requesterI
 Found in the screenshots and fixed: the "Waiting for Requester" status badge, used as a card label, stretched to the card's width and wrapped into a two-line box; the four primary staff cards sat 3 + 1 on tablet. Found by the tests: the Users card's accessible name said "1 active administrators".
 
 Earlier suites changed for the new role home and the URL-driven My Tickets: see "Documented changes to earlier suites" above.
+
+#### Issue #57 — Final hardening, regression and accessibility (2026-10-30)
+
+```
+$ npm run test:server     Test Files  26 passed (26)    Tests  926 passed (926)
+$ npm run test:client     Test Files  19 passed (19)    Tests  346 passed (346)
+$ npm run test:e2e        117 passed (4.1m)             # 83 Lab 2/3 + 34 Lab 4 (E2E-01 … E2E-06, STY-01 … STY-04, screenshot matrices)
+$ npm run lint (client)   0 errors; the 5 warnings are the existing ones in src/test/auth.tsx (a test fixture)
+```
+
+Turned to Pass: API-36 (every Lab 2/3 server suite in the same run), API-37, API-38, UI-22 (every Lab 2/3 client suite), STY-01 … STY-04, E2E-08 (every Lab 2/3 Playwright spec); ui-spec.md §5 filled. Server tests went from 909 to 926 (+17); client tests from 333 to 346 (+13).
+
+Found and fixed:
+
+- **Double submit on five Lab 2/3 forms.** Login, Change Password, Create Ticket, Public Comment / Internal Note and Create / Edit User / Set Initial Password relied on the busy state (or a state check), which only takes effect after a re-render, so two submits in the same tick both went out. They now share one ref-based guard, `useSingleFlight`, as do the attachment upload, removal and "appears resolved" dialogs. `SingleSubmit.test.tsx` fires two submits in one tick per form; with the guard disabled all five forms send twice and every case fails.
+- **No focus trap in any dialog (V-18).** Tab walked out of all five confirmation dialogs into the page behind; only the follow-up dialog handled Escape and returned focus. They now render through one `Modal` frame (focus in on open, Tab cycles inside, Escape, focus back to the trigger unless the screen sent it elsewhere on purpose). `Modal.test.tsx` and STY-02.
+- **No focus ring on the date input's calendar button (V-05).** Found by STY-02: the button sits in the input's shadow tree, where the input matches only `:focus-within`. The ring rule now covers it.
+- **Dates followed the machine's locale on the Lab 2/3 screens.** My Tickets, the Queue, both detail screens, comment times and the requester-resolved badge used `toLocaleString(undefined, …)`: a Thai-locale browser showed a Buddhist-era year and the times were not Bangkok time, unlike every Lab 4 screen. All now use `formatBangkok` / `formatBangkokDate` (ui-spec.md §1.5), and the dashboards' duplicate `relativeTime` is gone.
+
+STY-04 listens from the moment each role is signed in: the Login screen's session probe answers `401` to an anonymous visitor by design, and Chrome logs every 4xx resource load as a console error.
+
+README updated: Lab 4 features, project layout, a demo walkthrough, the end-to-end and screenshot commands, and the database scripts (INT-01, INT-02, PERF-01).
 
 ### Final run
 
