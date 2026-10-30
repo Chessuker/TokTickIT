@@ -2750,3 +2750,268 @@ body {
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* ==========================================================================
+ * Lab 4 — Dashboards (docs/lab-04/ui-spec.md §1.3, §1.4, §3.1, §3.2)
+ * ========================================================================== */
+
+.zg-metric-section {
+  margin-bottom: 1rem;
+}
+
+.zg-dash-subheading {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+}
+
+.zg-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.75rem;
+}
+
+.zg-metric-grid-compact {
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+}
+
+/* The whole card is the link, so the whole card is the target (≥ 44 px). */
+.zg-metric-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-height: 44px;
+  padding: 0.9rem 1rem;
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-border);
+  border-radius: 8px;
+  color: var(--zg-text);
+  text-decoration: none;
+  min-width: 0;
+}
+
+a.zg-metric-card:hover,
+a.zg-metric-card:focus-visible {
+  background: var(--zg-pale);
+  border-color: var(--zg-secondary);
+  color: var(--zg-text);
+}
+
+a.zg-metric-card:focus-visible {
+  outline: 2px solid var(--zg-secondary);
+  outline-offset: 2px;
+}
+
+.zg-metric-label {
+  color: var(--zg-text-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.zg-metric-value {
+  color: var(--zg-primary);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.zg-metric-compact {
+  padding: 0.65rem 0.8rem;
+}
+
+.zg-metric-compact .zg-metric-value {
+  font-size: 1.5rem;
+}
+
+.zg-metric-caption {
+  color: var(--zg-text-muted);
+  font-size: 0.8rem;
+}
+
+.zg-metric-cue {
+  margin-top: auto;
+  padding-top: 0.25rem;
+  color: var(--zg-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* "Waiting for you" > 0: a border and a caption, not colour alone. */
+.zg-metric-card.needs-attention {
+  border-left: 4px solid var(--zg-warning);
+}
+
+.zg-metric-attention {
+  color: #92400e;
+  font-weight: 600;
+}
+
+.zg-metric-skeleton {
+  height: 2rem;
+  width: 3.5rem;
+  border-radius: 6px;
+}
+
+.zg-metric-users-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.15rem 0.75rem;
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+}
+
+.zg-metric-users-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.zg-metric-users-list dt {
+  font-weight: 400;
+  color: var(--zg-text-muted);
+}
+
+.zg-metric-users-list dd {
+  margin: 0;
+  font-weight: 700;
+  color: var(--zg-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.zg-dash-lists {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.zg-dash-list {
+  min-width: 0;
+}
+
+.zg-dash-list-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.zg-dash-view-all {
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.zg-dash-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.zg-dash-rows li + li {
+  border-top: 1px solid var(--zg-border);
+}
+
+/* One link per row: number and badge on the first line, summary, then the time. */
+.zg-dash-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'number badge'
+    'summary summary'
+    'time time';
+  gap: 0.15rem 0.5rem;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.55rem 0.25rem;
+  color: var(--zg-text);
+  text-decoration: none;
+}
+
+.zg-dash-row:hover,
+.zg-dash-row:focus-visible {
+  background: var(--zg-pale);
+  color: var(--zg-text);
+}
+
+.zg-dash-row .zg-ticket-number {
+  grid-area: number;
+  font-size: 0.85rem;
+}
+
+.zg-dash-row .zg-badge {
+  grid-area: badge;
+  white-space: nowrap;
+}
+
+.zg-dash-summary {
+  grid-area: summary;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zg-dash-time {
+  grid-area: time;
+  color: var(--zg-text-muted);
+  font-size: 0.8rem;
+}
+
+.zg-dash-quick {
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 991.98px) {
+  .zg-dash-lists {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 575.98px) {
+  .zg-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .zg-metric-value {
+    font-size: 1.6rem;
+  }
+}
+
+/* A badge used as a card label hugs its text on one line (it was stretched by
+   the column flex and wrapped "Waiting for Requester" into a two-line box). */
+.zg-metric-label {
+  align-self: flex-start;
+  max-width: 100%;
+}
+
+.zg-metric-label .zg-badge {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+.zg-metric-compact {
+  padding: 0.65rem 0.7rem;
+}
+
+/* Tablet: the four primary cards as 2 × 2 rather than 3 + 1. */
+@media (min-width: 576px) and (max-width: 991.98px) {
+  .zg-metric-grid:not(.zg-metric-grid-compact) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Phones: two cards per row leave too little width for "Waiting for
+   Requester" on one line; wrap it inside the (still hugging) badge rather
+   than cut the status name off. */
+@media (max-width: 575.98px) {
+  .zg-metric-label .zg-badge {
+    white-space: normal;
+    text-overflow: clip;
+    border-radius: 0.75rem;
+  }
+}

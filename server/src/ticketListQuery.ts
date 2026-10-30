@@ -34,7 +34,10 @@ export const SORT_OPTIONS = [
   'ticketNumber:desc',
   'ticketNumber:asc',
   'priority:desc',
-  'priority:asc'
+  'priority:asc',
+  // Lab 4: the dashboard's "Recently updated" opens My Tickets in this order.
+  'updatedAt:desc',
+  'updatedAt:asc'
 ] as const;
 export type SortOption = (typeof SORT_OPTIONS)[number];
 
@@ -49,7 +52,12 @@ export interface TicketListQuery {
   /** Trimmed search term, or `null` when absent or empty after trimming. */
   search: string | null;
   categoryId: string | null;
-  status: TicketStatusValue | null;
+  /**
+   * Lab 4: repeatable, OR-ed (api-spec.md §4.4), so a dashboard card can open
+   * "all my active tickets". Empty when absent; a single value behaves exactly
+   * as the Lab 2 single `status` did.
+   */
+  statuses: TicketStatusValue[];
   sort: SortOption;
   page: number;
   pageSize: number;
@@ -104,17 +112,20 @@ export function parseTicketListQuery(raw: unknown): TicketListQueryValidation {
     }
   }
 
-  // --- status ---
-  let status: TicketStatusValue | null = null;
-  const rawStatus = asSingleString(input.status);
-  if (rawStatus === null) {
-    fieldErrors.status = 'status must be a single value.';
-  } else if (rawStatus !== undefined && rawStatus.trim() !== '') {
-    const trimmed = rawStatus.trim();
-    if (!(TICKET_STATUSES as readonly string[]).includes(trimmed)) {
-      fieldErrors.status = `status must be one of ${TICKET_STATUSES.join(', ')}.`;
-    } else {
-      status = trimmed as TicketStatusValue;
+  // --- status (repeatable, OR) ---
+  const statuses: TicketStatusValue[] = [];
+  const rawStatuses = asStringList(input.status);
+  if (rawStatuses === null) {
+    fieldErrors.status = 'status must be a text value.';
+  } else if (rawStatuses !== undefined) {
+    for (const value of rawStatuses) {
+      const trimmed = value.trim();
+      if (trimmed === '') continue;
+      if (!(TICKET_STATUSES as readonly string[]).includes(trimmed)) {
+        fieldErrors.status = `status must be one of ${TICKET_STATUSES.join(', ')}.`;
+        break;
+      }
+      if (!statuses.includes(trimmed as TicketStatusValue)) statuses.push(trimmed as TicketStatusValue);
     }
   }
 
@@ -164,7 +175,38 @@ export function parseTicketListQuery(raw: unknown): TicketListQueryValidation {
     return { fieldErrors, query: null };
   }
 
-  return { fieldErrors, query: { search, categoryId, status, sort, page, pageSize } };
+  return { fieldErrors, query: { search, categoryId, statuses, sort, page, pageSize } };
+}
+
+/** `status` may be repeated, so a string and an array of strings are both fine. */
+function asStringList(value: unknown): string[] | null | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value === 'string') return [value];
+  if (Array.isArray(value) && value.every((item) => typeof item === 'string')) return value as string[];
+  return null;
+}
+
+/**
+ * The Prisma `where` for a validated query, always scoped to the session
+ * Requester (BR-03). Shared with the dashboard drill-down check (UNIT-05), so
+ * the list a card opens is filtered by exactly this function.
+ */
+export function ticketListWhere(query: TicketListQuery, requesterId: string): Record<string, unknown> {
+  const where: Record<string, unknown> = { requesterId };
+  if (query.categoryId) where.categoryId = query.categoryId;
+  // One status keeps the exact Lab 2 clause; several (a dashboard card) are OR-ed.
+  if (query.statuses.length === 1) where.status = query.statuses[0];
+  else if (query.statuses.length > 1) where.status = { in: query.statuses };
+  if (query.search) {
+    // Case-insensitive partial match. `ticketNumber` is included so pasting a
+    // number straight from an email finds the ticket without picking a filter.
+    where.OR = [
+      { ticketNumber: { contains: query.search, mode: 'insensitive' } },
+      { summary: { contains: query.search, mode: 'insensitive' } },
+      { description: { contains: query.search, mode: 'insensitive' } }
+    ];
+  }
+  return where;
 }
 
 /** Strict integer parse: `"3.5"`, `"3abc"` and `""` are all rejected. */

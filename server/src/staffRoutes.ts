@@ -11,7 +11,7 @@ import { Router } from 'express';
 import type { Response } from 'express';
 import { prisma } from './db.js';
 import { getSessionUser, requireAuth, requireRole } from './auth.js';
-import { parseQueueQuery, toQueueOrderBy } from './queueQuery.js';
+import { parseQueueQuery, queueWhere, toQueueOrderBy } from './queueQuery.js';
 import { IT_PRIORITIES } from './queueQuery.js';
 import type { ItPriorityValue } from './queueQuery.js';
 import { sendError, sendInternalError, sendValidationFailed } from './httpErrors.js';
@@ -19,6 +19,7 @@ import { ATTACHMENT_SELECT, toAttachmentResponse } from './attachmentRules.js';
 import type { AttachmentRow } from './attachmentRules.js';
 import { COMMENT_SELECT, validateCommentBody } from './commentRules.js';
 import { staffActionsRouter } from './actionRoutes.js';
+import { staffDashboard } from './dashboardRoutes.js';
 import {
   TICKET_STATUSES,
   checkTransition,
@@ -45,6 +46,10 @@ staffRouter.use(requireAuth, requireRole('ITStaff', 'Administrator'));
 // Actions Taken (Lab 4 api-spec.md §3.1, §3.3, §3.4). Mounted after the gate
 // above, so it inherits it; its writes are open to Administrators (AD-02).
 staffRouter.use('/tickets/:id/actions', staffActionsRouter);
+
+// IT Staff / Administrator dashboard (Lab 4 api-spec.md §3.7). Behind the same
+// gate, so a Requester is refused before any count runs.
+staffRouter.get('/dashboard', staffDashboard);
 
 /** The `select` behind a `StaffTicketListItem` (api-spec.md §2). */
 export const STAFF_TICKET_LIST_SELECT = {
@@ -82,21 +87,16 @@ staffRouter.get('/tickets', async (req, res) => {
     return;
   }
 
-  const where: Record<string, unknown> = {};
-  if (query.search) {
-    where.OR = [
-      { ticketNumber: { contains: query.search, mode: 'insensitive' } },
-      { summary: { contains: query.search, mode: 'insensitive' } }
-    ];
+  const caller = getSessionUser(res);
+
+  // An Administrator can never be a follow-up assignee (BR-24), so "mine"
+  // would always be empty: a mistake worth naming rather than answering.
+  if (query.followUp === 'mine' && caller.role !== 'ITStaff') {
+    sendValidationFailed(res, { followUp: 'followUp=mine is only available to IT Staff.' });
+    return;
   }
-  if (query.statuses.length > 0) where.status = { in: query.statuses };
-  if (query.itPriority) where.itPriority = query.itPriority;
-  if (query.categoryId) where.categoryId = query.categoryId;
-  if (query.owner) {
-    if (query.owner.kind === 'me') where.ownerId = getSessionUser(res).id;
-    else if (query.owner.kind === 'unassigned') where.ownerId = null;
-    else where.ownerId = query.owner.id;
-  }
+
+  const where = queueWhere(query, caller.id);
 
   try {
     const [totalItems, tickets] = await Promise.all([

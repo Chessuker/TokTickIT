@@ -36,9 +36,9 @@ The handout's example rows keep their ids: **API-03** (create a valid Action, AC
 | UNIT-02 | Unit | BR-06, BR-07, AC-07 | Follow-up rules: required ⇒ note + assignee; not required with note/assignee given; open → Completed/Cancelled; closed → anything; required true → false; false → true on edit | Accepted / `400` field / `409` reason exactly per BR-06/BR-07 | `server/tests/lab-04/actionRules.test.ts` | Pass |
 | UNIT-03 | Unit | BR-14, BR-17, AC-12, AC-13 | Resolution gate: every combination of owner / actions since reopen / open follow-ups; never-reopened vs reopened with older and newer Actions | `ok` only when all three hold; `unmet` lists exactly the failing ones, in fixed order | `server/tests/lab-04/resolutionGate.test.ts` | Pass |
 | UNIT-04 | Unit | BR-13, BR-14, AC-14 | Transition matrix (L3 UNIT-02 retained) plus `permittedTransitions` with the gate closed and open | Matrix unchanged from Lab 3; `Resolved` omitted iff the gate is closed | `server/tests/lab-04/resolutionGate.test.ts` (the Lab 3 matrix test is unchanged and still passes) | Pass |
-| UNIT-05 | Unit | BR-22 … BR-27, AC-19, AC-20 | Dashboard metric definitions: each metric's Prisma `where` and its `href` produced from one definition; active-status set; Administrator nulls | Snapshot of `where` + `href` per metric; the queue/list parser re-reads each `href` into the same filter | `server/tests/lab-04/dashboardMetrics.test.ts` | Planned |
-| UNIT-06 | Unit | AC-20 | Requester list parser: repeatable `status`, single `status` (Lab 2 compatibility), invalid value, `sort=updatedAt:desc` | Parsed list / `400 fields.status` | `server/tests/lab-04/ticketListQuery.test.ts` | Planned |
-| UNIT-07 | Unit | AC-20 | Queue parser: `followUp=mine`, `requesterResolved=true`, invalid values, combination with Lab 3 parameters | Parsed / `400` naming the parameter | `server/tests/lab-03/queueQuery.test.ts` (extended) | Planned |
+| UNIT-05 | Unit | BR-22 … BR-27, AC-19, AC-20 | Dashboard metric definitions: each metric's Prisma `where` and its `href` produced from one definition; active-status set; Administrator nulls | Snapshot of `where` + `href` per metric; the queue/list parser re-reads each `href` into the same filter | `server/tests/lab-04/dashboardMetrics.test.ts` | Pass |
+| UNIT-06 | Unit | AC-20 | Requester list parser: repeatable `status`, single `status` (Lab 2 compatibility), invalid value, `sort=updatedAt:desc` | Parsed list / `400 fields.status` | `server/tests/lab-04/ticketListQuery.test.ts` | Pass |
+| UNIT-07 | Unit | AC-20 | Queue parser: `followUp=mine`, `requesterResolved=true`, invalid values, combination with Lab 3 parameters | Parsed / `400` naming the parameter | `server/tests/lab-03/queueQuery.test.ts` (extended: a new `describe` block; the defaults test gains the two new fields, §5) | Pass |
 | UNIT-08 | Unit | BR-30, AC-25 | Seed run twice against the upsert-only fake client | No `create`/`delete*` calls; same keys both runs; Tickets with 0, 1 and ≥ 3 Actions; at least one open follow-up per active IT Staff; Ploy has no Tickets | `server/tests/seed.test.ts` (extended) | Pass |
 | UNIT-09 | Unit | BR-08, BR-18, AC-16 | Static check of `server/src/**`: no `ticketStatusChange.update*` / `delete*`, no `ticketAction.delete*` | No match | `server/tests/lab-04/appendOnly.test.ts` | Pass |
 | UNIT-10 | Unit | BR-25, AD-11 | `formatBangkok` and `toUtcIso` across midnight UTC and month end | `2026-10-02T17:30Z` → "3 Oct 2026, 00:30"; round trip exact | `client/src/components/lab-04/dates.test.ts` | Pass |
@@ -79,24 +79,24 @@ The handout's example rows keep their ids: **API-03** (create a valid Action, AC
 
 | Test ID | Type | Requirement / AC | What It Tests | Expected Result | Automated Test File Path | Final Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| API-23 | API | AC-02, BR-21, BR-22 | Metric counts for a Requester with Tickets in every status | Each count = fixture count for that user; `generatedAt` present; one `$transaction` | `server/tests/lab-04/requester-dashboard.api.test.ts` | Planned |
-| API-24 | API | AC-02, BR-23 | Every count and list query carries `requesterId = session user`; `?requesterId=<other>` ignored | No query without the session `requesterId`; other Requesters' Tickets never returned | `server/tests/lab-04/requester-dashboard.api.test.ts` | Planned |
-| API-25 | API | AC-23, BR-25 | Lists: order, length cap 5, `DashboardTicket` shape (no description) | As specified | `server/tests/lab-04/requester-dashboard.api.test.ts` | Planned |
-| API-26 | API | AC-21, BR-26 | Requester with no Tickets | All counts `0` (present, not omitted); lists `[]`; `totalTickets: 0` | `server/tests/lab-04/requester-dashboard.api.test.ts` | Planned |
-| API-27 | API | AC-21 | IT Staff / Administrator / no session call the Requester dashboard | `403` / `403` / `401` | `server/tests/lab-04/requester-dashboard.api.test.ts` | Planned |
-| API-28 | API | AC-20, BR-27 | `GET /api/tickets` with each card's `href` query | `pagination.totalItems` equals the card count | `server/tests/lab-04/requester-dashboard.api.test.ts` | Planned |
+| API-23 | API | AC-02, BR-21, BR-22 | Metric counts for a Requester with Tickets in every status | Each count = fixture count for that user; `generatedAt` present; one `$transaction` | `server/tests/lab-04/requester-dashboard.api.test.ts` | Pass |
+| API-24 | API | AC-02, BR-23 | Every count and list query carries `requesterId = session user`; `?requesterId=<other>` ignored | No query without the session `requesterId`; other Requesters' Tickets never returned | `server/tests/lab-04/requester-dashboard.api.test.ts` | Pass |
+| API-25 | API | AC-23, BR-25 | Lists: order, length cap 5, `DashboardTicket` shape (no description) | As specified | `server/tests/lab-04/requester-dashboard.api.test.ts` | Pass |
+| API-26 | API | AC-21, BR-26 | Requester with no Tickets | All counts `0` (present, not omitted); lists `[]`; `totalTickets: 0` | `server/tests/lab-04/requester-dashboard.api.test.ts` | Pass |
+| API-27 | API | AC-21 | IT Staff / Administrator / no session call the Requester dashboard | `403` / `403` / `401` | `server/tests/lab-04/requester-dashboard.api.test.ts` | Pass |
+| API-28 | API | AC-20, BR-27 | `GET /api/tickets` with each card's `href` query | `pagination.totalItems` equals the card count | `server/tests/lab-04/requester-dashboard.api.test.ts` | Pass |
 
 ### API — Staff dashboard (`server/tests/lab-04/staff-dashboard.api.test.ts`)
 
 | Test ID | Type | Requirement / AC | What It Tests | Expected Result | Automated Test File Path | Final Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| API-29 | API | AC-19, BR-22 | `unassigned`, `requesterReportsResolved`, `byStatus`, `byItPriority` | Match fixture; inactive statuses excluded where defined | `server/tests/lab-04/staff-dashboard.api.test.ts` | Planned |
-| API-30 | API | AC-19, BR-24 | `mine`, `myFollowUps` (+ `ticketCount`), `myRecentActions` for two different IT Staff | Scoped to the caller; follow-ups on terminal Tickets not counted | `server/tests/lab-04/staff-dashboard.api.test.ts` | Planned |
-| API-31 | API | AC-19, BR-24 | Administrator variant | `viewer: Administrator`; `mine`, `myFollowUps` `null`; `users` block correct | `server/tests/lab-04/staff-dashboard.api.test.ts` | Planned |
-| API-32 | API | AC-21 | Requester / no session | `403` / `401` | `server/tests/lab-04/staff-dashboard.api.test.ts` | Planned |
-| API-33 | API | AC-20, BR-27 | `GET /api/staff/tickets` with each card's `href` query (incl. `followUp=mine`, `requesterResolved=true`); `followUp=mine` as Administrator | `totalItems` equals the count (`ticketCount` for follow-ups) / `400` | `server/tests/lab-04/staff-dashboard.api.test.ts` | Planned |
-| API-34 | API | AC-19, BR-25 | `urgent` and `recentlyUpdated` order and cap | As specified | `server/tests/lab-04/staff-dashboard.api.test.ts` | Planned |
-| API-35 | API | AC-30 | Response size and content of both dashboards on the full fixture | < 10 KB; no `description`, comment or note bodies | `server/tests/lab-04/staff-dashboard.api.test.ts` | Planned |
+| API-29 | API | AC-19, BR-22 | `unassigned`, `requesterReportsResolved`, `byStatus`, `byItPriority` | Match fixture; inactive statuses excluded where defined | `server/tests/lab-04/staff-dashboard.api.test.ts` | Pass |
+| API-30 | API | AC-19, BR-24 | `mine`, `myFollowUps` (+ `ticketCount`), `myRecentActions` for two different IT Staff | Scoped to the caller; follow-ups on terminal Tickets not counted | `server/tests/lab-04/staff-dashboard.api.test.ts` | Pass |
+| API-31 | API | AC-19, BR-24 | Administrator variant | `viewer: Administrator`; `mine`, `myFollowUps` `null`; `users` block correct | `server/tests/lab-04/staff-dashboard.api.test.ts` | Pass |
+| API-32 | API | AC-21 | Requester / no session | `403` / `401` | `server/tests/lab-04/staff-dashboard.api.test.ts` | Pass |
+| API-33 | API | AC-20, BR-27 | `GET /api/staff/tickets` with each card's `href` query (incl. `followUp=mine`, `requesterResolved=true`); `followUp=mine` as Administrator | `totalItems` equals the count (`ticketCount` for follow-ups) / `400` | `server/tests/lab-04/staff-dashboard.api.test.ts` | Pass |
+| API-34 | API | AC-19, BR-25 | `urgent` and `recentlyUpdated` order and cap | As specified | `server/tests/lab-04/staff-dashboard.api.test.ts` | Pass |
+| API-35 | API | AC-30 | Response size and content of both dashboards on the full fixture | < 10 KB; no `description`, comment or note bodies | `server/tests/lab-04/staff-dashboard.api.test.ts` | Pass |
 
 ### API — Regression and safe failure (`server/tests/lab-04/regression.api.test.ts`)
 
@@ -110,7 +110,7 @@ The handout's example rows keep their ids: **API-03** (create a valid Action, AC
 
 | Test ID | Type | Requirement / AC | What It Tests | Expected Result | Automated Test File Path | Final Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| INT-01 | Integration | AC-19, AC-02, BR-21 | On the seeded database, call both dashboards (as Jennifer, Ploy, Priya, admin) and run the raw SQL for every metric | Every API value equals its SQL value; output saved for Answer Part 5 | `server/scripts/verify-lab04-dashboards.ts` | Planned |
+| INT-01 | Integration | AC-19, AC-02, BR-21 | On the seeded database, call both dashboards (as Jennifer, Ploy, Priya, admin) and run the raw SQL for every metric | Every API value equals its SQL value; output saved for Answer Part 5 | `server/scripts/verify-lab04-dashboards.ts` | Pass |
 | INT-02 | Integration | AC-17, BR-19 | Two concurrent status PATCHes with the same `expectedVersion` | Exactly one `200`, one `409 STALE_UPDATE`; one history row | `server/scripts/verify-lab04-concurrency.ts` | Pass |
 | INT-03 | Integration | BR-06, DB-03 | Raw `INSERT` violating the follow-up `CHECK` | Rejected by PostgreSQL | `server/scripts/verify-lab04-concurrency.ts` | Pass |
 
@@ -130,15 +130,15 @@ The handout's example rows keep their ids: **API-03** (create a valid Action, AC
 | UI-10 | UI | AC-14, AC-16 | Successful status change refreshes header badge, operations card, tab counts and History without reload; Cancel dialog mentions open follow-ups | As stated | `client/src/components/lab-04/TicketWorkflow.test.tsx` | Pass |
 | UI-11 | UI | AC-17 | `409 STALE_UPDATE` on status/owner/IT Priority sends `expectedVersion`, then shows callout and Reload; Reload that fails with `500` or a network error | As stated; a failed Reload keeps the callout and the chosen value, says "Reload failed: …", and can be retried — the stale state ends only when the latest ticket loads | `client/src/components/lab-04/TicketWorkflow.test.tsx` | Pass |
 | UI-12 | UI | AC-16 | History tab: synthetic Created row, chronological rows, legacy line when empty, no controls | As stated | `client/src/components/lab-04/TicketWorkflow.test.tsx` | Pass |
-| UI-13 | UI | AC-02, AC-20, AC-29 | Requester dashboard cards: values, `href`s from the API, accessible names (singular/plural), "None right now" on zero, "Reply needed" cue | As stated | `client/src/components/lab-04/RequesterDashboard.test.tsx` | Planned |
-| UI-14 | UI | AC-23 | Requester lists: ≤ 5 rows, Bangkok times, each row links to `/tickets/:id`, empty messages | As stated | `client/src/components/lab-04/RequesterDashboard.test.tsx` | Planned |
-| UI-15 | UI | AC-21 | Requester dashboard loading skeleton, `totalTickets: 0` empty panel, failure + Retry, Refresh keeps old values while loading | As stated | `client/src/components/lab-04/RequesterDashboard.test.tsx` | Planned |
-| UI-16 | UI | AC-19 | Staff dashboard: primary, status and priority cards; Administrator variant hides "My" cards and shows Users | As stated | `client/src/components/lab-04/StaffDashboard.test.tsx` | Planned |
-| UI-17 | UI | AC-20 | Staff cards and lists link to the API-provided `href`s; "My recent actions" opens `#actions` | As stated | `client/src/components/lab-04/StaffDashboard.test.tsx` | Planned |
-| UI-18 | UI | AC-21 | Staff dashboard loading, all-zero, `403`, failure + Retry | Distinct states rendered | `client/src/components/lab-04/StaffDashboard.test.tsx` | Planned |
-| UI-19 | UI | AC-22 | Shell: Dashboard first per role, `aria-current`, Login and `Home` route to `/dashboard`, `from=` respected | As stated | `client/src/components/AppShell.test.tsx`, `client/src/components/lab-03/Login.test.tsx` (updated) | Planned |
-| UI-20 | UI | AC-20 | My Tickets reads `status` (repeated) and `sort` from the URL, shows chips, Clear resets URL | Correct `fetch` query; chips shown | `client/src/components/MyTickets.test.tsx` (extended) | Planned |
-| UI-21 | UI | AC-20 | Queue reads `followUp=mine` and `requesterResolved=true`, shows removable chips | As stated | `client/src/components/lab-03/StaffTicketQueue.test.tsx` (extended) | Planned |
+| UI-13 | UI | AC-02, AC-20, AC-29 | Requester dashboard cards: values, `href`s from the API, accessible names (singular/plural), "None right now" on zero, "Reply needed" cue | As stated | `client/src/components/lab-04/RequesterDashboard.test.tsx` | Pass |
+| UI-14 | UI | AC-23 | Requester lists: ≤ 5 rows, Bangkok times, each row links to `/tickets/:id`, empty messages | As stated | `client/src/components/lab-04/RequesterDashboard.test.tsx` | Pass |
+| UI-15 | UI | AC-21 | Requester dashboard loading skeleton, `totalTickets: 0` empty panel, failure + Retry, Refresh keeps old values while loading | As stated | `client/src/components/lab-04/RequesterDashboard.test.tsx` | Pass |
+| UI-16 | UI | AC-19 | Staff dashboard: primary, status and priority cards; Administrator variant hides "My" cards and shows Users | As stated | `client/src/components/lab-04/StaffDashboard.test.tsx` | Pass |
+| UI-17 | UI | AC-20 | Staff cards and lists link to the API-provided `href`s; "My recent actions" opens `#actions` | As stated | `client/src/components/lab-04/StaffDashboard.test.tsx` | Pass |
+| UI-18 | UI | AC-21 | Staff dashboard loading, all-zero, `403`, failure + Retry | Distinct states rendered | `client/src/components/lab-04/StaffDashboard.test.tsx` | Pass |
+| UI-19 | UI | AC-22 | Shell: Dashboard first per role, `aria-current`, Login and `Home` route to `/dashboard`, `from=` respected | As stated | `client/src/components/AppShell.test.tsx`, `client/src/components/lab-03/Login.test.tsx` (updated) | Pass |
+| UI-20 | UI | AC-20 | My Tickets reads `status` (repeated) and `sort` from the URL, shows chips, Clear resets URL | Correct `fetch` query; chips shown | `client/src/components/MyTickets.test.tsx` (extended) | Pass |
+| UI-21 | UI | AC-20 | Queue reads `followUp=mine` and `requesterResolved=true`, shows removable chips | As stated | `client/src/components/lab-03/StaffTicketQueue.test.tsx` (extended) | Pass |
 | UI-22 | UI | AC-26 | Every Lab 2/3 client suite re-run | All pass; only the role-home expectations change | `client/src/components/**/*.test.tsx` | Planned |
 | UI-23 | UI | V-07, V-17 | `Badges.tsx` renders the three follow-up badges with class, text and icon | Snapshot of classes and text | `client/src/components/lab-03/Badges.test.tsx` (extended) | Pass |
 
@@ -158,7 +158,7 @@ The handout's example rows keep their ids: **API-03** (create a valid Action, AC
 | MIG-01 | Migration | AC-24, BR-29 | `before` → `prisma migrate deploy` → `after` on a Lab 3 database, before the seed: counts of User, Ticket, Attachment, TicketComment, TicketInternalNote; every FK resolves; every Ticket `version = 0`; zero Actions and history | All equal; output pasted into §5 | `server/scripts/verify-lab04-migration.ts` | Pass |
 | MIG-02 | Migration | AC-24 | Rollback script → `after-rollback` (same counts, no Lab 4 tables) → Lab 3 server suite → re-deploy | Counts equal; suite green; re-deploy succeeds | `server/prisma/rollback/20261003000000_lab04_actions_taken.down.sql` + `verify-lab04-migration.ts` | Pass |
 | MIG-03 | Seed | AC-25, BR-30 | Seed twice on PostgreSQL; count Actions, history, users | Identical counts both runs | `server/src/seed.ts` (run manually, log in §5) | Pass |
-| PERF-01 | Performance smoke | AC-30 | 20 sequential requests each to both dashboards and one Actions list on the seeded local stack | p95 < 500 ms; dashboard bodies < 10 KB | `server/scripts/perf-lab04-smoke.ts` | Planned |
+| PERF-01 | Performance smoke | AC-30 | 20 sequential requests each to both dashboards and one Actions list on the seeded local stack | p95 < 500 ms; dashboard bodies < 10 KB | `server/scripts/perf-lab04-smoke.ts` | Pass |
 
 ### End-to-end (`e2e/lab-04/`)
 
@@ -168,8 +168,8 @@ The handout's example rows keep their ids: **API-03** (create a valid Action, AC
 | E2E-02 | E2E | AC-03, AC-05, AC-07, AC-11 | Chen owns a Ticket; Priya records an Action with follow-up assigned to Nattapong; assigning to inactive Robert is refused; Nattapong marks it done; Chen records a second Action; Jennifer (Requester) sees both read-only under "Work done by IT" in the same order | As stated | `e2e/lab-04/actions-taken-flow.spec.ts` | Pass |
 | E2E-03 | E2E | AC-12 … AC-16, AC-18 | Resolve blocked (hint lists conditions) → record Action / complete follow-up → Resolve (confirm) → History shows rows → Close → Reopen → Resolve blocked until a new Action → Cancel another Ticket with an open follow-up (dialog mentions it). Requester "appears resolved" leaves status unchanged | As stated | `e2e/lab-04/ticket-resolution.spec.ts` | Pass |
 | E2E-04 | E2E | AC-17 | Two IT Staff contexts on one Ticket; A changes status; B changes IT Priority from the stale page | B sees the stale callout; after Reload B's change applies; nothing lost | `e2e/lab-04/ticket-resolution.spec.ts` | Pass |
-| E2E-05 | E2E | AC-02, AC-19, AC-20, AC-22, AC-23 | Jennifer, Priya and admin log in → land on Dashboard (nav item current) → for every card, click it and compare the list total with the card value → list rows open details | All equal; landing correct | `e2e/lab-04/dashboards.spec.ts` | Planned |
-| E2E-06 | E2E | AC-21 | Ploy's empty dashboard with Create Ticket; Requester `fetch` to `/api/staff/dashboard` from the page → `403`; API stopped → safe failure + Retry | As stated | `e2e/lab-04/dashboards.spec.ts` | Planned |
+| E2E-05 | E2E | AC-02, AC-19, AC-20, AC-22, AC-23 | Jennifer, Priya and admin log in → land on Dashboard (nav item current) → for every card, click it and compare the list total with the card value → list rows open details | All equal; landing correct | `e2e/lab-04/dashboards.spec.ts` | Pass |
+| E2E-06 | E2E | AC-21 | Ploy's empty dashboard with Create Ticket; Requester `fetch` to `/api/staff/dashboard` from the page → `403`; API stopped → safe failure + Retry | As stated | `e2e/lab-04/dashboards.spec.ts` | Pass |
 | E2E-07 | E2E | AC-28, AC-29, AC-31 | Runs STY-01 … STY-04 and captures the screenshot matrix (§4); backend stopped once for the health/safe-failure capture | Every check passes | `e2e/lab-04/visual.spec.ts` | Planned |
 | E2E-08 | E2E | AC-26 | Every Lab 2 and Lab 3 Playwright spec on the Lab 4 build | All pass; only the role-home expectations change | `e2e/*.spec.ts`, `e2e/lab-03/*.spec.ts` | Planned |
 
@@ -219,20 +219,20 @@ Captured by `CAPTURE=1 npx playwright test e2e/lab-04/visual.spec.ts` (E2E-07) o
 
 | # | Screen | Viewport | Result | Screenshot |
 | --- | --- | --- | --- | --- |
-| R-01 | Requester Dashboard (Jennifer) | Desktop / Tablet / Mobile | | `requester-dashboard/dashboard-{desktop,tablet,mobile}.png` |
-| R-02 | Requester Dashboard empty (Ploy) | Desktop / Mobile | | `requester-dashboard/empty-{desktop,mobile}.png` |
-| R-03 | Requester Dashboard loading / failure | Desktop | | `requester-dashboard/{loading,failure}.png` |
-| R-04 | IT Staff Dashboard (Priya) | Desktop / Tablet / Mobile | | `staff-dashboard/dashboard-{desktop,tablet,mobile}.png` |
-| R-05 | Administrator Dashboard | Desktop / Mobile | | `staff-dashboard/admin-{desktop,mobile}.png` |
-| R-06 | Staff Dashboard failure / forbidden (Requester URL) | Desktop | | `staff-dashboard/{failure,forbidden}.png` |
+| R-01 | Requester Dashboard (Jennifer) | Desktop / Tablet / Mobile | Pass | `requester-dashboard/dashboard-{desktop,tablet,mobile}.png` |
+| R-02 | Requester Dashboard empty (Ploy) | Desktop / Mobile | Pass | `requester-dashboard/empty-{desktop,mobile}.png` |
+| R-03 | Requester Dashboard loading / failure | Desktop | Pass | `requester-dashboard/{loading,failure}.png` |
+| R-04 | IT Staff Dashboard (Priya) | Desktop / Tablet / Mobile | Pass — fixed in Issue #56 (the "Waiting for Requester" badge stretched into a two-line box on the status cards; the four primary cards sat 3 + 1 on tablet) | `staff-dashboard/dashboard-{desktop,tablet,mobile}.png` |
+| R-05 | Administrator Dashboard | Desktop / Mobile | Pass | `staff-dashboard/admin-{desktop,mobile}.png` |
+| R-06 | Staff Dashboard failure / forbidden (Requester URL) | Desktop | Pass | `staff-dashboard/{failure,forbidden}.png` |
 | R-07 | Actions Taken list | Desktop / Tablet / Mobile | Pass — fixed in Issue #54 (expanded row clipped at the right edge; see the #54 log) | `actions-taken/list-{desktop,tablet,mobile}.png` |
 | R-08 | Actions Taken create mode with follow-up + validation | Desktop / Tablet / Mobile | Pass | `actions-taken/create-{desktop,tablet,mobile}.png`, `create-validation-desktop.png` |
 | R-09 | Actions Taken view / edit mode; stale conflict | Desktop | Pass | `actions-taken/{view,edit,stale}-desktop.png` |
 | R-10 | Requester "Work done by IT" | Desktop / Tablet / Mobile | Pass | `actions-taken/requester-{desktop,tablet,mobile}.png` |
 | R-11 | Resolution gate hint; Cancel dialog with follow-ups; stale ticket operation | Desktop / Mobile (stale: Desktop) | Pass — fixed in Issue #55 (a wrapped gate-hint link put its bullet on the second line) | `workflow/{gate-hint,cancel-dialog}-{desktop,mobile}.png`, `workflow/stale-desktop.png` |
 | R-12 | History tab (Staff) and Requester status history | Desktop / Mobile | Pass — fixed in Issue #55 (the "·" before the time wrapped onto its own line on mobile) | `workflow/history-{desktop,mobile}.png`, `workflow/requester-history-{desktop,mobile}.png` |
-| R-13 | My Tickets drilled down (chips from URL) | Desktop / Mobile | | `requester-dashboard/drilldown-{desktop,mobile}.png` |
-| R-14 | Queue drilled down (`followUp=mine`) | Desktop / Mobile | | `staff-dashboard/drilldown-{desktop,mobile}.png` |
+| R-13 | My Tickets drilled down (chips from URL) | Desktop / Mobile | Pass (desktop; mobile is part of #58) | `requester-dashboard/drilldown-desktop.png` |
+| R-14 | Queue drilled down (`followUp=mine`) | Desktop / Mobile | Pass (desktop; mobile is part of #58) | `staff-dashboard/drilldown-desktop.png` |
 | R-15 | Lab 2/3 screens re-checked (Login, Change Password, Create Ticket, My Tickets, Ticket Detail, Queue, Staff Detail, Users) | All three | | `regression/*.png` |
 
 ---
@@ -267,6 +267,10 @@ Kept here so API-36 / UI-22 / E2E-08 can show that the earlier suites ran unchan
 | `client/src/components/TicketDetail.test.tsx` (Issue #54) | Fake server answers `GET /api/tickets/:id/actions` with an empty list | The Requester detail now shows "Work done by IT" (ui-spec.md §3.6) |
 | `e2e/lab-03/staff-ticket-flow.spec.ts` (Issue #54) | Three steps click the Public Comments tab before using it on the staff detail. The Administrator check now opens that tab before asserting there is no composer, so it still tests something | Same default-tab change. All other steps are unchanged |
 | `server/tests/lab-03/staff-ticket-detail.api.test.ts` (Issue #55) | The mocked client gains `ticket.updateMany` (answers `{ count: 1 }`), `ticketStatusChange.create` and `ticketAction.updateMany`. The ticket fixture gains `version: 0`, one Action with no follow-up and no reopen row. The detail test's `counts` expectation adds `actions: 1, openFollowUps: 0`. Every assertion on `prisma.ticket.update` data is unchanged | Each workflow write is now a transaction: a conditional version bump, the Lab 3 update, a history row (BR-18, BR-19). The one Action keeps the resolution gate open, so every Lab 3 transition is still permitted. `counts` gained two fields (api-spec.md §4.1, additive) |
+| `server/tests/lab-03/queueQuery.test.ts` (Issue #56) | The defaults test expects the two new fields `followUp: null` and `requesterResolved: false`; the Lab 4 cases (UNIT-07) are a new `describe` block | Two dashboard drill-down filters on the Queue (api-spec.md §4.3) |
+| `client/src/components/lab-03/Login.test.tsx`, `ChangePassword.test.tsx`, `RequireAuth.test.tsx`, `client/src/components/AppShell.test.tsx` (Issue #56) | Each gains a `/dashboard` route; every "lands on the role home" expectation now expects the Dashboard (Login ×6, Change Password ×1, the Forbidden state's home link, the app-name link); the three role-navigation lists start with "Dashboard". Every other assertion is unchanged | The dashboard is every role's home and first navigation item (BR-31, ui-spec.md §3.0). UI-22 / E2E-08 allow exactly this change |
+| `client/src/components/MyTickets.test.tsx` (Issue #56) | The status filter test clicks the "New" chip instead of choosing "New" in a dropdown; the three paging tests read "Showing 1 to 10 of 25 tickets" instead of "Showing 1–10 of 25 tickets" | Status is a set of chips set from the URL, and the result line matches the Queue's wording, so the total a card links to reads the same on both lists (ui-spec.md §3.7) |
+| `e2e/lab-03/authentication.spec.ts`, `staff-queue.spec.ts`, `user-administration.spec.ts`, `visual.spec.ts` (Issue #56) | Landing URLs expect `/dashboard` (7 in authentication, 2 in user-administration); the role-navigation lists start with "Dashboard" (4); the flows that start on the Queue or on Users open it themselves after signing in (5 in staff-queue, 6 in user-administration, 3 in visual). Every other step is unchanged | Same role-home change |
 | `client/src/components/lab-03/StaffTicketDetail.test.tsx` (Issue #55) | The tab test expects five tabs, with History last; End selects the fifth. The fake server answers `GET /api/tickets/:id/history` | History tab (ui-spec.md §3.5) |
 | `e2e/lab-03/staff-ticket-flow.spec.ts` (Issue #55) | The E2E-05 journey records one Action before Resolve, after checking that Resolved is not offered yet. The owner-rule test expects Resolved to stay out after Claim (no Action yet) and the gate hint to say so | Resolution gate (BR-14): a ticket with no Action cannot be resolved |
 | `e2e/lab-03/visual.spec.ts` (Issue #55) | R-16 (confirmation dialog on mobile) opens `TKT-2026-900004` (Open, one Action) instead of `…900008`, and expects `Open` after dismissing | `…900008` has an open follow-up, so Resolved is not offered there any more. The screenshot is the same dialog |
@@ -423,6 +427,33 @@ $ npm run test:client     Test Files  15 passed (15)    Tests  301 passed (301)
 $ npm run test:server     Test Files  21 passed (21)    Tests  835 passed (835)
 $ npm run test:e2e        97 passed (2.8m)
 ```
+
+#### Issue #56 — Role dashboards (2026-10-30)
+
+```
+$ npm run test:server     Test Files  25 passed (25)    Tests  909 passed (909)
+$ npm run test:client     Test Files  17 passed (17)    Tests  333 passed (333)
+$ npm run test:e2e        107 passed (3.2m)             # 83 Lab 2/3 + 24 Lab 4 (E2E-01 … E2E-06, screenshot matrices)
+$ npx tsx scripts/verify-lab04-dashboards.ts   # INT-01, full output in test-runs/int-01-dashboards.txt
+INT-01 PASSED: every dashboard number equals its SQL query, and every drill-down list total equals its card.
+$ npx tsx scripts/perf-lab04-smoke.ts          # PERF-01, output in test-runs/perf-01-smoke.txt
+  ok   GET /api/dashboard/requester       p95   12.9 ms   median   11.0 ms   body 2.9 KB
+  ok   GET /api/staff/dashboard           p95   21.5 ms   median   20.2 ms   body 4.9 KB
+  ok   GET …/TKT-2026-900007/actions      p95    8.4 ms   median    7.1 ms   body 2.0 KB
+PERF-01 PASSED
+```
+
+Turned to Pass: UNIT-05 … UNIT-07, API-23 … API-35, INT-01, PERF-01, UI-13 … UI-21, E2E-05, E2E-06; R-01 … R-06, R-13, R-14 (desktop) captured with `CAPTURE=1 npx playwright test e2e/lab-04/dashboards.spec.ts` into `artifacts/lab-04/screenshots/{requester-dashboard,staff-dashboard}/` (16 images). Server tests went from 835 to 909 (+74); client tests from 301 to 333 (+32).
+
+How drill-down consistency is proven: every card is defined once in `server/src/dashboardMetrics.ts` as a pair, the Prisma `where` that counts it and the `href` that lists it. UNIT-05 parses every `href` with the real list parser and builds the `where` with the real list builder (`ticketListWhere`, `queueWhere`, extracted from the two routes for this), and requires it to equal the card's. API-28 / API-33 then follow every `href` through the route on an in-memory fake that evaluates each `where` (`tests/lab-04/dashboardFake.ts`), and INT-01 does the same on PostgreSQL, next to a hand-written SQL query per number (76 checks for Jennifer, Ploy, Priya and the Administrator).
+
+INT-01 ran on the development database, which also holds the tickets every E2E run creates (Jennifer has 454), so its numbers are large; every one still matches. The Answer Part 5 capture is re-run on a freshly migrated and seeded database in #58.
+
+Deliberate mutations to `dashboardMetrics.ts`, each caught: dropping `requesterId` from "My open tickets" (6 tests fail), counting follow-ups on any Ticket instead of active ones (2), sorting Urgent newest first (2), counting IT Priority over every status (6).
+
+Found in the screenshots and fixed: the "Waiting for Requester" status badge, used as a card label, stretched to the card's width and wrapped into a two-line box; the four primary staff cards sat 3 + 1 on tablet. Found by the tests: the Users card's accessible name said "1 active administrators".
+
+Earlier suites changed for the new role home and the URL-driven My Tickets: see "Documented changes to earlier suites" above.
 
 ### Final run
 

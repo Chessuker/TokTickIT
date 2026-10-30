@@ -5,6 +5,7 @@ import {
   QUEUE_PAGE_SIZES,
   QUEUE_SORT_OPTIONS,
   parseQueueQuery,
+  queueWhere,
   toQueueOrderBy
 } from '../../src/queueQuery.js';
 import { TICKET_STATUSES } from '../../src/ticketListQuery.js';
@@ -29,6 +30,9 @@ describe('parseQueueQuery — defaults (AD-10)', () => {
       itPriority: null,
       owner: null,
       categoryId: null,
+      // Lab 4 (Issue #56): the two dashboard drill-down filters, off by default.
+      followUp: null,
+      requesterResolved: false,
       sort: QUEUE_DEFAULT_SORT,
       page: 1,
       pageSize: QUEUE_DEFAULT_PAGE_SIZE
@@ -172,5 +176,63 @@ describe('toQueueOrderBy', () => {
       'Closed',
       'Cancelled'
     ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Lab 4 UNIT-07 (Issue #56, api-spec.md §4.3, AC-20): the two dashboard
+// drill-down filters, alone and combined with the Lab 3 parameters.
+// ---------------------------------------------------------------------------
+
+describe('parseQueueQuery — followUp and requesterResolved (Lab 4 UNIT-07)', () => {
+  it('reads followUp=mine and requesterResolved=true', () => {
+    const { query, fieldErrors } = parseQueueQuery({ followUp: 'mine', requesterResolved: 'true' });
+    expect(fieldErrors).toEqual({});
+    expect(query?.followUp).toBe('mine');
+    expect(query?.requesterResolved).toBe(true);
+  });
+
+  it.each([
+    ['followUp', 'theirs'],
+    ['followUp', ['mine', 'mine']],
+    ['requesterResolved', 'false'],
+    ['requesterResolved', 'yes'],
+    ['requesterResolved', ['true', 'true']]
+  ])('refuses %s=%j naming the parameter', (key, value) => {
+    const { query, fieldErrors } = parseQueueQuery({ [key]: value });
+    expect(query).toBeNull();
+    expect(Object.keys(fieldErrors)).toEqual([key]);
+  });
+
+  it('combines (AND) with every Lab 3 filter', () => {
+    const { query } = parseQueueQuery({
+      followUp: 'mine',
+      requesterResolved: 'true',
+      status: ['Open', 'InProgress'],
+      itPriority: 'High',
+      owner: 'me',
+      search: 'vpn'
+    });
+
+    expect(queueWhere(query!, STAFF_ID)).toEqual({
+      OR: [
+        { ticketNumber: { contains: 'vpn', mode: 'insensitive' } },
+        { summary: { contains: 'vpn', mode: 'insensitive' } }
+      ],
+      status: { in: ['Open', 'InProgress'] },
+      itPriority: 'High',
+      ownerId: STAFF_ID,
+      requesterResolvedAt: { not: null },
+      AND: [
+        {
+          status: { in: ['New', 'Open', 'InProgress', 'WaitingForRequester', 'Reopened'] },
+          actions: { some: { followUpAssigneeId: STAFF_ID, followUpStatus: 'Open' } }
+        }
+      ]
+    });
+  });
+
+  it('adds nothing when neither is set, so every Lab 3 query is unchanged', () => {
+    expect(queueWhere(parseQueueQuery({ status: 'New' }).query!, STAFF_ID)).toEqual({ status: { in: ['New'] } });
   });
 });

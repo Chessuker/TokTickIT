@@ -14,6 +14,7 @@
  */
 import { SEARCH_MAX, TICKET_STATUSES } from './ticketListQuery.js';
 import type { TicketStatusValue } from './ticketListQuery.js';
+import { followUpTicketWhere } from './dashboardMetrics.js';
 
 export const IT_PRIORITIES = ['Low', 'Medium', 'High'] as const;
 export type ItPriorityValue = (typeof IT_PRIORITIES)[number];
@@ -43,6 +44,10 @@ export interface QueueQuery {
   itPriority: ItPriorityValue | null;
   owner: OwnerFilter | null;
   categoryId: string | null;
+  /** Lab 4 (api-spec.md §4.3): Tickets holding the caller's open follow-ups. */
+  followUp: 'mine' | null;
+  /** Lab 4 (api-spec.md §4.3): Tickets the Requester has said look resolved. */
+  requesterResolved: boolean;
   sort: QueueSortOption;
   page: number;
   pageSize: number;
@@ -154,6 +159,26 @@ export function parseQueueQuery(raw: unknown): QueueQueryValidation {
     }
   }
 
+  // --- followUp (Lab 4) ---
+  let followUp: 'mine' | null = null;
+  const rawFollowUp = asSingleString(input.followUp);
+  if (rawFollowUp === null) {
+    fieldErrors.followUp = 'followUp must be a single value.';
+  } else if (rawFollowUp !== undefined && rawFollowUp.trim() !== '') {
+    if (rawFollowUp.trim() === 'mine') followUp = 'mine';
+    else fieldErrors.followUp = 'followUp must be "mine".';
+  }
+
+  // --- requesterResolved (Lab 4) ---
+  let requesterResolved = false;
+  const rawRequesterResolved = asSingleString(input.requesterResolved);
+  if (rawRequesterResolved === null) {
+    fieldErrors.requesterResolved = 'requesterResolved must be a single value.';
+  } else if (rawRequesterResolved !== undefined && rawRequesterResolved.trim() !== '') {
+    if (rawRequesterResolved.trim() === 'true') requesterResolved = true;
+    else fieldErrors.requesterResolved = 'requesterResolved must be "true".';
+  }
+
   // --- sort ---
   let sort: QueueSortOption = QUEUE_DEFAULT_SORT;
   const rawSort = asSingleString(input.sort);
@@ -202,8 +227,37 @@ export function parseQueueQuery(raw: unknown): QueueQueryValidation {
 
   return {
     fieldErrors,
-    query: { search, statuses, itPriority, owner, categoryId, sort, page, pageSize }
+    query: { search, statuses, itPriority, owner, categoryId, followUp, requesterResolved, sort, page, pageSize }
   };
+}
+
+/**
+ * The Prisma `where` for a validated queue query. `callerId` is the session
+ * user, used only for the filters that say "me" (`owner=me`, `followUp=mine`);
+ * the route refuses `followUp=mine` for an Administrator before calling this.
+ * Shared with the dashboard drill-down check (UNIT-05).
+ */
+export function queueWhere(query: QueueQuery, callerId: string): Record<string, unknown> {
+  const where: Record<string, unknown> = {};
+  if (query.search) {
+    where.OR = [
+      { ticketNumber: { contains: query.search, mode: 'insensitive' } },
+      { summary: { contains: query.search, mode: 'insensitive' } }
+    ];
+  }
+  if (query.statuses.length > 0) where.status = { in: query.statuses };
+  if (query.itPriority) where.itPriority = query.itPriority;
+  if (query.categoryId) where.categoryId = query.categoryId;
+  if (query.owner) {
+    if (query.owner.kind === 'me') where.ownerId = callerId;
+    else if (query.owner.kind === 'unassigned') where.ownerId = null;
+    else where.ownerId = query.owner.id;
+  }
+  if (query.requesterResolved) where.requesterResolvedAt = { not: null };
+  // The same filter as the dashboard card (BR-27). AND-ed, so a status filter
+  // chosen on the Queue narrows it rather than replacing it.
+  if (query.followUp === 'mine') where.AND = [followUpTicketWhere(callerId)];
+  return where;
 }
 
 /**

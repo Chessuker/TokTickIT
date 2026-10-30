@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import MyTickets from './MyTickets'
 import { AuthStub, JENNIFER } from '../test/auth'
 
@@ -279,12 +279,13 @@ describe('MyTickets — search, filter and pagination (UI-04, AC-10)', () => {
     )
   })
 
-  it('filters by status through the dropdown', async () => {
+  // Lab 4 (Issue #56): Status is a set of chips (ui-spec.md §3.7), not a one-value dropdown.
+  it('filters by status through the chips', async () => {
     const user = userEvent.setup()
     const fetchMock = renderList(TICKETS)
     await screen.findByRole('table')
 
-    await user.selectOptions(screen.getByLabelText('Status'), 'New')
+    await user.click(within(screen.getByTestId('status-chips')).getByRole('button', { name: 'New' }))
 
     await waitFor(() => expect(lastTicketQuery(fetchMock).get('status')).toBe('New'))
   })
@@ -321,13 +322,13 @@ describe('MyTickets — search, filter and pagination (UI-04, AC-10)', () => {
     const fetchMock = renderList(many)
 
     await screen.findByRole('table')
-    expect(screen.getByText('Showing 1–10 of 25 tickets')).toBeInTheDocument()
+    expect(screen.getByText('Showing 1 to 10 of 25 tickets')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled()
 
     await user.click(screen.getByRole('button', { name: 'Next' }))
 
     await waitFor(() => expect(lastTicketQuery(fetchMock).get('page')).toBe('2'))
-    expect(await screen.findByText('Showing 11–20 of 25 tickets')).toBeInTheDocument()
+    expect(await screen.findByText('Showing 11 to 20 of 25 tickets')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Previous' })).toBeEnabled()
 
     await user.click(screen.getByRole('button', { name: 'Previous' }))
@@ -344,7 +345,7 @@ describe('MyTickets — search, filter and pagination (UI-04, AC-10)', () => {
     await user.click(screen.getByRole('button', { name: 'Page 3' }))
 
     await waitFor(() => expect(lastTicketQuery(fetchMock).get('page')).toBe('3'))
-    expect(await screen.findByText('Showing 21–25 of 25 tickets')).toBeInTheDocument()
+    expect(await screen.findByText('Showing 21 to 25 of 25 tickets')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled()
   })
 
@@ -443,5 +444,84 @@ describe('MyTickets — failure handling', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/could not reach the server/i)
     expect(screen.queryByTestId('empty-state')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Lab 4 UI-20 (Issue #56, ui-spec.md §3.7, AC-20): filters live in the URL, so
+// a dashboard card opens this list pre-filtered.
+// ---------------------------------------------------------------------------
+
+function UrlProbe() {
+  const location = useLocation()
+  return <p data-testid="url">{location.search}</p>
+}
+
+function renderAt(entry: string) {
+  const fetchMock = stubApi(TICKETS)
+  vi.stubGlobal('fetch', fetchMock)
+  render(
+    <MemoryRouter initialEntries={[entry]}>
+      <AuthStub user={JENNIFER}>
+        <Routes>
+          <Route
+            path="/tickets"
+            element={
+              <>
+                <MyTickets />
+                <UrlProbe />
+              </>
+            }
+          />
+        </Routes>
+      </AuthStub>
+    </MemoryRouter>,
+  )
+  return fetchMock
+}
+
+describe('MyTickets — filters from the URL (Lab 4 UI-20)', () => {
+  const ACTIVE = 'status=New&status=Open&status=InProgress&status=WaitingForRequester&status=Reopened'
+
+  it('sends every repeated status and the sort from a dashboard link, and shows them selected', async () => {
+    const fetchMock = renderAt(`/tickets?${ACTIVE}&sort=updatedAt:desc`)
+
+    await waitFor(() =>
+      expect(lastTicketQuery(fetchMock).getAll('status')).toEqual(['New', 'Open', 'InProgress', 'WaitingForRequester', 'Reopened']),
+    )
+    expect(lastTicketQuery(fetchMock).get('sort')).toBe('updatedAt:desc')
+
+    const chips = within(screen.getByTestId('status-chips'))
+    expect(chips.getByRole('button', { name: 'Waiting for Requester' })).toHaveAttribute('aria-pressed', 'true')
+    expect(chips.getByRole('button', { name: 'Resolved' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByLabelText('Sort by')).toHaveValue('updatedAt:desc')
+  })
+
+  it('writes a chip change into the URL', async () => {
+    const user = userEvent.setup()
+    renderAt('/tickets?status=Resolved')
+    await screen.findByTestId('status-chips')
+
+    await user.click(within(screen.getByTestId('status-chips')).getByRole('button', { name: 'Closed' }))
+
+    await waitFor(() => expect(screen.getByTestId('url')).toHaveTextContent('?status=Resolved&status=Closed'))
+  })
+
+  it('Clear Filters empties the URL and the request', async () => {
+    const user = userEvent.setup()
+    const fetchMock = renderAt('/tickets?status=Closed&search=VPN')
+    await waitFor(() => expect(lastTicketQuery(fetchMock).get('status')).toBe('Closed'))
+
+    await user.click(screen.getAllByRole('button', { name: 'Clear Filters' })[0])
+
+    await waitFor(() => expect(screen.getByTestId('url')).toHaveTextContent(/^$/))
+    await waitFor(() => expect(lastTicketQuery(fetchMock).has('status')).toBe(false))
+    expect(lastTicketQuery(fetchMock).has('search')).toBe(false)
+    expect(screen.getByLabelText('Search')).toHaveValue('')
+  })
+
+  it('ignores an unknown status in the URL instead of sending it', async () => {
+    const fetchMock = renderAt('/tickets?status=Done&status=Open')
+    await waitFor(() => expect(lastTicketQuery(fetchMock).getAll('status')).toEqual(['Open']))
   })
 })

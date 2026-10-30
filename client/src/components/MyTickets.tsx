@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { apiFetch } from '../apiClient'
 import { useAuth } from '../context/auth'
 import { useMediaQuery } from '../useMediaQuery'
+import { STATUS_PRESENTATION } from '../ticketStatus'
 import { ItPriorityBadge, OwnerName, PriorityBadge, StatusBadge } from './Badges'
 
 /**
@@ -21,6 +22,11 @@ import { ItPriorityBadge, OwnerName, PriorityBadge, StatusBadge } from './Badges
  * 3. Two different zero-result cases (AC-15). "You have no tickets" and "your
  *    search matched nothing" are distinct panels with distinct calls to action,
  *    decided from `totalItems` plus whether a filter is active.
+ *
+ * Lab 4 (ui-spec.md §3.7): the filters, sort and page live in the URL, as the
+ * Queue's already do, so a dashboard card can open this list pre-filtered and
+ * its total equals the card (AC-20). Status is a set of chips, because a card
+ * such as "My open tickets" means five statuses at once.
  *
  * Identity changes are handled above this component: AppShell keys the routed
  * subtree by the user id, so a different sign-in unmounts and remounts this
@@ -58,25 +64,57 @@ interface Pagination {
   hasPreviousPage: boolean
 }
 
-/** Only `New` exists this sprint (X-04); the dropdown grows with the enum. */
-const STATUSES = ['New'] as const
+/** The eight statuses in workflow order, with the badge's spelling. */
+const STATUS_OPTIONS = Object.entries(STATUS_PRESENTATION).map(([value, { label }]) => ({ value, label }))
 
 const SORT_CHOICES = [
   { value: 'createdAt:desc', label: 'Newest first' },
   { value: 'createdAt:asc', label: 'Oldest first' },
+  { value: 'updatedAt:desc', label: 'Recently updated' },
   { value: 'ticketNumber:desc', label: 'Ticket No. (high to low)' },
   { value: 'ticketNumber:asc', label: 'Ticket No. (low to high)' },
   { value: 'priority:desc', label: 'Priority (High first)' },
   { value: 'priority:asc', label: 'Priority (Low first)' },
 ] as const
 
+const SORT_VALUES: readonly string[] = [...SORT_CHOICES.map((choice) => choice.value), 'updatedAt:asc']
+const DEFAULT_SORT = 'createdAt:desc'
 const PAGE_SIZES = [10, 20, 50] as const
 
-const DEFAULT_FILTERS = {
-  search: '',
-  category: '',
-  status: '',
-  sort: 'createdAt:desc',
+/** What the URL asks for, with the defaults filled in. */
+interface ListParams {
+  search: string
+  category: string
+  statuses: string[]
+  sort: string
+  page: number
+  pageSize: number
+}
+
+function readParams(params: URLSearchParams): ListParams {
+  const page = Number(params.get('page') ?? '1')
+  const pageSize = Number(params.get('pageSize') ?? String(PAGE_SIZES[0]))
+  const sort = params.get('sort') ?? DEFAULT_SORT
+  return {
+    search: params.get('search') ?? '',
+    category: params.get('category') ?? '',
+    statuses: params.getAll('status').filter((status) => status in STATUS_PRESENTATION),
+    sort: SORT_VALUES.includes(sort) ? sort : DEFAULT_SORT,
+    page: Number.isInteger(page) && page >= 1 ? page : 1,
+    pageSize: (PAGE_SIZES as readonly number[]).includes(pageSize) ? pageSize : PAGE_SIZES[0],
+  }
+}
+
+/** Only what differs from the defaults is written to the URL. */
+function toSearchParams(next: ListParams): URLSearchParams {
+  const params = new URLSearchParams()
+  if (next.search) params.set('search', next.search)
+  if (next.category) params.set('category', next.category)
+  for (const status of next.statuses) params.append('status', status)
+  if (next.sort !== DEFAULT_SORT) params.set('sort', next.sort)
+  if (next.page !== 1) params.set('page', String(next.page))
+  if (next.pageSize !== PAGE_SIZES[0]) params.set('pageSize', String(next.pageSize))
+  return params
 }
 
 /** How long the search box waits after the last keystroke before re-fetching. */
@@ -92,13 +130,14 @@ function MyTickets() {
   const { user } = useAuth()
   const isMobile = useMediaQuery('(max-width: 767.98px)')
 
-  // `searchInput` is what the user is typing; `filters.search` is what has been
+  const [searchParams, setSearchParams] = useSearchParams()
+  const params = useMemo(() => readParams(searchParams), [searchParams])
+  const { page, pageSize } = params
+
+  // `searchInput` is what the user is typing; `params.search` is what has been
   // sent to the server. Keeping them apart is what makes the debounce possible
   // without the input feeling laggy.
-  const [searchInput, setSearchInput] = useState('')
-  const [filters, setFilters] = useState(DEFAULT_FILTERS)
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState<number>(PAGE_SIZES[0])
+  const [searchInput, setSearchInput] = useState(params.search)
 
   const [tickets, setTickets] = useState<TicketListItem[]>([])
   const [pagination, setPagination] = useState<Pagination | null>(null)
@@ -109,20 +148,34 @@ function MyTickets() {
   /** Bumped by the Retry control so a failed load can be repeated unchanged. */
   const [reloadToken, setReloadToken] = useState(0)
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setFilters((current) => (current.search === searchInput ? current : { ...current, search: searchInput }))
-    }, SEARCH_DEBOUNCE_MS)
+  /**
+   * Every change goes through the URL. Any change to what is being asked for
+   * sends the reader back to page 1: staying on page 4 of a narrower result
+   * set is how a filter comes to look like it matched nothing when it
+   * actually matched plenty. Functional form, so two quick chip clicks both
+   * build on the latest URL.
+   */
+  const update = useCallback(
+    (patch: Partial<ListParams>) => {
+      setSearchParams(
+        (current) => {
+          const next = { ...readParams(current), ...patch }
+          if (!('page' in patch)) next.page = 1
+          return toSearchParams(next)
+        },
+        { replace: !('page' in patch) },
+      )
+    },
+    [setSearchParams],
+  )
 
+  const setPage = (next: number) => update({ page: next })
+
+  useEffect(() => {
+    if (searchInput === params.search) return
+    const timer = window.setTimeout(() => update({ search: searchInput }), SEARCH_DEBOUNCE_MS)
     return () => window.clearTimeout(timer)
-  }, [searchInput])
-
-  // Any change to what is being asked for sends the reader back to page 1.
-  // Staying on page 4 of a narrower result set is how a filter comes to look
-  // like it matched nothing when it actually matched plenty.
-  useEffect(() => {
-    setPage(1)
-  }, [filters.search, filters.category, filters.status, filters.sort, pageSize])
+  }, [searchInput, params.search, update])
 
   useEffect(() => {
     let cancelled = false
@@ -147,14 +200,14 @@ function MyTickets() {
   // to state, so a slow answer for page 1 cannot overwrite a fast one for page 2.
   const requestIdRef = useRef(0)
 
+  const queryString = searchParams.toString()
+
   useEffect(() => {
-    const params = new URLSearchParams()
-    if (filters.search) params.set('search', filters.search)
-    if (filters.category) params.set('category', filters.category)
-    if (filters.status) params.set('status', filters.status)
-    params.set('sort', filters.sort)
-    params.set('page', String(page))
-    params.set('pageSize', String(pageSize))
+    // The API wants every value spelled out; the URL omits the defaults.
+    const query = toSearchParams(readParams(new URLSearchParams(queryString)))
+    query.set('sort', params.sort)
+    query.set('page', String(page))
+    query.set('pageSize', String(pageSize))
 
     const requestId = requestIdRef.current + 1
     requestIdRef.current = requestId
@@ -164,7 +217,7 @@ function MyTickets() {
 
     // The caller is the session cookie, never a query parameter (Lab 3
     // api-spec.md §1.1), so the server owns the ownership check.
-    apiFetch(`/api/tickets?${params.toString()}`)
+    apiFetch(`/api/tickets?${query.toString()}`)
       .then(async (res) => {
         const body = await res.json().catch(() => null)
         if (requestIdRef.current !== requestId) return
@@ -188,18 +241,20 @@ function MyTickets() {
       .finally(() => {
         if (requestIdRef.current === requestId) setLoading(false)
       })
-  }, [filters.search, filters.category, filters.status, filters.sort, page, pageSize, reloadToken])
+  }, [queryString, params.sort, page, pageSize, reloadToken])
 
-  const hasActiveFilters = Boolean(filters.search || filters.category || filters.status)
+  const hasActiveFilters = Boolean(params.search || params.category || params.statuses.length)
 
   const clearFilters = useCallback(() => {
     setSearchInput('')
-    setFilters(DEFAULT_FILTERS)
-    setPage(1)
-  }, [])
+    update({ search: '', category: '', statuses: [] })
+  }, [update])
 
-  const setFilter = (field: keyof typeof DEFAULT_FILTERS, value: string) => {
-    setFilters((current) => ({ ...current, [field]: value }))
+  const toggleStatus = (status: string) => {
+    const statuses = params.statuses.includes(status)
+      ? params.statuses.filter((value) => value !== status)
+      : [...params.statuses, status]
+    update({ statuses })
   }
 
   const totalItems = pagination?.totalItems ?? 0
@@ -258,32 +313,13 @@ function MyTickets() {
           <select
             id="ticket-category"
             className="zg-select"
-            value={filters.category}
-            onChange={(event) => setFilter('category', event.target.value)}
+            value={params.category}
+            onChange={(event) => update({ category: event.target.value })}
           >
             <option value="">All categories</option>
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
                 {category.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="zg-filter">
-          <label className="zg-label" htmlFor="ticket-status">
-            Status
-          </label>
-          <select
-            id="ticket-status"
-            className="zg-select"
-            value={filters.status}
-            onChange={(event) => setFilter('status', event.target.value)}
-          >
-            <option value="">All statuses</option>
-            {STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {status}
               </option>
             ))}
           </select>
@@ -296,16 +332,39 @@ function MyTickets() {
           <select
             id="ticket-sort"
             className="zg-select"
-            value={filters.sort}
-            onChange={(event) => setFilter('sort', event.target.value)}
+            value={params.sort}
+            onChange={(event) => update({ sort: event.target.value })}
           >
             {SORT_CHOICES.map((choice) => (
               <option key={choice.value} value={choice.value}>
                 {choice.label}
               </option>
             ))}
+            {/* Reachable only from a link; shown so the select never lies about the order. */}
+            {params.sort === 'updatedAt:asc' && <option value="updatedAt:asc">Least recently updated</option>}
           </select>
         </div>
+
+        {/* Lab 4: several statuses at once, set from a dashboard link or by hand. */}
+        <fieldset className="zg-filter zg-filter-wide">
+          <legend className="zg-label">Status</legend>
+          <div className="zg-chip-group" data-testid="status-chips">
+            {STATUS_OPTIONS.map((status) => {
+              const selected = params.statuses.includes(status.value)
+              return (
+                <button
+                  key={status.value}
+                  type="button"
+                  className={selected ? 'zg-chip zg-chip-toggle is-selected' : 'zg-chip zg-chip-toggle'}
+                  aria-pressed={selected}
+                  onClick={() => toggleStatus(status.value)}
+                >
+                  {status.label}
+                </button>
+              )
+            })}
+          </div>
+        </fieldset>
 
         <div className="zg-filter zg-filter-action">
           <button
@@ -377,7 +436,7 @@ function MyTickets() {
       {!loading && !error && totalItems > 0 && (
         <>
           <p className="zg-result-count" role="status">
-            Showing {rangeStart}–{rangeEnd} of {totalItems} ticket{totalItems === 1 ? '' : 's'}
+            Showing {rangeStart} to {rangeEnd} of {totalItems} ticket{totalItems === 1 ? '' : 's'}
           </p>
 
           {isMobile ? (
@@ -504,7 +563,7 @@ function MyTickets() {
             <button
               type="button"
               className="zg-btn zg-btn-secondary zg-btn-sm"
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              onClick={() => setPage(Math.max(1, page - 1))}
               disabled={!pagination?.hasPreviousPage}
             >
               Previous
@@ -529,7 +588,7 @@ function MyTickets() {
             <button
               type="button"
               className="zg-btn zg-btn-secondary zg-btn-sm"
-              onClick={() => setPage((current) => current + 1)}
+              onClick={() => setPage(page + 1)}
               disabled={!pagination?.hasNextPage}
             >
               Next
@@ -545,7 +604,7 @@ function MyTickets() {
                 id="ticket-page-size"
                 className="zg-select"
                 value={pageSize}
-                onChange={(event) => setPageSize(Number(event.target.value))}
+                onChange={(event) => update({ pageSize: Number(event.target.value) })}
               >
                 {PAGE_SIZES.map((size) => (
                   <option key={size} value={size}>

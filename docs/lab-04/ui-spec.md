@@ -97,9 +97,9 @@ The Lab 3 feedback table (L3 §2 "Feedback states") applies unchanged to every L
 | Header | "Welcome back, {first name}!" + "Here's what's happening in the queue." · **Refresh** |
 | Primary cards (row 1) | Unassigned · My open tickets · My open follow-ups ("across N tickets") · Requester reports resolved. Administrator: the two "My" cards are not rendered |
 | By status (row 2) | Compact cards: New · Open · In Progress · Waiting · Reopened · Resolved, each with its `StatusBadge` as the label, so the colour and the text match the Queue |
-| By IT Priority | Three compact cards: IT High · IT Medium · IT Low with `ItPriorityBadge` labels |
+| By IT Priority | Three compact cards: IT High · IT Medium · IT Low with `ItPriorityBadge` labels. The group heading reads "Active by IT Priority", because these count active Tickets only (§5 metric table) — "IT High: 6" next to a status row that includes Resolved would otherwise look inconsistent (Issue #56) |
 | Lists | **Urgent** (active, IT High, longest untouched first) · **Recently updated** · **My recent actions** (ticket number, description preview, action time, follow-up badge → `/staff/tickets/:id#actions`, which opens the Actions Taken tab) |
-| Administrator extra | **Users** card: active Requesters / IT Staff / Administrators and inactive count, linking to `/admin/users` |
+| Administrator extra | **Users** card: active Requesters / IT Staff / Administrators and inactive count, linking to `/admin/users`. It sits in the primary row where the two "My" cards would be; its accessible name lists all four numbers |
 | Quick actions | **Open Queue** · **My Queue** (`/staff/queue?owner=me`) · **Unassigned** (`/staff/queue?owner=unassigned`). Administrator: **Open Queue** · **Users** |
 | Empty | Each card shows 0 + "None right now"; lists: "No urgent tickets." · "No recent updates." · "You haven't recorded any actions yet." |
 | Loading / failure | As §3.1 |

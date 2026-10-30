@@ -131,6 +131,7 @@ test.describe('Responsive and visual pass (E2E-07, AC-33)', () => {
 
       test('Users (R-17 … R-19)', async ({ page }) => {
         await loginAs(page, ADMIN)
+        await page.goto('/admin/users') // Lab 4: the Administrator lands on /dashboard
         // Seeded accounts only; the E2E suite's accounts all use an "e2e." local part.
         await page.locator('#user-role').selectOption('ITStaff')
         await page.locator('#user-search').fill('@kmutt.ac.th')
@@ -146,9 +147,9 @@ test.describe('Responsive and visual pass (E2E-07, AC-33)', () => {
 test.describe('Shell and role navigation (R-06, R-07, V-10)', () => {
   test('each role sees only its own links (desktop)', async ({ page }) => {
     for (const [account, file, links] of [
-      [REQUESTER_A, 'shell-requester-desktop.png', ['My Tickets', 'Create Ticket']],
-      [IT_STAFF, 'shell-staff-desktop.png', ['Queue']],
-      [ADMIN, 'shell-admin-desktop.png', ['Users', 'Queue']],
+      [REQUESTER_A, 'shell-requester-desktop.png', ['Dashboard', 'My Tickets', 'Create Ticket']],
+      [IT_STAFF, 'shell-staff-desktop.png', ['Dashboard', 'Queue']],
+      [ADMIN, 'shell-admin-desktop.png', ['Dashboard', 'Users', 'Queue']],
     ] as const) {
       await page.context().clearCookies()
       await loginAs(page, account)
@@ -219,6 +220,7 @@ test.describe('Detail states (R-11, R-15, R-16, R-20)', () => {
 
   test('Users validation and 409 under Email (R-20)', async ({ page }) => {
     await loginAs(page, ADMIN)
+    await page.goto('/admin/users') // Lab 4: the Administrator lands on /dashboard
     await page.getByRole('button', { name: 'Create User' }).click()
     const panel = page.getByTestId('user-panel')
     await panel.getByLabel(/full name/i).fill('Duplicate Example')
@@ -348,6 +350,7 @@ test.describe('Measured checklist items (V-05, V-06, V-07)', () => {
 
     await page.context().clearCookies()
     await loginAs(page, ADMIN)
+    await page.goto('/admin/users') // Lab 4: the Administrator lands on /dashboard
     await expect(page.getByTestId('user-table')).toBeVisible()
     await measure('users')
 
