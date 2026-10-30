@@ -1,0 +1,5 @@
+PERF-01 — 20 sequential requests each (limit: p95 < 500 ms, dashboard body < 10 KB)
+  ok   GET /api/dashboard/requester       p95   12.4 ms   median   11.8 ms   body 2.9 KB
+  ok   GET /api/staff/dashboard           p95   26.1 ms   median   22.7 ms   body 4.9 KB
+  ok   GET …/TKT-2026-900007/actions      p95    9.4 ms   median    7.9 ms   body 2.0 KB
+PERF-01 PASSED

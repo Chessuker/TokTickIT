@@ -9,11 +9,11 @@ export const ROLE_LABELS: Record<Role, string> = {
   Administrator: 'Administrator',
 }
 
-/** Where each role lands after login and where "home" links point. */
+/** Where each role lands after login and where "home" links point: the dashboard for every role (Lab 4 BR-31). */
 export const ROLE_HOMES: Record<Role, string> = {
-  Requester: '/tickets',
-  ITStaff: '/staff/queue',
-  Administrator: '/admin/users',
+  Requester: '/dashboard',
+  ITStaff: '/dashboard',
+  Administrator: '/dashboard',
 }
 
 export interface NavItem {
@@ -26,11 +26,16 @@ export interface NavItem {
 /** Only the current role's links ever render (AC-11). */
 export const ROLE_NAV: Record<Role, NavItem[]> = {
   Requester: [
+    { to: '/dashboard', label: 'Dashboard' },
     { to: '/tickets', label: 'My Tickets', end: true },
     { to: '/tickets/new', label: 'Create Ticket' },
   ],
-  ITStaff: [{ to: '/staff/queue', label: 'Queue' }],
+  ITStaff: [
+    { to: '/dashboard', label: 'Dashboard' },
+    { to: '/staff/queue', label: 'Queue' },
+  ],
   Administrator: [
+    { to: '/dashboard', label: 'Dashboard' },
     { to: '/admin/users', label: 'Users' },
     { to: '/staff/queue', label: 'Queue' },
   ],
@@ -38,6 +43,8 @@ export const ROLE_NAV: Record<Role, NavItem[]> = {
 
 /** Which roles may open each application area; used to vet the `from` param. */
 export const AREA_ROLES: { prefix: string; roles: Role[] }[] = [
+  // Lab 4: one dashboard route for every role; the page picks the variant (AD-09).
+  { prefix: '/dashboard', roles: ['Requester', 'ITStaff', 'Administrator'] },
   { prefix: '/tickets', roles: ['Requester'] },
   { prefix: '/staff', roles: ['ITStaff', 'Administrator'] },
   { prefix: '/admin', roles: ['Administrator'] },

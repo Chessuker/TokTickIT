@@ -41,10 +41,11 @@ test.describe('Login, shell and logout (E2E-01)', () => {
     await expect(page).toHaveURL(/\/login/)
   })
 
-  test('a valid login shows the name and role in the shell and lands on My Tickets', async ({ page }) => {
+  // Lab 4 (Issue #56): every role lands on /dashboard (BR-31), with Dashboard as the first link.
+  test('a valid login shows the name and role in the shell and lands on the Dashboard', async ({ page }) => {
     await loginAs(page, REQUESTER_A)
 
-    await expect(page).toHaveURL(/\/tickets$/)
+    await expect(page).toHaveURL(/\/dashboard$/)
     await expect(page.getByRole('banner')).toContainText(REQUESTER_A.name)
     await expect(page.getByRole('banner')).toContainText('Requester')
     await expect(page.getByRole('navigation', { name: /main/i })).toContainText('My Tickets')
@@ -57,7 +58,7 @@ test.describe('Login, shell and logout (E2E-01)', () => {
 
     await page.reload()
 
-    await expect(page).toHaveURL(/\/tickets$/)
+    await expect(page).toHaveURL(/\/dashboard$/)
     await expect(page.locator('.zg-profile-name')).toContainText(REQUESTER_A.name)
   })
 
@@ -66,7 +67,7 @@ test.describe('Login, shell and logout (E2E-01)', () => {
 
     await page.goto('/login')
 
-    await expect(page).toHaveURL(/\/tickets$/)
+    await expect(page).toHaveURL(/\/dashboard$/)
   })
 
   test('logout ends the session: Back and direct URLs both land on Login', async ({ page }) => {
@@ -139,14 +140,14 @@ test.describe('Initial password change (E2E-02, MIG-02)', () => {
     await page.getByLabel(/^confirm new password/i).fill(newPassword)
     await page.getByRole('button', { name: /continue/i }).click()
 
-    await expect(page).toHaveURL(/\/tickets$/)
+    await expect(page).toHaveURL(/\/dashboard$/)
     await expect(page.locator('.zg-profile-name')).toContainText(REQUESTER_FIRST_LOGIN.name)
     await expect(page.getByRole('navigation', { name: /main/i })).toBeVisible()
 
     // The new password works on a fresh login and is no longer forced.
     await logout(page)
     await submitLogin(page, { email: REQUESTER_FIRST_LOGIN.email, password: newPassword })
-    await expect(page).toHaveURL(/\/tickets$/)
+    await expect(page).toHaveURL(/\/dashboard$/)
   })
 })
 
@@ -155,7 +156,7 @@ test.describe('Role navigation and forbidden pages (E2E-03)', () => {
     await loginAs(page, REQUESTER_A)
 
     const nav = page.getByRole('navigation', { name: /main/i })
-    await expect(nav.getByRole('link')).toHaveText(['My Tickets', 'Create Ticket'])
+    await expect(nav.getByRole('link')).toHaveText(['Dashboard', 'My Tickets', 'Create Ticket'])
 
     for (const path of ['/staff/queue', '/admin/users']) {
       await page.goto(path)
@@ -172,11 +173,11 @@ test.describe('Role navigation and forbidden pages (E2E-03)', () => {
     expect(status).toBe(404)
   })
 
-  test('IT Staff land on the queue, see the Queue link, and are refused /admin/users', async ({ page }) => {
+  test('IT Staff land on the Dashboard, see the Queue link, and are refused /admin/users', async ({ page }) => {
     await loginAs(page, IT_STAFF)
 
-    await expect(page).toHaveURL(/\/staff\/queue$/)
-    await expect(page.getByRole('navigation', { name: /main/i }).getByRole('link')).toHaveText(['Queue'])
+    await expect(page).toHaveURL(/\/dashboard$/)
+    await expect(page.getByRole('navigation', { name: /main/i }).getByRole('link')).toHaveText(['Dashboard', 'Queue'])
     await expect(page.getByRole('banner')).toContainText('IT Staff')
 
     await page.goto('/admin/users')
@@ -188,11 +189,11 @@ test.describe('Role navigation and forbidden pages (E2E-03)', () => {
     expect(refused.status()).toBe(403)
   })
 
-  test('an Administrator lands on Users and sees Users and Queue', async ({ page }) => {
+  test('an Administrator lands on the Dashboard and sees Dashboard, Users and Queue', async ({ page }) => {
     await loginAs(page, ADMIN)
 
-    await expect(page).toHaveURL(/\/admin\/users$/)
-    await expect(page.getByRole('navigation', { name: /main/i }).getByRole('link')).toHaveText(['Users', 'Queue'])
+    await expect(page).toHaveURL(/\/dashboard$/)
+    await expect(page.getByRole('navigation', { name: /main/i }).getByRole('link')).toHaveText(['Dashboard', 'Users', 'Queue'])
     await expect(page.getByRole('banner')).toContainText('Administrator')
   })
 })

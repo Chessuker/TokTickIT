@@ -6,6 +6,7 @@ import RequireAuth from './components/lab-03/RequireAuth'
 import StaffTicketDetail from './components/lab-03/StaffTicketDetail'
 import StaffTicketQueue from './components/lab-03/StaffTicketQueue'
 import UserManagement from './components/lab-03/UserManagement'
+import Dashboard from './components/lab-04/Dashboard'
 import { useAuth } from './context/auth'
 import CreateTicket from './pages/CreateTicket'
 import MyTickets from './pages/MyTickets'
@@ -35,6 +36,8 @@ function App() {
       <Route element={<RequireAuth />}>
         <Route element={<AppShell />}>
           <Route path="/change-password" element={<ChangePassword />} />
+          {/* Lab 4: every role's home; the page picks the role's variant (AD-09). */}
+          <Route path="/dashboard" element={<Dashboard />} />
         </Route>
       </Route>
 

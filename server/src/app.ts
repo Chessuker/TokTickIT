@@ -8,9 +8,10 @@ import { validateCreateTicketInput } from './ticketValidation.js';
 import { getSessionUser, requireAuth, requireRole } from './auth.js';
 import { authRouter } from './authRoutes.js';
 import { staffRouter } from './staffRoutes.js';
+import { requesterDashboardRouter } from './dashboardRoutes.js';
 import { listTicketActions } from './actionRoutes.js';
 import { adminRouter } from './adminRoutes.js';
-import { parseTicketListQuery, toOrderBy } from './ticketListQuery.js';
+import { parseTicketListQuery, ticketListWhere, toOrderBy } from './ticketListQuery.js';
 import { sendError, sendInternalError, sendValidationFailed } from './httpErrors.js';
 import {
   ALLOWED_TYPES_LABEL,
@@ -50,6 +51,10 @@ app.use('/api/auth', authRouter);
 // Role-gated inside the router, so every `/api/staff/*` path refuses a
 // Requester before lookup.
 app.use('/api/staff', staffRouter);
+
+// Lab 4: the Requester dashboard (api-spec.md §3.6). The staff dashboard lives
+// on `staffRouter` above.
+app.use('/api/dashboard', requesterDashboardRouter);
 
 // Administrator user management (api-spec.md §3.18 – §3.22). Same shape:
 // anything but an Administrator is refused before a user is loaded (AC-30).
@@ -277,18 +282,7 @@ app.get('/api/tickets', requireAuth, requireRole('Requester'), async (req, res) 
 
   const requester = getSessionUser(res);
 
-  const where: Record<string, unknown> = { requesterId: requester.id };
-  if (query.categoryId) where.categoryId = query.categoryId;
-  if (query.status) where.status = query.status;
-  if (query.search) {
-    // Case-insensitive partial match. `ticketNumber` is included so pasting a
-    // number straight from an email finds the ticket without picking a filter.
-    where.OR = [
-      { ticketNumber: { contains: query.search, mode: 'insensitive' } },
-      { summary: { contains: query.search, mode: 'insensitive' } },
-      { description: { contains: query.search, mode: 'insensitive' } }
-    ];
-  }
+  const where = ticketListWhere(query, requester.id);
 
   try {
     // The count and the page are read with the same `where`, so the metadata

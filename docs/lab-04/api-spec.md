@@ -291,7 +291,7 @@ Response gains `version`, `counts.actions`, `counts.openFollowUps` and `resoluti
 
 | New parameter | Values | Meaning |
 | --- | --- | --- |
-| `followUp` | `mine` | Only Tickets that have at least one Action with `followUpAssigneeId = caller` and `followUpStatus = Open`, with the Ticket in an active status. Administrator → `400` (they cannot be assignees, BR-24) |
+| `followUp` | `mine` | Only Tickets that have at least one Action with `followUpAssigneeId = caller` and `followUpStatus = Open`, with the Ticket in an active status. AND-ed with every other filter, so a status chosen on the Queue narrows it. Administrator → `400 fields.followUp` (they cannot be assignees, BR-24) |
 | `requesterResolved` | `true` | Only Tickets with `requesterResolvedAt IS NOT NULL` |
 
 Both combine (AND) with every existing filter. Any other value → `400` naming the parameter. All Lab 3 parameters keep their behaviour.
@@ -300,7 +300,7 @@ Both combine (AND) with every existing filter. Any other value → `400` naming 
 
 | Change | Detail |
 | --- | --- |
-| `status` | Now repeatable (OR), same as the Queue: `?status=Open&status=InProgress`. A single value behaves exactly as in Lab 2/3. Invalid values → `400` naming `status` |
+| `status` | Now repeatable (OR), same as the Queue: `?status=Open&status=InProgress`. A single value behaves exactly as in Lab 2/3 (the same `where: { status }` clause, not `in` of one); several become `status: { in: [...] }`. Invalid values → `400` naming `status` |
 | `sort` | Gains `updatedAt:desc` and `updatedAt:asc`; default stays `createdAt:desc` |
 
 ### 4.5 `GET /api/health`

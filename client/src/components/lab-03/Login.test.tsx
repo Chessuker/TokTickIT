@@ -26,6 +26,8 @@ function renderLogin(options: { user?: SessionUser | null; initialPath?: string;
       <AuthStub value={value}>
         <Routes>
           <Route path="/login" element={<Login />} />
+          {/* Lab 4 (Issue #56): the dashboard is every role's home (BR-31). */}
+          <Route path="/dashboard" element={<h1>Dashboard</h1>} />
           <Route path="/tickets" element={<h1>My Tickets</h1>} />
           <Route path="/tickets/new" element={<h1>Create Ticket</h1>} />
           <Route path="/staff/queue" element={<h1>Ticket Queue</h1>} />
@@ -185,7 +187,7 @@ describe('Login — failure handling (UI-04, AC-34)', () => {
 
     expect(screen.getByRole('button', { name: /signing in/i })).toBeDisabled()
     resolve(jsonResponse(200, JENNIFER) as Response)
-    await screen.findByRole('heading', { name: /my tickets/i })
+    await screen.findByRole('heading', { name: /^dashboard$/i })
   })
 
   it('posts JSON with credentials: include to /api/auth/login', async () => {
@@ -206,9 +208,9 @@ describe('Login — failure handling (UI-04, AC-34)', () => {
 
 describe('Login — success routing (UI-05, AC-02, AC-10)', () => {
   it.each([
-    ['Requester', JENNIFER, /my tickets/i],
-    ['IT Staff', PRIYA, /ticket queue/i],
-    ['Administrator', ADMIN, /^users$/i],
+    ['Requester', JENNIFER, /^dashboard$/i],
+    ['IT Staff', PRIYA, /^dashboard$/i],
+    ['Administrator', ADMIN, /^dashboard$/i],
   ])('sends a %s to their role home and publishes the user', async (_label, sessionUser, heading) => {
     vi.mocked(fetch).mockResolvedValue(jsonResponse(200, sessionUser) as Response)
     const setUser = vi.fn()
@@ -244,13 +246,13 @@ describe('Login — success routing (UI-05, AC-02, AC-10)', () => {
 
     await fillAndSubmit(JENNIFER.email, 'Requester1!')
 
-    expect(await screen.findByRole('heading', { name: /my tickets/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /^dashboard$/i })).toBeInTheDocument()
   })
 
   it('redirects an already signed-in visitor to their role home without rendering the form', () => {
     renderLogin({ user: PRIYA })
 
-    expect(screen.getByRole('heading', { name: /ticket queue/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /^dashboard$/i })).toBeInTheDocument()
     expect(screen.queryByLabelText(/email address/i)).not.toBeInTheDocument()
   })
 })
