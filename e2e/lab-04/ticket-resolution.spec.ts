@@ -36,6 +36,9 @@ async function shot(page: Page, file?: string, fullPage = true) {
   expect(scrollWidth, 'page must not scroll horizontally').toBeLessThanOrEqual(innerWidth)
   if (!CAPTURE || !file) return
   await page.waitForTimeout(250)
+  // A full-page capture of a scrolled page draws the sticky header where the
+  // viewport was; from the top, it sits where a reader expects it.
+  if (fullPage) await page.evaluate(() => window.scrollTo(0, 0))
   await page.screenshot({ path: path.join(SHOTS, file), fullPage })
 }
 
@@ -237,6 +240,7 @@ test.describe('Stale ticket operation (E2E-04, AC-17)', () => {
 test.describe('Workflow screenshots (R-11, R-12, V-03)', () => {
   const VIEWPORTS = {
     desktop: { width: 1280, height: 900 },
+    tablet: { width: 820, height: 1100 },
     mobile: { width: 375, height: 812 },
   } as const
 

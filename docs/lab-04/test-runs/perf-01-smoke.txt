@@ -1,5 +1,7 @@
+# Recorded 2026-10-31 on feature/58-e2e-release, code = lab4-staging ccbcc2e (PR #64), against a freshly migrated and seeded database (toktickit_release).
+
 PERF-01 — 20 sequential requests each (limit: p95 < 500 ms, dashboard body < 10 KB)
-  ok   GET /api/dashboard/requester       p95   12.4 ms   median   11.8 ms   body 2.9 KB
-  ok   GET /api/staff/dashboard           p95   26.1 ms   median   22.7 ms   body 4.9 KB
-  ok   GET …/TKT-2026-900007/actions      p95    9.4 ms   median    7.9 ms   body 2.0 KB
+  ok   GET /api/dashboard/requester       p95   18.4 ms   median   11.7 ms   body 2.1 KB
+  ok   GET /api/staff/dashboard           p95   28.7 ms   median   17.5 ms   body 5.1 KB
+  ok   GET …/TKT-2026-900007/actions      p95   20.7 ms   median    6.7 ms   body 2.0 KB
 PERF-01 PASSED

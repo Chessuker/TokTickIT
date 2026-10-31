@@ -1841,6 +1841,13 @@ body {
   gap: 0.5rem;
 }
 
+/* The Sort select never narrower than its longest choice ("Recently updated"
+   was cut to "Recently updatec" at 820 px, found in the #58 capture); the
+   toolbar wraps instead. */
+.zg-queue-toolbar .zg-filter:not(.zg-filter-search):not(.zg-filter-action) {
+  min-width: 13.5rem;
+}
+
 .zg-queue-filters {
   display: flex;
   flex-wrap: wrap;
@@ -2990,13 +2997,16 @@ a.zg-metric-card:focus-visible {
   max-width: 100%;
 }
 
+/* Never cut a status name off (V-04): when a card is too narrow for
+   "Waiting for Requester" on one line (six cards across at 1280 px, two on a
+   phone), the text wraps inside the badge, which still hugs it. Found in the
+   #58 release capture; the ellipsis used before hid the word. */
 .zg-metric-label .zg-badge {
   display: inline-block;
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
   vertical-align: top;
+  border-radius: 0.75rem;
 }
 
 .zg-metric-compact {
@@ -3010,13 +3020,3 @@ a.zg-metric-card:focus-visible {
   }
 }
 
-/* Phones: two cards per row leave too little width for "Waiting for
-   Requester" on one line; wrap it inside the (still hugging) badge rather
-   than cut the status name off. */
-@media (max-width: 575.98px) {
-  .zg-metric-label .zg-badge {
-    white-space: normal;
-    text-overflow: clip;
-    border-radius: 0.75rem;
-  }
-}

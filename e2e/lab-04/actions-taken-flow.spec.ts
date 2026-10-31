@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import type { Browser, Page } from '@playwright/test'
 import path from 'node:path'
+import { writeFileSync } from 'node:fs'
 import { IT_STAFF, REQUESTER_A, createTicket, loginAs, switchUser } from '../helpers'
 import type { Account } from '../helpers'
 
@@ -47,6 +48,9 @@ async function shot(page: Page, file: string, options: { fullPage?: boolean } = 
   await expectNoHorizontalOverflow(page)
   if (!CAPTURE) return
   await page.waitForTimeout(250)
+  // A full-page capture of a scrolled page draws the sticky header where the
+  // viewport was; from the top, it sits where a reader expects it.
+  if (options.fullPage ?? true) await page.evaluate(() => window.scrollTo(0, 0))
   await page.screenshot({ path: path.join(SHOTS, file), fullPage: options.fullPage ?? true })
 }
 
@@ -197,6 +201,9 @@ test.describe('Several IT Staff on one ticket (E2E-02, AC-03, AC-05, AC-07, AC-1
     await expect(first).toContainText('Follow-up open')
     await expect(first).toContainText(NATTAPONG.name)
     await expect(first.getByText('Owner')).toHaveCount(0)
+    // A save leaves the new row expanded, so the follow-up block is on screen.
+    await expect(page.getByTestId('action-view')).toContainText('Re-check battery drain after one full day.')
+    await shot(page, 'followup-assigned-desktop.png')
 
     // --- An inactive assignee is refused by the server (BR-06) -------------
     // Robert is inactive, so the form never offers him; a direct call is the
@@ -217,7 +224,25 @@ test.describe('Several IT Staff on one ticket (E2E-02, AC-03, AC-05, AC-07, AC-1
       },
     })
     expect(refused.status()).toBe(400)
-    expect((await refused.json()).error.fields.followUpAssigneeId).toMatch(/active IT Staff/)
+    const refusal = await refused.json()
+    expect(refusal.error.fields.followUpAssigneeId).toMatch(/active IT Staff/)
+    if (CAPTURE) {
+      // The request and the answer, verbatim, for Answer Part 6.
+      writeFileSync(
+        path.join(process.cwd(), 'docs', 'lab-04', 'test-runs', 'inactive-assignee-refused.txt'),
+        `# E2E-02: a follow-up assigned to Robert Wilson (inactive IT Staff), sent directly to the API as Priya.
+
+` +
+          `POST /api/staff/tickets/<ticket>/actions
+` +
+          `{ "followUpRequired": true, "followUpNote": "n", "followUpAssigneeId": "<Robert Wilson>", ... }
+
+` +
+          `HTTP ${refused.status()}
+${JSON.stringify(refusal, null, 2)}
+`,
+      )
+    }
 
     // --- Nattapong completes the follow-up assigned to him (AC-07) ----------
     await switchUser(page, NATTAPONG)
@@ -226,9 +251,11 @@ test.describe('Several IT Staff on one ticket (E2E-02, AC-03, AC-05, AC-07, AC-1
     await page.getByRole('button', { name: 'Mark follow-up done' }).click()
     const dialog = page.getByRole('dialog')
     await expect(dialog).toContainText('Re-check battery drain after one full day.')
+    await shot(page, 'followup-done-dialog-desktop.png', { fullPage: false })
     await dialog.getByRole('button', { name: 'Mark as done' }).click()
     await expect(page.getByText('Follow-up marked as done.')).toBeVisible()
     await expect(page.getByTestId('action-view')).toContainText(`Done by ${NATTAPONG.name}`)
+    await shot(page, 'followup-done-desktop.png')
 
     // --- Chen, the owner, records the second Action -------------------------
     await switchUser(page, CHEN)
@@ -243,6 +270,7 @@ test.describe('Several IT Staff on one ticket (E2E-02, AC-03, AC-05, AC-07, AC-1
     await expect(rows.nth(0).getByText('Owner')).toBeVisible()
     await expect(rows.nth(1)).toContainText('Ran a remote diagnostic on the laptop.')
     await expect(rows.nth(1)).toContainText('Follow-up done')
+    await shot(page, 'several-performers-desktop.png')
 
     // --- The Requester sees both, in the same order, with no controls ------
     await switchUser(page, REQUESTER_A)
@@ -279,6 +307,10 @@ test.describe('Actions Taken screenshots (R-07 … R-10, V-03)', () => {
         await shot(page, 'edit-desktop.png')
         // Exact: the #55 gate hint has a "…completed or cancelled" link too.
         await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+        await page.getByRole('button', { name: 'Cancel follow-up' }).first().click()
+        await expect(page.getByRole('dialog')).toContainText('Cancel this follow-up?')
+        await shot(page, 'followup-cancel-dialog-desktop.png', { fullPage: false })
+        await page.keyboard.press('Escape')
       }
 
       await page.getByRole('button', { name: /record action/i }).click()

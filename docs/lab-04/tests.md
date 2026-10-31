@@ -170,7 +170,7 @@ The handout's example rows keep their ids: **API-03** (create a valid Action, AC
 | E2E-04 | E2E | AC-17 | Two IT Staff contexts on one Ticket; A changes status; B changes IT Priority from the stale page | B sees the stale callout; after Reload B's change applies; nothing lost | `e2e/lab-04/ticket-resolution.spec.ts` | Pass |
 | E2E-05 | E2E | AC-02, AC-19, AC-20, AC-22, AC-23 | Jennifer, Priya and admin log in → land on Dashboard (nav item current) → for every card, click it and compare the list total with the card value → list rows open details | All equal; landing correct | `e2e/lab-04/dashboards.spec.ts` | Pass |
 | E2E-06 | E2E | AC-21 | Ploy's empty dashboard with Create Ticket; Requester `fetch` to `/api/staff/dashboard` from the page → `403`; API stopped → safe failure + Retry | As stated | `e2e/lab-04/dashboards.spec.ts` | Pass |
-| E2E-07 | E2E | AC-28, AC-29, AC-31 | Runs STY-01 … STY-04 and captures the screenshot matrix (§4); backend stopped once for the health/safe-failure capture | Every check passes | `e2e/lab-04/visual.spec.ts` | Planned |
+| E2E-07 | E2E | AC-28, AC-29, AC-31 | Runs STY-01 … STY-04 and captures the screenshot matrix (§4); backend stopped once for the health/safe-failure capture | Every check passes | `e2e/lab-04/visual.spec.ts` | Pass |
 | E2E-08 | E2E | AC-26 | Every Lab 2 and Lab 3 Playwright spec on the Lab 4 build | All pass; only the role-home expectations change | `e2e/*.spec.ts`, `e2e/lab-03/*.spec.ts` | Pass |
 
 ---
@@ -215,7 +215,7 @@ The handout's example rows keep their ids: **API-03** (create a valid Action, AC
 
 ## 4. Responsive and Visual Checklist
 
-Captured by `CAPTURE=1 npx playwright test e2e/lab-04/visual.spec.ts` (E2E-07) on a freshly seeded database. Paths are under `artifacts/lab-04/screenshots/`. Every row is checked against V-01 … V-20 in [ui-spec.md](ui-spec.md) §5. Filled in by Issue #58.
+Captured by `CAPTURE=1 npx playwright test e2e/lab-04` (E2E-07 and the screenshot tests of every Lab 4 spec) on 2026-10-31 against a freshly created, migrated and seeded database (`toktickit_release`), so the images show the seed and nothing left by earlier runs: the read-only captures first, then the journeys that create their own Tickets. Paths are under `artifacts/lab-04/screenshots/` (78 images). Every row is checked against V-01 … V-20 in [ui-spec.md](ui-spec.md) §5.
 
 | # | Screen | Viewport | Result | Screenshot |
 | --- | --- | --- | --- | --- |
@@ -229,11 +229,11 @@ Captured by `CAPTURE=1 npx playwright test e2e/lab-04/visual.spec.ts` (E2E-07) o
 | R-08 | Actions Taken create mode with follow-up + validation | Desktop / Tablet / Mobile | Pass | `actions-taken/create-{desktop,tablet,mobile}.png`, `create-validation-desktop.png` |
 | R-09 | Actions Taken view / edit mode; stale conflict | Desktop | Pass | `actions-taken/{view,edit,stale}-desktop.png` |
 | R-10 | Requester "Work done by IT" | Desktop / Tablet / Mobile | Pass | `actions-taken/requester-{desktop,tablet,mobile}.png` |
-| R-11 | Resolution gate hint; Cancel dialog with follow-ups; stale ticket operation | Desktop / Mobile (stale: Desktop) | Pass — fixed in Issue #55 (a wrapped gate-hint link put its bullet on the second line) | `workflow/{gate-hint,cancel-dialog}-{desktop,mobile}.png`, `workflow/stale-desktop.png` |
-| R-12 | History tab (Staff) and Requester status history | Desktop / Mobile | Pass — fixed in Issue #55 (the "·" before the time wrapped onto its own line on mobile) | `workflow/history-{desktop,mobile}.png`, `workflow/requester-history-{desktop,mobile}.png` |
-| R-13 | My Tickets drilled down (chips from URL) | Desktop / Mobile | Pass (desktop; mobile is part of #58) | `requester-dashboard/drilldown-desktop.png` |
-| R-14 | Queue drilled down (`followUp=mine`) | Desktop / Mobile | Pass (desktop; mobile is part of #58) | `staff-dashboard/drilldown-desktop.png` |
-| R-15 | Lab 2/3 screens re-checked (Login, Change Password, Create Ticket, My Tickets, Ticket Detail, Queue, Staff Detail, Users) | All three | | `regression/*.png` |
+| R-11 | Resolution gate hint; Cancel dialog with follow-ups; stale ticket operation | Desktop / Tablet / Mobile (stale: Desktop) | Pass — fixed in Issue #55 (a wrapped gate-hint link put its bullet on the second line) | `workflow/{gate-hint,cancel-dialog}-{desktop,tablet,mobile}.png`, `workflow/stale-desktop.png` |
+| R-12 | History tab (Staff) and Requester status history | Desktop / Tablet / Mobile | Pass — fixed in Issue #55 (the "·" before the time wrapped onto its own line on mobile) | `workflow/history-{desktop,tablet,mobile}.png`, `workflow/requester-history-{desktop,tablet,mobile}.png` |
+| R-13 | My Tickets drilled down (chips from URL) | Desktop / Tablet / Mobile | Pass | `requester-dashboard/drilldown-{desktop,tablet,mobile}.png` |
+| R-14 | Queue drilled down (`followUp=mine`) | Desktop / Tablet / Mobile | Pass | `staff-dashboard/drilldown-{desktop,tablet,mobile}.png` |
+| R-15 | Lab 2/3 screens re-checked (Login, Change Password, Create Ticket, My Tickets, Ticket Detail, Queue, Staff Detail, Users) | All three | Pass — fixed in Issue #58 (a September date, "Sept", ran into the next Queue column and the Sort select was clipped, both on tablet) | `regression/{login,change-password,my-tickets,create-ticket,ticket-detail,queue,staff-ticket-detail,internal-notes,users}-{desktop,tablet,mobile}.png` |
 
 ---
 
@@ -490,6 +490,36 @@ $ npm run test:server     Test Files  26 passed (26)    Tests  926 passed (926)
 $ npm run test:client     Test Files  19 passed (19)    Tests  357 passed (357)
 $ npm run test:e2e        130 passed (4.8m)
 $ npm --prefix client run lint   exit 0 — 0 errors; 5 warnings, all the existing ones in src/test/auth.tsx
+```
+
+#### Issue #58 — E2E, visual inspection and release (2026-10-31)
+
+Evidence re-captured on a fresh database: a new database `toktickit_release` was created in the same container (the development database was left alone), migrated and seeded, and the API was started against it.
+
+```
+$ npx tsx scripts/verify-lab04-dashboards.ts      INT-01 PASSED — 76 checks (test-runs/int-01-dashboards.txt)
+$ npx tsx scripts/verify-lab04-concurrency.ts     INT-02 PASSED, INT-03 PASSED (test-runs/int-02-03-concurrency.txt)
+$ npx tsx scripts/perf-lab04-smoke.ts             PERF-01 PASSED — p95 18.4 / 28.7 / 20.7 ms; bodies 2.1 / 5.1 KB (test-runs/perf-01-smoke.txt)
+$ CAPTURE=1 npx playwright test e2e/lab-04 -g "screenshots|E2E-05|E2E-06|E2E-07"   22 passed
+$ CAPTURE=1 npx playwright test e2e/lab-04 --grep-invert "…"                        29 passed
+```
+
+Added for the evidence the sheet asks for: tablet captures of the workflow screens, the drill-down lists at every width (R-13, R-14), the Lab 2/3 screens at every width including Internal Notes and an attachment (R-15, E2E-07 in `visual.spec.ts`), and in E2E-02 the follow-up assigned, done and cancel dialogs, two Actions by different IT Staff, and the inactive-assignee refusal saved verbatim (`test-runs/inactive-assignee-refused.txt`).
+
+Found in the release captures and fixed:
+
+- **"Waiting for Requester" cut to "Waiting for Reque…"** on the desktop status card: the badge label now wraps inside the badge at every width instead of being cut (V-04).
+- **"18 Sept 2026" ran into the next Queue column** on tablet: newer ICU data writes September as "Sept" in en-GB. Month names are now spelled by the date helpers (three letters, "Sep"), with a test over all twelve months.
+- **The Queue's Sort select was clipped** to "Recently updatec" at 820 px: the toolbar now wraps before the select gets narrower than its longest choice.
+- Full-page captures taken after the page had scrolled drew the sticky header mid-image (a capture artifact, not a page defect): every capture now starts from the top.
+
+Full run on this branch after the fixes, before the release PR:
+
+```
+$ npm run test:server     Test Files  26 passed (26)    Tests  926 passed (926)
+$ npm run test:client     Test Files  19 passed (19)    Tests  358 passed (358)
+$ npm run test:e2e        134 passed (5.1m)
+$ npm --prefix client run lint   0 errors; the 5 existing warnings in src/test/auth.tsx
 ```
 
 ### Final run
