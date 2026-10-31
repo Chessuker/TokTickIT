@@ -524,7 +524,7 @@ $ npm --prefix client run lint   0 errors; the 5 existing warnings in src/test/a
 
 ### Final run
 
-_Recorded by Issue #58 on `main` after the release merge: all suites, verbatim output in `test-runs/`._
+_Not yet run: recorded by Issue #58 on `main` after the release merge (server, client, E2E and lint, verbatim output in `test-runs/`). The latest full run so far is the regression run on `feature/58-e2e-release` in the Issue #58 log above._
 
 ---
 
