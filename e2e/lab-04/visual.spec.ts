@@ -179,28 +179,32 @@ async function unnamedControls(page: Page): Promise<string[]> {
 }
 
 test.describe('STY-02 — keyboard, names and dialogs (V-05, V-06, V-15, V-18)', () => {
-  test('both dashboards: focus ring on the first 30 stops; every card named with label and value', async ({ page }) => {
-    for (const account of [REQUESTER_A, IT_STAFF]) {
-      await page.context().clearCookies()
-      await loginAs(page, account)
-      await settled(page)
-      expect(await focusRingProblems(page), `${account.name} dashboard`).toEqual([])
-      expect(await unnamedControls(page)).toEqual([])
-      const names = await page.locator('a.zg-metric-card').evaluateAll((cards) => cards.map((card) => card.getAttribute('aria-label') ?? ''))
-      expect(names.length).toBeGreaterThan(3)
-      for (const name of names) expect(name).toMatch(/^[^:]+: \d+ /)
-    }
-  })
+  for (const [width, viewport] of Object.entries(VIEWPORTS)) {
+    test(`both dashboards at ${width}: focus ring on the first 30 stops; every card named with label and value`, async ({ page }) => {
+      await page.setViewportSize(viewport)
+      for (const account of [REQUESTER_A, IT_STAFF]) {
+        await page.context().clearCookies()
+        await loginAs(page, account)
+        await settled(page)
+        expect(await focusRingProblems(page), `${account.name} dashboard`).toEqual([])
+        expect(await unnamedControls(page)).toEqual([])
+        const names = await page.locator('a.zg-metric-card').evaluateAll((cards) => cards.map((card) => card.getAttribute('aria-label') ?? ''))
+        expect(names.length).toBeGreaterThan(3)
+        for (const name of names) expect(name).toMatch(/^[^:]+: \d+ /)
+      }
+    })
 
-  test('Actions Taken tab and its create form: focus ring on every stop; every control named', async ({ page }) => {
-    await loginAs(page, IT_STAFF)
-    await page.goto(`/staff/tickets/${await seededTicketId(page, 'TKT-2026-900007')}`)
-    await settled(page)
-    await page.getByRole('button', { name: /record action/i }).click()
-    expect(await focusRingProblems(page, 45)).toEqual([])
-    expect(await unnamedControls(page)).toEqual([])
-    await page.getByTestId('action-form').getByRole('button', { name: 'Cancel', exact: true }).click()
-  })
+    test(`Actions Taken tab and its create form at ${width}: focus ring on every stop; every control named`, async ({ page }) => {
+      await page.setViewportSize(viewport)
+      await loginAs(page, IT_STAFF)
+      await page.goto(`/staff/tickets/${await seededTicketId(page, 'TKT-2026-900007')}`)
+      await settled(page)
+      await page.getByRole('button', { name: /record action/i }).click()
+      expect(await focusRingProblems(page, 45)).toEqual([])
+      expect(await unnamedControls(page)).toEqual([])
+      await page.getByTestId('action-form').getByRole('button', { name: 'Cancel', exact: true }).click()
+    })
+  }
 
   test('the status dialog keeps Tab inside, closes on Escape and returns focus', async ({ page }) => {
     await loginAs(page, IT_STAFF)
@@ -222,6 +226,79 @@ test.describe('STY-02 — keyboard, names and dialogs (V-05, V-06, V-15, V-18)',
     await expect(status).toBeFocused()
     await expect(status).toHaveValue('Open')
   })
+})
+
+/**
+ * Whether each element is the one actually on top at its centre and corners,
+ * so nothing (the sticky header, a menu, the backdrop) covers it, and whether
+ * it sits inside the viewport.
+ */
+async function coveredOrOutside(page: Page, selector: string): Promise<string[]> {
+  return page.evaluate((query) => {
+    const out: string[] = []
+    for (const el of document.querySelectorAll(query)) {
+      const box = el.getBoundingClientRect()
+      if (box.width === 0) continue
+      const name = `${query} "${(el.textContent ?? '').trim().slice(0, 25)}"`
+      if (box.left < 0 || box.right > window.innerWidth || box.top < 0 || box.bottom > window.innerHeight) {
+        out.push(`${name} is outside the viewport`)
+      }
+      const inset = 3
+      const points: [number, number][] = [
+        [box.left + box.width / 2, box.top + box.height / 2],
+        [box.left + inset, box.top + inset],
+        [box.right - inset, box.top + inset],
+        [box.left + inset, box.bottom - inset],
+        [box.right - inset, box.bottom - inset],
+      ]
+      for (const [x, y] of points) {
+        const top = document.elementFromPoint(x, y)
+        if (top && !el.contains(top) && !top.contains(el)) {
+          out.push(`${name} is covered at (${Math.round(x)}, ${Math.round(y)}) by ${top.tagName.toLowerCase()}.${String(top.className).split(' ')[0]}`)
+          break
+        }
+      }
+    }
+    return out
+  }, selector)
+}
+
+test.describe('V-14 — no overlap between header, dialogs, sticky form bar and content', () => {
+  for (const [width, viewport] of Object.entries(VIEWPORTS)) {
+    test(`at ${width}: dialogs sit on top and inside the viewport; the form's buttons are not covered`, async ({ page }) => {
+      await page.setViewportSize(viewport)
+      await loginAs(page, IT_STAFF)
+      const problems: string[] = []
+
+      // The status dialog over the ticket, with the sticky header behind it.
+      await page.goto(`/staff/tickets/${await seededTicketId(page, 'TKT-2026-900004')}`)
+      await settled(page)
+      await page.getByLabel('Current Status').selectOption('Cancelled')
+      await expect(page.getByRole('dialog')).toBeVisible()
+      problems.push(...(await coveredOrOutside(page, '[role=dialog]')))
+      problems.push(...(await coveredOrOutside(page, '[role=dialog] button')))
+      await page.keyboard.press('Escape')
+
+      // The follow-up dialog.
+      await page.goto(`/staff/tickets/${await seededTicketId(page, 'TKT-2026-900007')}`)
+      await settled(page)
+      // On desktop the list is a table; the follow-up buttons are in the expanded row.
+      const view = page.getByTestId('action-row').first().getByRole('button', { name: /view/i })
+      if (await view.count()) await view.click()
+      await page.getByRole('button', { name: 'Mark follow-up done' }).first().click()
+      await expect(page.getByRole('dialog')).toBeVisible()
+      problems.push(...(await coveredOrOutside(page, '[role=dialog] button')))
+      await page.keyboard.press('Escape')
+
+      // The Actions form's buttons (a sticky bar on mobile), scrolled into view under the header.
+      await page.getByRole('button', { name: /record action/i }).click()
+      const save = page.getByTestId('action-form').getByRole('button', { name: 'Save action' })
+      await save.scrollIntoViewIfNeeded()
+      problems.push(...(await coveredOrOutside(page, '[data-testid=action-form] .zg-action-form-actions button')))
+
+      expect(problems).toEqual([])
+    })
+  }
 })
 
 /** WCAG contrast of every badge on the page, and that each has text (V-07, V-17). */
@@ -308,8 +385,9 @@ test.describe('STY-04 — console, links and leftovers (V-19, V-20)', () => {
     ['Administrator', ADMIN, 'admin'],
   ]
 
-  for (const [label, account, role] of happyPaths) {
-    test(`${label}: no console errors or warnings; every in-app link resolves; no placeholder text`, async ({ page }) => {
+  for (const [width, viewport] of Object.entries(VIEWPORTS)) for (const [label, account, role] of happyPaths) {
+    test(`${label} at ${width}: no console errors or warnings; every in-app link resolves; no placeholder text`, async ({ page }) => {
+      await page.setViewportSize(viewport)
       // Listening starts once signed in: the Login screen's session probe
       // (`GET /api/auth/me`) answers 401 to an anonymous visitor by design,
       // and Chrome logs every 4xx resource load as a console error.

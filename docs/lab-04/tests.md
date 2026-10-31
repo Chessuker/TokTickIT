@@ -478,6 +478,20 @@ STY-04 listens from the moment each role is signed in: the Login screen's sessio
 
 README updated: Lab 4 features, project layout, a demo walkthrough, the end-to-end and screenshot commands, and the database scripts (INT-01, INT-02, PERF-01).
 
+Review follow-up on the #57 PR (2026-10-31):
+
+- **Confirmation handlers.** `runConfirmation()` (status, reassign) and `confirmClose()` (follow-up) read React state to refuse a second click, which a same-tick double click gets past. Both now take the ref guard and release it in `finally`, so a failed attempt can be retried; `save()` on the Staff Ticket Detail takes one too, which also covers Claim.
+- **Tests added (11):** one request for a same-tick double click on the status and reassign confirmations, Claim, Mark follow-up done, Edit User, Set Initial Password and Internal Note; and a second attempt is sent after a failure (status confirmation, follow-up, Login, Public Comment with the text kept). Disabling the guard makes all 13 double-submit tests fail.
+- **Checklist closed.** STY-02 and STY-04 now run at 1280 / 820 / 375, and a new V-14 test checks with `elementFromPoint` that dialogs and the Actions form buttons are on top and inside the viewport at every width; ui-spec.md §5 is ☑ in every cell.
+- **No CI to check.** The repository has no `.github/workflows`, so there is no GitHub Actions run on the commit; the suites below were run locally on the final code.
+
+```
+$ npm run test:server     Test Files  26 passed (26)    Tests  926 passed (926)
+$ npm run test:client     Test Files  19 passed (19)    Tests  357 passed (357)
+$ npm run test:e2e        130 passed (4.8m)
+$ npm --prefix client run lint   exit 0 — 0 errors; 5 warnings, all the existing ones in src/test/auth.tsx
+```
+
 ### Final run
 
 _Recorded by Issue #58 on `main` after the release merge: all suites, verbatim output in `test-runs/`._

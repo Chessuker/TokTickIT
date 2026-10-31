@@ -17,6 +17,7 @@ import ActionsTaken from '../lab-04/ActionsTaken'
 import TicketHistory from '../lab-04/TicketHistory'
 import Modal from '../Modal'
 import { formatBangkok } from '../lab-04/dates'
+import { useSingleFlight } from '../../useSingleFlight'
 
 /**
  * IT Staff Ticket Detail (ui-spec.md §3.5, api-spec.md §3.10, §3.12 – §3.17 —
@@ -115,8 +116,8 @@ interface Confirmation {
   run: () => Promise<SaveOutcome>
 }
 
-/** What one operation came back with, so a confirmation dialog knows whether to close. */
-type SaveOutcome = 'ok' | 'stale' | 'error'
+/** What one operation came back with; `skipped` = another one was still in flight. */
+type SaveOutcome = 'ok' | 'stale' | 'error' | 'skipped'
 
 const IT_PRIORITIES = ['Low', 'Medium', 'High'] as const
 // Actions Taken is first and the default (Lab 4 ui-spec.md §3.3); History last (§3.5).
@@ -167,6 +168,8 @@ function StaffTicketDetail() {
   const [notice, setNotice] = useState<string | null>(null)
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null)
   const [confirming, setConfirming] = useState(false)
+  const saveFlight = useSingleFlight()
+  const confirmFlight = useSingleFlight()
   const [confirmError, setConfirmError] = useState<string | null>(null)
   /** The change the server refused as stale, still shown in its control (AC-17). */
   const [stale, setStale] = useState<{ control: Exclude<Control, null>; value: string } | null>(null)
@@ -294,6 +297,9 @@ function StaffTicketDetail() {
       body: Record<string, unknown>,
       value: string,
     ): Promise<SaveOutcome> => {
+      // One operation at a time, whichever control started it: a double
+      // click on Claim lands in the same tick as the first (Issue #57 review).
+      if (!saveFlight.begin()) return 'skipped'
       setBusy(control)
       setControlError(null)
       setNotice(null)
@@ -333,10 +339,11 @@ function StaffTicketDetail() {
         setControlError({ control, message: 'Could not reach the server. The change was not saved.' })
         return 'error'
       } finally {
+        saveFlight.end()
         setBusy(null)
       }
     },
-    [id, refresh],
+    [id, refresh, saveFlight],
   )
 
   useEffect(() => {
@@ -410,14 +417,24 @@ function StaffTicketDetail() {
 
   const runConfirmation = async () => {
     if (!confirmation) return
+    // Same-tick double click on Confirm: the busy state disables the button
+    // only after a re-render (Issue #57 review).
+    if (!confirmFlight.begin()) return
     setConfirming(true)
     setConfirmError(null)
 
-    const outcome = await confirmation.run()
-    setConfirming(false)
+    let outcome: SaveOutcome
+    try {
+      outcome = await confirmation.run()
+    } finally {
+      confirmFlight.end()
+      setConfirming(false)
+    }
 
     // A refusal stays in the dialog. A stale answer closes it: the stale
     // callout on the operations card is where the user decides what to do.
+    // Another operation was still running: nothing was sent, keep the dialog.
+    if (outcome === 'skipped') return
     if (outcome === 'error') {
       setControlError((current) => {
         if (current) setConfirmError(current.message)

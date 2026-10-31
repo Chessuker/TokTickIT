@@ -5,6 +5,7 @@ import { useAuth } from '../../context/auth'
 import { useMediaQuery } from '../../useMediaQuery'
 import { FollowUpBadge } from '../Badges'
 import Modal from '../Modal'
+import { useSingleFlight } from '../../useSingleFlight'
 import {
   defaultActionInput,
   formatBangkok,
@@ -824,6 +825,7 @@ function ActionsTaken({
 
   const [pendingClose, setPendingClose] = useState<PendingClose | null>(null)
   const [closing, setClosing] = useState(false)
+  const closeFlight = useSingleFlight()
   const [closeError, setCloseError] = useState<string | null>(null)
   const confirmButtonRef = useRef<HTMLButtonElement | null>(null)
   const closeTriggerRef = useRef<HTMLElement | null>(null)
@@ -919,7 +921,10 @@ function ActionsTaken({
   }
 
   const confirmClose = async () => {
-    if (!pendingClose || closing) return
+    if (!pendingClose) return
+    // `closing` is state, so a same-tick double click would read it as false
+    // twice; the ref guard closes that gap (Issue #57 review).
+    if (!closeFlight.begin()) return
     setClosing(true)
     setCloseError(null)
 
@@ -952,6 +957,7 @@ function ActionsTaken({
     } catch {
       setCloseError('Could not reach the server. Nothing was changed.')
     } finally {
+      closeFlight.end()
       setClosing(false)
     }
   }
