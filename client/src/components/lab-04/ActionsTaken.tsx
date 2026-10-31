@@ -4,6 +4,8 @@ import { apiFetch, apiJson, readApiError } from '../../apiClient'
 import { useAuth } from '../../context/auth'
 import { useMediaQuery } from '../../useMediaQuery'
 import { FollowUpBadge } from '../Badges'
+import Modal from '../Modal'
+import { useSingleFlight } from '../../useSingleFlight'
 import {
   defaultActionInput,
   formatBangkok,
@@ -823,6 +825,7 @@ function ActionsTaken({
 
   const [pendingClose, setPendingClose] = useState<PendingClose | null>(null)
   const [closing, setClosing] = useState(false)
+  const closeFlight = useSingleFlight()
   const [closeError, setCloseError] = useState<string | null>(null)
   const confirmButtonRef = useRef<HTMLButtonElement | null>(null)
   const closeTriggerRef = useRef<HTMLElement | null>(null)
@@ -918,7 +921,10 @@ function ActionsTaken({
   }
 
   const confirmClose = async () => {
-    if (!pendingClose || closing) return
+    if (!pendingClose) return
+    // `closing` is state, so a same-tick double click would read it as false
+    // twice; the ref guard closes that gap (Issue #57 review).
+    if (!closeFlight.begin()) return
     setClosing(true)
     setCloseError(null)
 
@@ -951,6 +957,7 @@ function ActionsTaken({
     } catch {
       setCloseError('Could not reach the server. Nothing was changed.')
     } finally {
+      closeFlight.end()
       setClosing(false)
     }
   }
@@ -1218,56 +1225,46 @@ function ActionsTaken({
       )}
 
       {pendingClose && (
-        <div className="zg-modal-backdrop" role="presentation">
-          <div
-            className="zg-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="followup-confirm-title"
-            onKeyDown={(event) => {
-              if (event.key === 'Escape' && !closing) dismissClose()
-            }}
-          >
-            <h2 className="zg-section-title" id="followup-confirm-title">
-              {pendingClose.status === 'Completed' ? 'Mark this follow-up as done?' : 'Cancel this follow-up?'}
-            </h2>
-            <p className="zg-hint">“{pendingClose.action.followUp.note}”</p>
-            <p className="zg-hint">
-              {pendingClose.status === 'Completed'
-                ? 'It will be recorded as done by you, now. This cannot be undone.'
-                : 'It will be recorded as cancelled by you, now. This cannot be undone; a new need is a new action.'}
+        <Modal labelledBy="followup-confirm-title" onEscape={() => !closing && dismissClose()}>
+          <h2 className="zg-section-title" id="followup-confirm-title">
+            {pendingClose.status === 'Completed' ? 'Mark this follow-up as done?' : 'Cancel this follow-up?'}
+          </h2>
+          <p className="zg-hint">“{pendingClose.action.followUp.note}”</p>
+          <p className="zg-hint">
+            {pendingClose.status === 'Completed'
+              ? 'It will be recorded as done by you, now. This cannot be undone.'
+              : 'It will be recorded as cancelled by you, now. This cannot be undone; a new need is a new action.'}
+          </p>
+
+          {closeError && (
+            <p className="zg-field-error" role="alert">
+              {closeError}
             </p>
+          )}
 
-            {closeError && (
-              <p className="zg-field-error" role="alert">
-                {closeError}
-              </p>
-            )}
-
-            <div className="zg-actions">
-              <button
-                type="button"
-                ref={confirmButtonRef}
-                className={pendingClose.status === 'Cancelled' ? 'zg-btn zg-btn-danger' : 'zg-btn zg-btn-primary'}
-                onClick={() => void confirmClose()}
-                disabled={closing}
-              >
-                {closing ? (
-                  <>
-                    <span className="zg-spinner-sm" aria-hidden="true" /> Saving...
-                  </>
-                ) : pendingClose.status === 'Completed' ? (
-                  'Mark as done'
-                ) : (
-                  'Cancel follow-up'
-                )}
-              </button>
-              <button type="button" className="zg-btn zg-btn-secondary" onClick={dismissClose} disabled={closing}>
-                Keep it open
-              </button>
-            </div>
+          <div className="zg-actions">
+            <button
+              type="button"
+              ref={confirmButtonRef}
+              className={pendingClose.status === 'Cancelled' ? 'zg-btn zg-btn-danger' : 'zg-btn zg-btn-primary'}
+              onClick={() => void confirmClose()}
+              disabled={closing}
+            >
+              {closing ? (
+                <>
+                  <span className="zg-spinner-sm" aria-hidden="true" /> Saving...
+                </>
+              ) : pendingClose.status === 'Completed' ? (
+                'Mark as done'
+              ) : (
+                'Cancel follow-up'
+              )}
+            </button>
+            <button type="button" className="zg-btn zg-btn-secondary" onClick={dismissClose} disabled={closing}>
+              Keep it open
+            </button>
           </div>
-        </div>
+        </Modal>
       )}
     </section>
   )

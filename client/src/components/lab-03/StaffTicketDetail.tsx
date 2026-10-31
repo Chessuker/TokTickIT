@@ -15,7 +15,9 @@ import CommentsPanel from './CommentsPanel'
 import InternalNotesPanel from './InternalNotesPanel'
 import ActionsTaken from '../lab-04/ActionsTaken'
 import TicketHistory from '../lab-04/TicketHistory'
+import Modal from '../Modal'
 import { formatBangkok } from '../lab-04/dates'
+import { useSingleFlight } from '../../useSingleFlight'
 
 /**
  * IT Staff Ticket Detail (ui-spec.md §3.5, api-spec.md §3.10, §3.12 – §3.17 —
@@ -114,8 +116,8 @@ interface Confirmation {
   run: () => Promise<SaveOutcome>
 }
 
-/** What one operation came back with, so a confirmation dialog knows whether to close. */
-type SaveOutcome = 'ok' | 'stale' | 'error'
+/** What one operation came back with; `skipped` = another one was still in flight. */
+type SaveOutcome = 'ok' | 'stale' | 'error' | 'skipped'
 
 const IT_PRIORITIES = ['Low', 'Medium', 'High'] as const
 // Actions Taken is first and the default (Lab 4 ui-spec.md §3.3); History last (§3.5).
@@ -131,19 +133,6 @@ const CONFIRMED_TARGETS = ['Resolved', 'Closed', 'Cancelled']
  * decides what is permitted.
  */
 const RESOLVABLE_FROM = ['Open', 'InProgress', 'WaitingForRequester', 'Reopened']
-
-function formatDateTime(value: string | null): string {
-  if (!value) return '—'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '—'
-  return date.toLocaleString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
 
 /** One read-only row of the ticket (ui-spec.md §3.5 "Read-only group"). */
 function ReadOnlyField({
@@ -179,6 +168,8 @@ function StaffTicketDetail() {
   const [notice, setNotice] = useState<string | null>(null)
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null)
   const [confirming, setConfirming] = useState(false)
+  const saveFlight = useSingleFlight()
+  const confirmFlight = useSingleFlight()
   const [confirmError, setConfirmError] = useState<string | null>(null)
   /** The change the server refused as stale, still shown in its control (AC-17). */
   const [stale, setStale] = useState<{ control: Exclude<Control, null>; value: string } | null>(null)
@@ -306,6 +297,9 @@ function StaffTicketDetail() {
       body: Record<string, unknown>,
       value: string,
     ): Promise<SaveOutcome> => {
+      // One operation at a time, whichever control started it: a double
+      // click on Claim lands in the same tick as the first (Issue #57 review).
+      if (!saveFlight.begin()) return 'skipped'
       setBusy(control)
       setControlError(null)
       setNotice(null)
@@ -345,10 +339,11 @@ function StaffTicketDetail() {
         setControlError({ control, message: 'Could not reach the server. The change was not saved.' })
         return 'error'
       } finally {
+        saveFlight.end()
         setBusy(null)
       }
     },
-    [id, refresh],
+    [id, refresh, saveFlight],
   )
 
   useEffect(() => {
@@ -422,14 +417,24 @@ function StaffTicketDetail() {
 
   const runConfirmation = async () => {
     if (!confirmation) return
+    // Same-tick double click on Confirm: the busy state disables the button
+    // only after a re-render (Issue #57 review).
+    if (!confirmFlight.begin()) return
     setConfirming(true)
     setConfirmError(null)
 
-    const outcome = await confirmation.run()
-    setConfirming(false)
+    let outcome: SaveOutcome
+    try {
+      outcome = await confirmation.run()
+    } finally {
+      confirmFlight.end()
+      setConfirming(false)
+    }
 
     // A refusal stays in the dialog. A stale answer closes it: the stale
     // callout on the operations card is where the user decides what to do.
+    // Another operation was still running: nothing was sent, keep the dialog.
+    if (outcome === 'skipped') return
     if (outcome === 'error') {
       setControlError((current) => {
         if (current) setConfirmError(current.message)
@@ -818,13 +823,13 @@ function StaffTicketDetail() {
               <span className="zg-muted"> · {ticket.requester.department}</span>
             ) : null}
           </ReadOnlyField>
-          <ReadOnlyField label="Created">{formatDateTime(ticket.createdAt)}</ReadOnlyField>
-          <ReadOnlyField label="Updated">{formatDateTime(ticket.updatedAt)}</ReadOnlyField>
+          <ReadOnlyField label="Created">{formatBangkok(ticket.createdAt)}</ReadOnlyField>
+          <ReadOnlyField label="Updated">{formatBangkok(ticket.updatedAt)}</ReadOnlyField>
           {ticket.resolvedAt && (
-            <ReadOnlyField label="Resolved">{formatDateTime(ticket.resolvedAt)}</ReadOnlyField>
+            <ReadOnlyField label="Resolved">{formatBangkok(ticket.resolvedAt)}</ReadOnlyField>
           )}
           {ticket.closedAt && (
-            <ReadOnlyField label="Closed">{formatDateTime(ticket.closedAt)}</ReadOnlyField>
+            <ReadOnlyField label="Closed">{formatBangkok(ticket.closedAt)}</ReadOnlyField>
           )}
           <ReadOnlyField label="Summary" wide>
             {ticket.summary}
@@ -943,7 +948,7 @@ function StaffTicketDetail() {
                     <li key={file.id} className="zg-file-row">
                       <span className="zg-file-name">{file.fileName}</span>
                       <span className="zg-file-size">{formatBytes(file.sizeBytes)}</span>
-                      <span className="zg-file-size">Uploaded {formatDateTime(file.uploadedAt)}</span>
+                      <span className="zg-file-size">Uploaded {formatBangkok(file.uploadedAt)}</span>
                       <span className="zg-file-actions">
                         <button
                           type="button"
@@ -974,7 +979,7 @@ function StaffTicketDetail() {
                         <span className="zg-badge zg-badge-removed">Removed</span>
                         <span className="zg-file-size">{formatBytes(file.sizeBytes)}</span>
                         <span className="zg-file-removed-meta">
-                          Removed {formatDateTime(file.removedAt)} — {file.removedReason}
+                          Removed {formatBangkok(file.removedAt)} — {file.removedReason}
                         </span>
                       </li>
                     ))}
@@ -987,48 +992,53 @@ function StaffTicketDetail() {
       </div>
 
       {confirmation && (
-        <div className="zg-modal-backdrop" role="presentation">
-          <div className="zg-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
-            <h2 className="zg-section-title" id="confirm-title">
-              {confirmation.title}
-            </h2>
-            <p className="zg-hint">{confirmation.message}</p>
+        <Modal
+          labelledBy="confirm-title"
+          onEscape={() => {
+            if (confirming) return
+            setConfirmation(null)
+            setConfirmError(null)
+          }}
+        >
+          <h2 className="zg-section-title" id="confirm-title">
+            {confirmation.title}
+          </h2>
+          <p className="zg-hint">{confirmation.message}</p>
 
-            {confirmError && (
-              <p className="zg-field-error" role="alert">
-                {confirmError}
-              </p>
-            )}
+          {confirmError && (
+            <p className="zg-field-error" role="alert">
+              {confirmError}
+            </p>
+          )}
 
-            <div className="zg-actions">
-              <button
-                type="button"
-                className={confirmation.danger ? 'zg-btn zg-btn-danger' : 'zg-btn zg-btn-primary'}
-                onClick={() => void runConfirmation()}
-                disabled={confirming}
-              >
-                {confirming ? (
-                  <>
-                    <span className="zg-spinner-sm" aria-hidden="true" /> Saving...
-                  </>
-                ) : (
-                  'Confirm'
-                )}
-              </button>
-              <button
-                type="button"
-                className="zg-btn zg-btn-secondary"
-                onClick={() => {
-                  setConfirmation(null)
-                  setConfirmError(null)
-                }}
-                disabled={confirming}
-              >
-                Cancel
-              </button>
-            </div>
+          <div className="zg-actions">
+            <button
+              type="button"
+              className={confirmation.danger ? 'zg-btn zg-btn-danger' : 'zg-btn zg-btn-primary'}
+              onClick={() => void runConfirmation()}
+              disabled={confirming}
+            >
+              {confirming ? (
+                <>
+                  <span className="zg-spinner-sm" aria-hidden="true" /> Saving...
+                </>
+              ) : (
+                'Confirm'
+              )}
+            </button>
+            <button
+              type="button"
+              className="zg-btn zg-btn-secondary"
+              onClick={() => {
+                setConfirmation(null)
+                setConfirmError(null)
+              }}
+              disabled={confirming}
+            >
+              Cancel
+            </button>
           </div>
-        </div>
+        </Modal>
       )}
     </section>
   )

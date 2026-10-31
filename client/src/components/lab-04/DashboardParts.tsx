@@ -2,7 +2,8 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { StatusBadge } from '../Badges'
 import { formatBangkok } from './dates'
-import { countNoun, relativeTime } from './dashboardData'
+import { relativeTime } from '../../comments'
+import { countNoun } from './dashboardData'
 import type { DashboardFailure, DashboardTicket, Metric } from './dashboardData'
 
 /**

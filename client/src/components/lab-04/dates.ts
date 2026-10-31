@@ -42,6 +42,26 @@ export function formatBangkok(iso: string | null | undefined): string {
   return `${part('day')} ${part('month')} ${part('year')}, ${part('hour')}:${part('minute')}`
 }
 
+const DISPLAY_DATE = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Asia/Bangkok',
+  calendar: 'gregory',
+  numberingSystem: 'latn',
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+})
+
+/**
+ * "3 Oct 2026" in Bangkok time, for the list columns that show a day only;
+ * "—" for a missing or bad value. Issue #57 moved the Lab 2/3 lists onto it.
+ */
+export function formatBangkokDate(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return '—'
+  return DISPLAY_DATE.format(date)
+}
+
 /** A UTC instant as the `YYYY-MM-DDTHH:mm` a `datetime-local` input shows, in Bangkok time. */
 export function toBangkokInput(instant: string | Date | number): string {
   const ms = new Date(instant).getTime()

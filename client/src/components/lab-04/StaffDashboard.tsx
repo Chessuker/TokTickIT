@@ -10,7 +10,8 @@ import {
   MetricGroup,
   TicketRow,
 } from './DashboardParts'
-import { countNoun, firstName, relativeTime, ticketRowLabel, useDashboard } from './dashboardData'
+import { relativeTime } from '../../comments'
+import { countNoun, firstName, ticketRowLabel, useDashboard } from './dashboardData'
 import type { DashboardTicket, Metric } from './dashboardData'
 
 /**

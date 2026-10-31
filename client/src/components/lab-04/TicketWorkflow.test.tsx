@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import StaffTicketDetail from '../lab-03/StaffTicketDetail'
@@ -67,7 +67,10 @@ function stubApi(initial: Partial<State> = {}) {
   /** Actions recorded through the panel, in the Action shape the list returns. */
   const listed: Record<string, unknown>[] = []
   /** Makes the next detail reads fail, as a `500` or at the network level. */
-  const control: { failDetail: 'server' | 'network' | null } = { failDetail: null }
+  const control: { failDetail: 'server' | 'network' | null; failNextWrite: boolean } = {
+    failDetail: null,
+    failNextWrite: false,
+  }
 
   const gate = () => {
     const unmet: string[] = []
@@ -158,6 +161,11 @@ function stubApi(initial: Partial<State> = {}) {
     }
 
     writes.push({ path, body })
+
+    if (control.failNextWrite) {
+      control.failNextWrite = false
+      throw new TypeError('Failed to fetch')
+    }
 
     if (body.expectedVersion !== undefined && body.expectedVersion !== state.version) {
       return json(
@@ -566,5 +574,67 @@ describe('History (UI-12, AC-16, BR-18)', () => {
     expect(toggle).toHaveAttribute('aria-expanded', 'true')
     expect(await screen.findAllByTestId('history-row')).toHaveLength(2)
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain(`/api/tickets/${TICKET_ID}/history`)
+  })
+})
+
+describe('one request per confirmation (Issue #57 review, AC-27)', () => {
+  /** Two clicks in one tick: the busy state cannot have rendered between them. */
+  function doubleClick(button: HTMLElement) {
+    act(() => {
+      fireEvent.click(button)
+      fireEvent.click(button)
+    })
+  }
+
+  const done = [{ id: 'a-1', followUpStatus: null, createdAt: '2026-10-01T00:00:00.000Z' }]
+
+  it('a status confirmation sends one PATCH', async () => {
+    const user = userEvent.setup()
+    const { writes } = renderDetail({ actions: done })
+    await user.selectOptions(await screen.findByLabelText('Current Status'), 'Resolved')
+
+    doubleClick(within(screen.getByRole('dialog')).getByRole('button', { name: 'Confirm' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(writes).toHaveLength(1)
+    expect(writes[0]).toMatchObject({ path: '/status', body: { status: 'Resolved' } })
+  })
+
+  it('a reassign confirmation sends one PATCH', async () => {
+    const user = userEvent.setup()
+    const { writes } = renderDetail()
+    await user.selectOptions(await screen.findByLabelText('Ticket Owner'), CHEN.id)
+
+    doubleClick(within(screen.getByRole('dialog')).getByRole('button', { name: 'Confirm' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(writes).toHaveLength(1)
+    expect(writes[0]).toMatchObject({ path: '/owner', body: { ownerId: CHEN.id } })
+  })
+
+  it('a double click on Claim sends one POST', async () => {
+    const { writes } = renderDetail({ owner: CHEN })
+    const claim = await screen.findByRole('button', { name: 'Claim' })
+
+    doubleClick(claim)
+
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Claim' })).toBeNull())
+    expect(writes.map((write) => write.path)).toEqual(['/claim'])
+  })
+
+  it('after a failed confirmation the guard is released, so Confirm can be tried again', async () => {
+    const user = userEvent.setup()
+    const { writes, control, state } = renderDetail({ actions: done })
+    await user.selectOptions(await screen.findByLabelText('Current Status'), 'Resolved')
+    control.failNextWrite = true
+
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Confirm' }))
+    expect(await within(screen.getByRole('dialog')).findByRole('alert')).toHaveTextContent('Could not reach the server')
+
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Confirm' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(writes).toHaveLength(2)
+    expect(state.status).toBe('Resolved')
   })
 })

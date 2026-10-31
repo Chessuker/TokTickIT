@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { defaultActionInput, formatBangkok, maxActionInput, minActionInput, toBangkokInput, toUtcIso } from './dates'
+import { defaultActionInput, formatBangkok, formatBangkokDate, maxActionInput, minActionInput, toBangkokInput, toUtcIso } from './dates'
 
 /** UNIT-10 — BR-25, AD-11: Bangkok display and `datetime-local` conversion. */
 
@@ -56,5 +56,18 @@ describe('Action Date/Time bounds (BR-05, PR #60 review)', () => {
     expect(defaultActionInput('2026-09-30T03:20:45.000Z', now)).toBe('2026-10-03T14:00')
     // A ticket created in this very minute: the default moves up to the minimum.
     expect(defaultActionInput('2026-10-03T07:00:10.000Z', now)).toBe('2026-10-03T14:01')
+  })
+})
+
+describe('formatBangkokDate (Issue #57: the Lab 2/3 list dates)', () => {
+  it('shows the Bangkok calendar day, which can differ from the UTC one', () => {
+    expect(formatBangkokDate('2026-10-02T17:30:00.000Z')).toBe('3 Oct 2026')
+    expect(formatBangkokDate('2026-10-02T16:59:00.000Z')).toBe('2 Oct 2026')
+  })
+
+  it('never prints the Buddhist year, and shows a dash for a bad value', () => {
+    expect(formatBangkokDate('2026-01-01T00:00:00.000Z')).not.toMatch(/2569/)
+    expect(formatBangkokDate(null)).toBe('—')
+    expect(formatBangkokDate('nope')).toBe('—')
   })
 })

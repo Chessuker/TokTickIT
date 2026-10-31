@@ -8,6 +8,8 @@ import { ROLE_LABELS } from '../../roles'
 import { useMediaQuery } from '../../useMediaQuery'
 import { ActiveBadge, RoleBadge } from '../Badges'
 import PasswordField from './PasswordField'
+import { useSingleFlight } from '../../useSingleFlight'
+import Modal from '../Modal'
 
 /**
  * Administrator User Management (ui-spec.md §3.6, api-spec.md §3.18 – §3.22 —
@@ -196,7 +198,11 @@ function UserManagement() {
     }
   }
 
+  const flight = useSingleFlight()
+  const resetFlight = useSingleFlight()
+
   const createUser = async (values: FormState) => {
+    if (!flight.begin()) return
     setSaving(true)
     setFieldErrors({})
     setPanelError(null)
@@ -222,12 +228,14 @@ function UserManagement() {
     } catch {
       setPanelError('Could not reach the server. The user was not created.')
     } finally {
+      flight.end()
       setSaving(false)
     }
   }
 
   const saveUser = async (values: FormState) => {
     if (!panel || panel.mode !== 'edit') return
+    if (!flight.begin()) return
 
     setSaving(true)
     setFieldErrors({})
@@ -256,6 +264,7 @@ function UserManagement() {
       setConfirmDeactivate(null)
       setPanelError('Could not reach the server. The changes were not saved.')
     } finally {
+      flight.end()
       setSaving(false)
     }
   }
@@ -281,6 +290,7 @@ function UserManagement() {
 
   const setInitialPassword = async () => {
     if (!panel || panel.mode !== 'edit') return
+    if (!resetFlight.begin()) return
 
     setResetting(true)
     setResetError(null)
@@ -305,6 +315,7 @@ function UserManagement() {
     } catch {
       setResetError('Could not reach the server. The password was not set.')
     } finally {
+      resetFlight.end()
       setResetting(false)
     }
   }
@@ -739,39 +750,37 @@ function UserManagement() {
       </div>
 
       {confirmDeactivate && (
-        <div className="zg-modal-backdrop" role="presentation">
-          <div className="zg-modal" role="dialog" aria-modal="true" aria-labelledby="deactivate-title">
-            <h2 className="zg-section-title" id="deactivate-title">
-              Deactivate this user?
-            </h2>
-            <p className="zg-hint">They will be signed out immediately.</p>
+        <Modal labelledBy="deactivate-title" onEscape={() => !saving && setConfirmDeactivate(null)}>
+          <h2 className="zg-section-title" id="deactivate-title">
+            Deactivate this user?
+          </h2>
+          <p className="zg-hint">They will be signed out immediately.</p>
 
-            <div className="zg-actions">
-              <button
-                type="button"
-                className="zg-btn zg-btn-danger"
-                onClick={() => void saveUser(confirmDeactivate)}
-                disabled={saving}
-              >
-                {saving ? (
-                  <>
-                    <span className="zg-spinner-sm" aria-hidden="true" /> Saving...
-                  </>
-                ) : (
-                  'Confirm'
-                )}
-              </button>
-              <button
-                type="button"
-                className="zg-btn zg-btn-secondary"
-                onClick={() => setConfirmDeactivate(null)}
-                disabled={saving}
-              >
-                Cancel
-              </button>
-            </div>
+          <div className="zg-actions">
+            <button
+              type="button"
+              className="zg-btn zg-btn-danger"
+              onClick={() => void saveUser(confirmDeactivate)}
+              disabled={saving}
+            >
+              {saving ? (
+                <>
+                  <span className="zg-spinner-sm" aria-hidden="true" /> Saving...
+                </>
+              ) : (
+                'Confirm'
+              )}
+            </button>
+            <button
+              type="button"
+              className="zg-btn zg-btn-secondary"
+              onClick={() => setConfirmDeactivate(null)}
+              disabled={saving}
+            >
+              Cancel
+            </button>
           </div>
-        </div>
+        </Modal>
       )}
     </section>
   )

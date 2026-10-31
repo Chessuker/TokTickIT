@@ -12,6 +12,7 @@ import {
 import CommentsPanel from './lab-03/CommentsPanel'
 import ActionsTaken from './lab-04/ActionsTaken'
 import TicketHistory from './lab-04/TicketHistory'
+import { formatBangkok } from './lab-04/dates'
 import {
   ALLOWED_MIME_TYPES,
   ALLOWED_TYPES_LABEL,
@@ -19,6 +20,8 @@ import {
   MAX_FILE_BYTES,
   formatBytes,
 } from '../attachments'
+import { useSingleFlight } from '../useSingleFlight'
+import Modal from './Modal'
 
 /**
  * Requester Ticket Detail (Lab 2 ui-spec.md §3.4, api-spec.md §3.6 — FR-04,
@@ -86,19 +89,6 @@ interface TicketDetailData {
 interface LoadFailure {
   status: number
   message: string
-}
-
-function formatDateTime(value: string | null): string {
-  if (!value) return '—'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '—'
-  return date.toLocaleString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
 }
 
 /** Statuses in which the ticket is finished; the indication is no longer offered (BR-21). */
@@ -197,6 +187,10 @@ function TicketDetail() {
    * Uploads one file at a time: one request per file means a rejected file
    * names itself instead of failing the whole batch.
    */
+  const uploadFlight = useSingleFlight()
+  const removeFlight = useSingleFlight()
+  const resolveFlight = useSingleFlight()
+
   const uploadFiles = async (picked: FileList | null) => {
     if (!picked || picked.length === 0) return
 
@@ -207,6 +201,7 @@ function TicketDetail() {
     const failures: string[] = []
     let uploaded = 0
 
+    if (!uploadFlight.begin()) return
     setUploading(true)
 
     for (const file of files) {
@@ -251,6 +246,7 @@ function TicketDetail() {
       }
     }
 
+    uploadFlight.end()
     setUploading(false)
     if (fileInputRef.current) fileInputRef.current.value = ''
 
@@ -311,6 +307,7 @@ function TicketDetail() {
   const confirmRemoval = async () => {
     if (!removeTarget || reason.trim().length === 0) return
 
+    if (!removeFlight.begin()) return
     setRemoving(true)
     setRemoveError(null)
 
@@ -332,6 +329,7 @@ function TicketDetail() {
     } catch {
       setRemoveError('Could not reach the server. Please try again.')
     } finally {
+      removeFlight.end()
       setRemoving(false)
     }
   }
@@ -344,6 +342,7 @@ function TicketDetail() {
    * and the ticket is re-read so the header catches up.
    */
   const confirmResolved = async () => {
+    if (!resolveFlight.begin()) return
     setResolving(true)
     setResolveError(null)
 
@@ -363,6 +362,7 @@ function TicketDetail() {
     } catch {
       setResolveError('Could not reach the server. Please try again.')
     } finally {
+      resolveFlight.end()
       setResolving(false)
     }
   }
@@ -444,7 +444,7 @@ function TicketDetail() {
               Owner: <OwnerName owner={ticket.owner ?? null} />
             </span>
             {ticket.requesterResolvedAt && <RequesterResolvedBadge at={ticket.requesterResolvedAt} />}
-            <span className="zg-muted">Created {formatDateTime(ticket.createdAt)}</span>
+            <span className="zg-muted">Created {formatBangkok(ticket.createdAt)}</span>
           </div>
         </div>
 
@@ -484,7 +484,7 @@ function TicketDetail() {
           <ReadOnlyField label="Ticket No.">
             <span className="zg-ticket-number">{ticket.ticketNumber}</span>
           </ReadOnlyField>
-          <ReadOnlyField label="Created Date">{formatDateTime(ticket.createdAt)}</ReadOnlyField>
+          <ReadOnlyField label="Created Date">{formatBangkok(ticket.createdAt)}</ReadOnlyField>
           <ReadOnlyField label="Category">{ticket.category?.name ?? 'Uncategorised'}</ReadOnlyField>
           <ReadOnlyField label="Related System">
             {ticket.relatedSystem?.name ?? 'Not specified'}
@@ -505,7 +505,7 @@ function TicketDetail() {
           <ReadOnlyField label="Ticket Owner">
             <OwnerName owner={ticket.owner ?? null} />
           </ReadOnlyField>
-          <ReadOnlyField label="Last Updated">{formatDateTime(ticket.updatedAt)}</ReadOnlyField>
+          <ReadOnlyField label="Last Updated">{formatBangkok(ticket.updatedAt)}</ReadOnlyField>
           <ReadOnlyField label="Summary" wide>
             {ticket.summary}
           </ReadOnlyField>
@@ -542,7 +542,7 @@ function TicketDetail() {
               <li key={file.id} className="zg-file-row">
                 <span className="zg-file-name">{file.fileName}</span>
                 <span className="zg-file-size">{formatBytes(file.sizeBytes)}</span>
-                <span className="zg-file-size">Uploaded {formatDateTime(file.uploadedAt)}</span>
+                <span className="zg-file-size">Uploaded {formatBangkok(file.uploadedAt)}</span>
                 <span className="zg-file-actions">
                   <button
                     type="button"
@@ -589,7 +589,7 @@ function TicketDetail() {
                   <span className="zg-badge zg-badge-removed">Removed</span>
                   <span className="zg-file-size">{formatBytes(file.sizeBytes)}</span>
                   <span className="zg-file-removed-meta">
-                    Removed {formatDateTime(file.removedAt)} — {file.removedReason}
+                    Removed {formatBangkok(file.removedAt)} — {file.removedReason}
                   </span>
                 </li>
               ))}
@@ -669,53 +669,46 @@ function TicketDetail() {
        * inside it.
        */}
       {resolveOpen && (
-        <div className="zg-modal-backdrop" role="presentation">
-          <div
-            className="zg-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="resolve-modal-title"
-          >
-            <h2 className="zg-section-title" id="resolve-modal-title">
-              Tell IT Staff this looks fixed?
-            </h2>
-            <p className="zg-hint">
-              IT Staff will see that you consider the problem resolved. The ticket stays{' '}
-              <strong>{ticket.status}</strong> until they close it.
+        <Modal labelledBy="resolve-modal-title" onEscape={() => !resolving && setResolveOpen(false)}>
+          <h2 className="zg-section-title" id="resolve-modal-title">
+            Tell IT Staff this looks fixed?
+          </h2>
+          <p className="zg-hint">
+            IT Staff will see that you consider the problem resolved. The ticket stays{' '}
+            <strong>{ticket.status}</strong> until they close it.
+          </p>
+
+          {resolveError && (
+            <p className="zg-field-error" role="alert">
+              {resolveError}
             </p>
+          )}
 
-            {resolveError && (
-              <p className="zg-field-error" role="alert">
-                {resolveError}
-              </p>
-            )}
-
-            <div className="zg-actions">
-              <button
-                type="button"
-                className="zg-btn zg-btn-primary"
-                onClick={() => void confirmResolved()}
-                disabled={resolving}
-              >
-                {resolving ? (
-                  <>
-                    <span className="zg-spinner-sm" aria-hidden="true" /> Saving...
-                  </>
-                ) : (
-                  'Confirm'
-                )}
-              </button>
-              <button
-                type="button"
-                className="zg-btn zg-btn-secondary"
-                onClick={() => setResolveOpen(false)}
-                disabled={resolving}
-              >
-                Cancel
-              </button>
-            </div>
+          <div className="zg-actions">
+            <button
+              type="button"
+              className="zg-btn zg-btn-primary"
+              onClick={() => void confirmResolved()}
+              disabled={resolving}
+            >
+              {resolving ? (
+                <>
+                  <span className="zg-spinner-sm" aria-hidden="true" /> Saving...
+                </>
+              ) : (
+                'Confirm'
+              )}
+            </button>
+            <button
+              type="button"
+              className="zg-btn zg-btn-secondary"
+              onClick={() => setResolveOpen(false)}
+              disabled={resolving}
+            >
+              Cancel
+            </button>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/*
@@ -724,68 +717,61 @@ function TicketDetail() {
        * so a removal without one is not offered rather than merely rejected.
        */}
       {removeTarget && (
-        <div className="zg-modal-backdrop" role="presentation">
-          <div
-            className="zg-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="remove-modal-title"
-          >
-            <h2 className="zg-section-title" id="remove-modal-title">
-              Remove attachment
-            </h2>
-            <p className="zg-hint">
-              <strong>{removeTarget.fileName}</strong> stays on the ticket as a record. It can no
-              longer be downloaded, and the reason below is shown beside it.
-            </p>
+        <Modal labelledBy="remove-modal-title" onEscape={() => !removing && closeRemoveModal()}>
+          <h2 className="zg-section-title" id="remove-modal-title">
+            Remove attachment
+          </h2>
+          <p className="zg-hint">
+            <strong>{removeTarget.fileName}</strong> stays on the ticket as a record. It can no
+            longer be downloaded, and the reason below is shown beside it.
+          </p>
 
-            <div className="zg-field">
-              <label className="zg-label" htmlFor="removal-reason">
-                Reason for removal <span className="zg-required" aria-hidden="true">*</span>
-              </label>
-              <textarea
-                id="removal-reason"
-                className="zg-textarea"
-                rows={3}
-                maxLength={500}
-                value={reason}
-                onChange={(event) => setReason(event.target.value)}
-                placeholder="e.g. Uploaded the wrong screenshot"
-              />
-            </div>
-
-            {removeError && (
-              <p className="zg-field-error" role="alert">
-                {removeError}
-              </p>
-            )}
-
-            <div className="zg-actions">
-              <button
-                type="button"
-                className="zg-btn zg-btn-primary"
-                onClick={() => void confirmRemoval()}
-                disabled={reason.trim().length === 0 || removing}
-              >
-                {removing ? (
-                  <>
-                    <span className="zg-spinner-sm" aria-hidden="true" /> Removing...
-                  </>
-                ) : (
-                  'Confirm removal'
-                )}
-              </button>
-              <button
-                type="button"
-                className="zg-btn zg-btn-secondary"
-                onClick={closeRemoveModal}
-                disabled={removing}
-              >
-                Cancel
-              </button>
-            </div>
+          <div className="zg-field">
+            <label className="zg-label" htmlFor="removal-reason">
+              Reason for removal <span className="zg-required" aria-hidden="true">*</span>
+            </label>
+            <textarea
+              id="removal-reason"
+              className="zg-textarea"
+              rows={3}
+              maxLength={500}
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              placeholder="e.g. Uploaded the wrong screenshot"
+            />
           </div>
-        </div>
+
+          {removeError && (
+            <p className="zg-field-error" role="alert">
+              {removeError}
+            </p>
+          )}
+
+          <div className="zg-actions">
+            <button
+              type="button"
+              className="zg-btn zg-btn-primary"
+              onClick={() => void confirmRemoval()}
+              disabled={reason.trim().length === 0 || removing}
+            >
+              {removing ? (
+                <>
+                  <span className="zg-spinner-sm" aria-hidden="true" /> Removing...
+                </>
+              ) : (
+                'Confirm removal'
+              )}
+            </button>
+            <button
+              type="button"
+              className="zg-btn zg-btn-secondary"
+              onClick={closeRemoveModal}
+              disabled={removing}
+            >
+              Cancel
+            </button>
+          </div>
+        </Modal>
       )}
     </section>
   )

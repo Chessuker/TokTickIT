@@ -5,6 +5,7 @@ import type { Role } from '../../context/auth'
 import { COMMENT_MAX_LENGTH, fullTimestamp, relativeTime } from '../../comments'
 import { initials } from '../../roles'
 import { RoleBadge } from '../Badges'
+import { useSingleFlight } from '../../useSingleFlight'
 
 /**
  * The append-only thread behind both Public Comments and Internal Notes
@@ -106,6 +107,8 @@ function ThreadPanel({
   const bodyId = `${idPrefix}-body`
   const counterId = `${idPrefix}-counter`
 
+  const flight = useSingleFlight()
+
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     setSubmitError(null)
@@ -121,6 +124,7 @@ function ThreadPanel({
       return
     }
 
+    if (!flight.begin()) return
     setPosting(true)
     try {
       const res = await apiJson(endpoint, 'POST', { body: body.trim() })
@@ -143,6 +147,7 @@ function ThreadPanel({
     } catch {
       setSubmitError(`Could not reach the server. Your ${noun.toLowerCase()} has not been posted.`)
     } finally {
+      flight.end()
       setPosting(false)
     }
   }

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import ActionsTaken from './ActionsTaken'
 import type { Action, ActionsTakenProps } from './ActionsTaken'
@@ -736,5 +736,38 @@ describe('forbidden, not found and server failure (UI-08, L3 ui-spec.md §2)', (
 
     expect(await within(screen.getByRole('dialog')).findByRole('alert')).toHaveTextContent('Access denied: Not allowed.')
     expect(screen.getByText('Follow-up open')).toBeInTheDocument()
+  })
+})
+
+describe('follow-up confirmation sends once (Issue #57 review, UI-03, AC-10)', () => {
+  it('a same-tick double click on Mark as done sends one PATCH', async () => {
+    const user = userEvent.setup()
+    const { writes } = renderPanel({ actions: [WITH_OPEN_FOLLOW_UP] })
+    await user.click(within(await screen.findByTestId('action-card')).getByRole('button', { name: 'Mark follow-up done' }))
+    const confirm = within(screen.getByRole('dialog')).getByRole('button', { name: 'Mark as done' })
+
+    act(() => {
+      fireEvent.click(confirm)
+      fireEvent.click(confirm)
+    })
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(writes).toHaveLength(1)
+    expect(writes[0].body).toEqual({ version: 0, followUpStatus: 'Completed' })
+  })
+
+  it('after a failed attempt the dialog stays and a second Mark as done is sent', async () => {
+    const user = userEvent.setup()
+    const { writes } = renderPanel({ actions: [WITH_OPEN_FOLLOW_UP], failNext: true })
+    await user.click(within(await screen.findByTestId('action-card')).getByRole('button', { name: 'Mark follow-up done' }))
+
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Mark as done' }))
+    expect(await within(screen.getByRole('dialog')).findByRole('alert')).toHaveTextContent('Could not reach the server')
+
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Mark as done' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(writes).toHaveLength(2)
+    expect(await screen.findByText('Follow-up done')).toBeInTheDocument()
   })
 })

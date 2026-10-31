@@ -77,18 +77,6 @@ export function countNoun(count: number, noun: string, plural = `${noun}s`): str
   return `${count} ${count === 1 ? noun : plural}`
 }
 
-/** "2 h ago", for the `title` of a list time (ui-spec.md §1.4). */
-export function relativeTime(iso: string, now = Date.now()): string {
-  const minutes = Math.round((now - Date.parse(iso)) / 60_000)
-  if (Number.isNaN(minutes)) return ''
-  if (minutes < 1) return 'just now'
-  if (minutes < 60) return `${minutes} min ago`
-  const hours = Math.round(minutes / 60)
-  if (hours < 24) return `${hours} h ago`
-  const days = Math.round(hours / 24)
-  return `${days} day${days === 1 ? '' : 's'} ago`
-}
-
 export function firstName(name: string | undefined): string {
   return name?.split(/\s+/)[0] ?? ''
 }

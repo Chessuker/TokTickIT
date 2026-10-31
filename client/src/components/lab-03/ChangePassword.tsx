@@ -7,6 +7,7 @@ import type { SessionUser } from '../../context/auth'
 import { PASSWORD_RULES, passwordSatisfiesRules } from '../../passwordRules'
 import { ROLE_HOMES } from '../../roles'
 import PasswordField from './PasswordField'
+import { useSingleFlight } from '../../useSingleFlight'
 
 interface Fields {
   currentPassword: string
@@ -61,6 +62,8 @@ function ChangePassword() {
     return errors
   }
 
+  const flight = useSingleFlight()
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
     if (submitting) return
@@ -75,6 +78,7 @@ function ChangePassword() {
     }
 
     setFieldErrors({})
+    if (!flight.begin()) return
     setSubmitting(true)
 
     try {
@@ -113,6 +117,7 @@ function ChangePassword() {
     } catch {
       setFormError('Something went wrong. Please try again.')
     } finally {
+      flight.end()
       setSubmitting(false)
     }
   }

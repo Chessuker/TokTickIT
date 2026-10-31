@@ -6,6 +6,7 @@ import { useAuth } from '../../context/auth'
 import type { SessionUser } from '../../context/auth'
 import { ROLE_HOMES, pathBelongsToRole } from '../../roles'
 import PasswordField from './PasswordField'
+import { useSingleFlight } from '../../useSingleFlight'
 
 /** How long the button stays disabled after a `429` (ui-spec.md §3.1). */
 export const THROTTLE_COOLDOWN_MS = 30_000
@@ -36,6 +37,7 @@ function Login() {
   const [submitting, setSubmitting] = useState(false)
   const [cooldownUntil, setCooldownUntil] = useState<number | null>(null)
   const passwordRef = useRef<HTMLInputElement>(null)
+  const flight = useSingleFlight()
 
   // The throttled state releases the button by itself once the cooldown ends.
   useEffect(() => {
@@ -95,6 +97,7 @@ function Login() {
   }
 
   const submit = async () => {
+    if (!flight.begin()) return
     setCallout(null)
     setSubmitting(true)
 
@@ -138,6 +141,7 @@ function Login() {
     } catch {
       setCallout({ tone: 'error', message: 'Something went wrong. Please try again.', retry: true })
     } finally {
+      flight.end()
       setSubmitting(false)
     }
   }

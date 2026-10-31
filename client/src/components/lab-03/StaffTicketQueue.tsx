@@ -4,6 +4,7 @@ import { apiFetch } from '../../apiClient'
 import { useAuth } from '../../context/auth'
 import { useMediaQuery } from '../../useMediaQuery'
 import { ItPriorityBadge, OwnerName, PriorityBadge, StatusBadge } from '../Badges'
+import { formatBangkokDate } from '../lab-04/dates'
 import { Forbidden } from './RequireAuth'
 
 /**
@@ -107,12 +108,6 @@ const SORTABLE: Record<string, string> = {
   itPriority: 'itPriority',
   status: 'status',
   updatedAt: 'updatedAt',
-}
-
-function formatDate(value: string): string {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '—'
-  return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' })
 }
 
 /** What the URL currently asks for, with the defaults filled in. */
@@ -665,11 +660,11 @@ function StaffTicketQueue() {
                     <dl className="zg-ticket-card-meta">
                       <div>
                         <dt>Created</dt>
-                        <dd>{formatDate(ticket.createdAt)}</dd>
+                        <dd>{formatBangkokDate(ticket.createdAt)}</dd>
                       </div>
                       <div>
                         <dt>Updated</dt>
-                        <dd>{formatDate(ticket.updatedAt)}</dd>
+                        <dd>{formatBangkokDate(ticket.updatedAt)}</dd>
                       </div>
                     </dl>
                   </Link>
@@ -721,7 +716,7 @@ function StaffTicketQueue() {
                       <td className="zg-cell-tight">
                         <span className="zg-ticket-number">{ticket.ticketNumber}</span>
                       </td>
-                      <td className="zg-cell-tight zg-cell-date">{formatDate(ticket.createdAt)}</td>
+                      <td className="zg-cell-tight zg-cell-date">{formatBangkokDate(ticket.createdAt)}</td>
                       <td className="zg-cell-summary" title={ticket.summary}>
                         <span className="zg-clamp-2" tabIndex={0}>
                           {ticket.summary}
@@ -752,7 +747,7 @@ function StaffTicketQueue() {
                           {ticket.owner && ticket.owner.id === user?.id && <span className="zg-you-tag">You</span>}
                         </span>
                       </td>
-                      <td className="zg-cell-tight zg-cell-date">{formatDate(ticket.updatedAt)}</td>
+                      <td className="zg-cell-tight zg-cell-date">{formatBangkokDate(ticket.updatedAt)}</td>
                       <td className="zg-cell-tight">
                         <Link
                           className="zg-btn zg-btn-secondary zg-btn-sm"

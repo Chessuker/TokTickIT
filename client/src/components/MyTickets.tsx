@@ -5,6 +5,7 @@ import { useAuth } from '../context/auth'
 import { useMediaQuery } from '../useMediaQuery'
 import { STATUS_PRESENTATION } from '../ticketStatus'
 import { ItPriorityBadge, OwnerName, PriorityBadge, StatusBadge } from './Badges'
+import { formatBangkokDate } from './lab-04/dates'
 
 /**
  * My Tickets list (ui-spec.md §3.3, api-spec.md §3.5 — FR-03, AC-04, AC-10, AC-15).
@@ -119,12 +120,6 @@ function toSearchParams(next: ListParams): URLSearchParams {
 
 /** How long the search box waits after the last keystroke before re-fetching. */
 const SEARCH_DEBOUNCE_MS = 300
-
-function formatDate(value: string): string {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '—'
-  return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' })
-}
 
 function MyTickets() {
   const { user } = useAuth()
@@ -456,11 +451,11 @@ function MyTickets() {
                     <dl className="zg-ticket-card-meta">
                       <div>
                         <dt>Created</dt>
-                        <dd>{formatDate(ticket.createdAt)}</dd>
+                        <dd>{formatBangkokDate(ticket.createdAt)}</dd>
                       </div>
                       <div>
                         <dt>Last Updated</dt>
-                        <dd>{formatDate(ticket.updatedAt)}</dd>
+                        <dd>{formatBangkokDate(ticket.updatedAt)}</dd>
                       </div>
                       <div>
                         <dt>IT Priority</dt>
@@ -527,7 +522,7 @@ function MyTickets() {
                       <td className="zg-cell-tight">
                         <span className="zg-ticket-number">{ticket.ticketNumber}</span>
                       </td>
-                      <td className="zg-cell-tight zg-cell-date">{formatDate(ticket.createdAt)}</td>
+                      <td className="zg-cell-tight zg-cell-date">{formatBangkokDate(ticket.createdAt)}</td>
                       <td className="zg-cell-summary">{ticket.summary}</td>
                       <td>{ticket.category?.name ?? 'Uncategorised'}</td>
                       <td className="zg-cell-tight">
@@ -542,7 +537,7 @@ function MyTickets() {
                       <td className="zg-cell-tight">
                         <OwnerName owner={ticket.owner ?? null} />
                       </td>
-                      <td className="zg-cell-tight zg-cell-date">{formatDate(ticket.updatedAt)}</td>
+                      <td className="zg-cell-tight zg-cell-date">{formatBangkokDate(ticket.updatedAt)}</td>
                       <td className="zg-cell-tight">
                         <Link
                           className="zg-btn zg-btn-secondary zg-btn-sm"

@@ -1,6 +1,7 @@
 import type { Role } from '../context/auth'
 import { ROLE_LABELS } from '../roles'
 import { STATUS_PRESENTATION } from '../ticketStatus'
+import { formatBangkok } from './lab-04/dates'
 
 /**
  * Shared badge components (Lab 3 ui-spec.md §2 "Badges").
@@ -89,8 +90,8 @@ export function FollowUpBadge({ status }: { status: string | null }) {
  * `requesterResolvedAt` is set, so its presence *is* the signal.
  */
 export function RequesterResolvedBadge({ at }: { at: string }) {
-  const date = new Date(at)
-  const title = Number.isNaN(date.getTime()) ? undefined : `Reported resolved ${date.toLocaleString()}`
+  const when = formatBangkok(at)
+  const title = when === '—' ? undefined : `Reported resolved ${when}`
   return (
     <span className="zg-badge zg-badge-requester-resolved" title={title} data-testid="requester-resolved">
       <i className="bi bi-check-circle" aria-hidden="true" /> Requester reports resolved
