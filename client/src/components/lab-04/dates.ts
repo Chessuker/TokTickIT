@@ -18,12 +18,19 @@ const MINUTE_MS = 60_000
 /** BR-05: the server accepts Action Date/Time up to 5 minutes ahead. */
 export const FUTURE_TOLERANCE_MS = 5 * MINUTE_MS
 
+/**
+ * Month names are spelled here, not taken from Intl: newer ICU data writes
+ * September as "Sept" in en-GB, one letter longer than every other month,
+ * which pushed the Queue's date column into the next one (found in #58).
+ */
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
 const DISPLAY = new Intl.DateTimeFormat('en-GB', {
   timeZone: 'Asia/Bangkok',
   calendar: 'gregory',
   numberingSystem: 'latn',
   day: 'numeric',
-  month: 'short',
+  month: 'numeric',
   year: 'numeric',
   hour: '2-digit',
   minute: '2-digit',
@@ -39,17 +46,9 @@ export function formatBangkok(iso: string | null | undefined): string {
   const part = (type: Intl.DateTimeFormatPartTypes) =>
     DISPLAY.formatToParts(date).find((entry) => entry.type === type)?.value ?? ''
 
-  return `${part('day')} ${part('month')} ${part('year')}, ${part('hour')}:${part('minute')}`
+  return `${Number(part('day'))} ${MONTHS[Number(part('month')) - 1]} ${part('year')}, ${part('hour')}:${part('minute')}`
 }
 
-const DISPLAY_DATE = new Intl.DateTimeFormat('en-GB', {
-  timeZone: 'Asia/Bangkok',
-  calendar: 'gregory',
-  numberingSystem: 'latn',
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-})
 
 /**
  * "3 Oct 2026" in Bangkok time, for the list columns that show a day only;
@@ -59,7 +58,7 @@ export function formatBangkokDate(iso: string | null | undefined): string {
   if (!iso) return '—'
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) return '—'
-  return DISPLAY_DATE.format(date)
+  return formatBangkok(iso).split(',')[0]
 }
 
 /** A UTC instant as the `YYYY-MM-DDTHH:mm` a `datetime-local` input shows, in Bangkok time. */

@@ -71,3 +71,12 @@ describe('formatBangkokDate (Issue #57: the Lab 2/3 list dates)', () => {
     expect(formatBangkokDate('nope')).toBe('—')
   })
 })
+
+describe('month names (Issue #58)', () => {
+  it('are always three letters, whatever the ICU data ("Sept" pushed the Queue date column over)', () => {
+    expect(formatBangkok('2026-09-18T08:05:00.000Z')).toBe('18 Sep 2026, 15:05')
+    expect(formatBangkokDate('2026-09-18T08:05:00.000Z')).toBe('18 Sep 2026')
+    const months = Array.from({ length: 12 }, (_, m) => formatBangkokDate(new Date(Date.UTC(2026, m, 15)).toISOString()))
+    expect(months.map((text) => text.split(' ')[1])).toEqual(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])
+  })
+})

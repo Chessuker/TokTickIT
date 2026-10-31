@@ -43,6 +43,9 @@ async function shot(page: Page, file: string, fullPage = true) {
   expect(scrollWidth, 'page must not scroll horizontally').toBeLessThanOrEqual(innerWidth)
   if (!CAPTURE) return
   await page.waitForTimeout(250)
+  // A full-page capture of a scrolled page draws the sticky header where the
+  // viewport was; from the top, it sits where a reader expects it.
+  if (fullPage) await page.evaluate(() => window.scrollTo(0, 0))
   await page.screenshot({ path: path.join(SHOTS, file), fullPage })
 }
 
@@ -194,10 +197,20 @@ test.describe('Dashboard screenshots (R-01 … R-06, V-03)', () => {
 
       await openDashboard(page, REQUESTER_A)
       await shot(page, `requester-dashboard/dashboard-${width}.png`)
+      // R-13: My Tickets opened by the "My open tickets" card, chips set from the link.
+      await page.getByRole('link', { name: /^My open tickets/ }).click()
+      await expect(page.getByTestId('status-chips').getByRole('button', { pressed: true })).toHaveCount(5)
+      await expect(page.locator('.zg-result-count, [data-testid=no-results-state]').first()).toBeVisible()
+      await shot(page, `requester-dashboard/drilldown-${width}.png`)
 
       await page.context().clearCookies()
       await openDashboard(page, IT_STAFF)
       await shot(page, `staff-dashboard/dashboard-${width}.png`)
+      // R-14: the Queue opened by "My open follow-ups", with its removable chip.
+      await page.getByTestId('metric-follow-ups').click()
+      await expect(page.getByTestId('drilldown-chips')).toContainText('My open follow-ups')
+      await expect(page.locator('.zg-result-count, [data-testid=no-results-state]').first()).toBeVisible()
+      await shot(page, `staff-dashboard/drilldown-${width}.png`)
 
       if (width === 'mobile') {
         await page.context().clearCookies()

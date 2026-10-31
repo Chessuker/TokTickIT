@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 import type { ConsoleMessage, Page } from '@playwright/test'
 import { ADMIN, IT_STAFF, REQUESTER_A, loginAs } from '../helpers'
 import type { Account } from '../helpers'
+import path from 'node:path'
 
 /**
  * STY-01 … STY-04 — the Lab 4 visual and accessibility pass over every screen
@@ -24,6 +25,14 @@ import type { Account } from '../helpers'
  */
 
 const API = 'http://localhost:5000'
+const CAPTURE = process.env.CAPTURE === '1'
+const SHOTS = path.join(process.cwd(), 'artifacts', 'lab-04', 'screenshots', 'regression')
+
+/** A valid 1 × 1 PNG, for the one attachment the regression capture needs. */
+const ONE_PIXEL_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+  'base64',
+)
 
 const VIEWPORTS = {
   desktop: { width: 1280, height: 900 },
@@ -427,6 +436,66 @@ test.describe('STY-04 — console, links and leftovers (V-19, V-20)', () => {
       expect(broken).toEqual([])
       expect(leftovers).toEqual([])
       expect(messages).toEqual([])
+    })
+  }
+})
+
+/**
+ * E2E-07 / R-15 — the Lab 2 and Lab 3 screens re-checked on the Lab 4 build
+ * at every width. Always runs the overflow check; with `CAPTURE=1` it also
+ * writes `artifacts/lab-04/screenshots/regression/<screen>-<width>.png`.
+ * The viewport only on tablet and phone: what the device shows.
+ */
+test.describe('E2E-07 — Lab 2/3 screens on the Lab 4 build (R-15)', () => {
+  for (const [width, viewport] of Object.entries(VIEWPORTS)) {
+    test(`every Lab 2/3 screen at ${width}`, async ({ page }) => {
+      await page.setViewportSize(viewport)
+      const capture = async (name: string) => {
+        await settled(page)
+        expect(await layoutProblems(page), name).toEqual([])
+        if (!CAPTURE) return
+        await page.waitForTimeout(250)
+        await page.evaluate(() => window.scrollTo(0, 0))
+        await page.screenshot({ path: path.join(SHOTS, `${name}-${width}.png`), fullPage: width === 'desktop' })
+      }
+
+      await page.goto('/login')
+      await capture('login')
+
+      await loginAs(page, REQUESTER_A)
+      await page.goto('/tickets')
+      await capture('my-tickets')
+      await page.goto('/tickets/new')
+      await capture('create-ticket')
+      const mine = await page.request.get(`${API}/api/tickets?search=TKT-2026-900010`)
+      const own = (await mine.json()).data[0] as { id: string; attachmentCount: number }
+      // The seed has no files; one small screenshot makes the Lab 2
+      // attachment list part of the evidence. Added once, through the API.
+      if (own.attachmentCount === 0) {
+        const uploaded = await page.request.post(`${API}/api/tickets/${own.id}/attachments`, {
+          multipart: { file: { name: 'monitor-request.png', mimeType: 'image/png', buffer: ONE_PIXEL_PNG } },
+        })
+        expect(uploaded.status()).toBe(201)
+      }
+      await page.goto(`/tickets/${own.id}`)
+      await capture('ticket-detail')
+      await page.goto('/change-password')
+      await capture('change-password')
+
+      await page.context().clearCookies()
+      await loginAs(page, IT_STAFF)
+      await page.goto('/staff/queue?search=TKT-2026-9000')
+      await capture('queue')
+      await page.goto(`/staff/tickets/${await seededTicketId(page, 'TKT-2026-900008')}#comments`)
+      await capture('staff-ticket-detail')
+      await page.getByRole('tab', { name: /internal notes/i }).click()
+      await expect(page.getByTestId('note-list')).toBeVisible()
+      await capture('internal-notes')
+
+      await page.context().clearCookies()
+      await loginAs(page, ADMIN)
+      await page.goto('/admin/users')
+      await capture('users')
     })
   }
 })
