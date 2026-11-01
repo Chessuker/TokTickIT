@@ -524,7 +524,16 @@ $ npm --prefix client run lint   0 errors; the 5 existing warnings in src/test/a
 
 ### Final run
 
-_Not yet run: recorded by Issue #58 on `main` after the release merge (server, client, E2E and lint, verbatim output in `test-runs/`). The latest full run so far is the regression run on `feature/58-e2e-release` in the Issue #58 log above._
+Recorded on 2026-11-01 after the release merge, on `main` at `dca9244` (merge of PR #66), against the migrated and freshly re-seeded database (`npm run prisma:seed`), by `node docs/lab-04/scripts/capture-test-runs.mjs`. The code under test is exactly that commit: the only uncommitted files were under `docs/` and `artifacts/`. Verbatim output in [`test-runs/`](test-runs/) — `server.txt`, `client.txt`, `e2e.txt`, `lint.txt`.
+
+```
+$ npm run test:server                                Test Files  26 passed (26)    Tests  926 passed (926)
+$ npm --prefix client run test -- --reporter=verbose  Test Files  19 passed (19)    Tests  358 passed (358)
+$ npx playwright test --reporter=list                134 passed (5.3m)
+$ npm --prefix client run lint                       exit 0 — 0 errors; the 5 existing warnings in src/test/auth.tsx
+```
+
+Nothing failed and nothing was skipped. Every test row in §2 marked Pass is part of this run; the database checks INT-01, INT-02 / INT-03 and PERF-01 are the fresh-database run in the Issue #58 log above (the code they exercise is unchanged between `ccbcc2e` and `dca9244`).
 
 ---
 

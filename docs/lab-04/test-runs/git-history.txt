@@ -1,0 +1,110 @@
+$ git log --graph --oneline --decorate -n 60
+# docs/58-final-run @ dca9244 + uncommitted docs/artifacts only (code = this commit)
+
+*   dca9244 2026-11-01 Merge pull request #66 from Chessuker/lab4-staging (HEAD -> docs/58-final-run, origin/main, origin/HEAD, main)
+|\  
+| *   2916efb 2026-10-31 Merge pull request #65 from Chessuker/feature/58-e2e-release (origin/lab4-staging)
+| |\  
+| | * f5f2555 2026-10-31 docs(#58): Part 3 run labelled as the feature-branch regression run; reviewer.md adds PR #65 (origin/feature/58-e2e-release, feature/58-e2e-release)
+| | * e43b285 2026-10-31 docs(#58): release evidence on a fresh database, answer pages, PDF build
+| |/  
+| *   ccbcc2e 2026-10-31 Merge pull request #64 from Chessuker/feature/57-final-hardening
+| |\  
+| | * 3755b40 2026-10-31 fix(#57): single submit on confirmations, tablet/mobile a11y checks (PR review) (origin/feature/57-final-hardening, feature/57-final-hardening)
+| | * 9065413 2026-10-30 feat(#57): final hardening - single submit, dialog focus, Bangkok dates, visual and a11y checks
+| |/  
+| *   f554825 2026-10-30 Merge pull request #63 from Chessuker/feature/56-dashboards
+| |\  
+| | * 2d0e2a0 2026-10-30 feat(#56): role dashboards with drill-down that matches the cards (origin/feature/56-dashboards, feature/56-dashboards)
+| |/  
+| *   2cda9de 2026-10-30 Merge pull request #62 from Chessuker/feature/55-ticket-workflow
+| |\  
+| | * 1e337d5 2026-10-29 fix(#55): keep the stale state until Reload actually loads the latest ticket (PR review) (origin/feature/55-ticket-workflow, feature/55-ticket-workflow)
+| | * 581bad2 2026-10-29 feat(#55): ticket workflow - resolution gate, stale updates, status history
+| |/  
+| *   2b09623 2026-10-29 Merge pull request #61 from Chessuker/feature/54-actions-taken-ui
+| |\  
+| | * 88f039b 2026-10-29 fix(#54): show 403/404 as Access denied / Not found, not as a network failure (PR review) (origin/feature/54-actions-taken-ui, feature/54-actions-taken-ui)
+| | * 8616896 2026-10-29 feat(#54): Actions Taken UI - staff tab, requester view, follow-up actions
+| |/  
+| *   213ec64 2026-10-29 Merge pull request #60 from Chessuker/feature/53-actions-taken-api
+| |\  
+| | * ee07dee 2026-10-28 fix(#53): compare actionAt to ticket createdAt exactly (PR #60 review) (origin/feature/53-actions-taken-api, feature/53-actions-taken-api)
+| | * 8cd5324 2026-10-08 feat(#53): Actions Taken foundation - schema, migration, rollback, seed, API
+| | * 6d9eeb4 2026-10-08 docs(lab-04): PR #59 review record and merge evidence
+| |/  
+| * b48ef3a 2026-10-07 Merge pull request #59 from Chessuker/feature/52-lab4-spec-docs (lab4-staging)
+|/| 
+| * 621f7e4 2026-10-03 docs(lab-04): Sprint 4 engineering contract (#52) (origin/feature/52-lab4-spec-docs, feature/52-lab4-spec-docs)
+|/  
+*   28d4225 2026-09-28 Merge pull request #51 from Chessuker/docs/lab-03-final-evidence
+|\  
+| * d0b704e 2026-09-28 docs(lab-03): reviewer.md — PR #50 merge date, six partner PRs (origin/docs/lab-03-final-evidence, docs/lab-03-final-evidence)
+| * 7bc7fb2 2026-09-27 docs(lab-03): final evidence on main (34eadf5)
+|/  
+*   34eadf5 2026-09-27 Merge pull request #50 from Chessuker/lab3-staging
+|\  
+| *   ac1f845 2026-09-26 Merge pull request #49 from Chessuker/feature/42-e2e-release (origin/lab3-staging, lab3-staging)
+| |\  
+| | * 475900e 2026-09-26 feat(#42): E2E-07 visual pass, evidence capture, submission PDF (origin/feature/42-e2e-release, feature/42-e2e-release)
+| |/  
+| *   91e5178 2026-09-26 Merge pull request #48 from Chessuker/feature/41-admin-users
+| |\  
+| | * 8a29f57 2026-09-25 feat(#41): Administrator user management (origin/feature/41-admin-users, feature/41-admin-users)
+| |/  
+| *   f835755 2026-09-25 Merge pull request #47 from Chessuker/feature/40-staff-ticket-ops
+| |\  
+| | * e22d9ae 2026-09-25 feat(#40): IT Staff ticket operations — workflow matrix, staff detail, internal notes (origin/feature/40-staff-ticket-ops, feature/40-staff-ticket-ops)
+| |/  
+| *   acd96bd 2026-09-22 Merge pull request #46 from Chessuker/feature/39-staff-queue
+| |\  
+| | * e565ad6 2026-09-19 feat(#39): IT Staff Ticket Queue — staff routes, queue query, seeded tickets, StaffTicketQueue (origin/feature/39-staff-queue, feature/39-staff-queue)
+| |/  
+| *   42e7ccf 2026-09-19 Merge pull request #45 from Chessuker/feature/38-requester-comments
+| |\  
+| | * 5af69f1 2026-09-19 docs(#38): requester ticket detail screenshots for the PR (origin/feature/38-requester-comments, feature/38-requester-comments)
+| | * cf6a7df 2026-09-19 feat(#38): Public Comments and "Problem appears resolved" on the Requester Ticket Detail
+| |/  
+| *   05f2133 2026-09-19 Merge pull request #44 from Chessuker/feature/37-auth-foundation
+| |\  
+| | * 35986d0 2026-09-18 feat(#37): authentication foundation — sessions, roles, login/change-password, migration and seed (origin/feature/37-auth-foundation, feature/37-auth-foundation)
+| |/  
+| * 4ad5d2e 2026-09-18 Merge pull request #43 from Chessuker/feature/36-lab3-spec-docs
+|/| 
+| * 8921f2d 2026-09-18 chore: move lab-1 screenshots under docs/lab-01, untrack lab sheet and .claude tooling config (origin/feature/36-lab3-spec-docs, feature/36-lab3-spec-docs)
+| * e1f3aa2 2026-09-18 docs(lab-03): address review on #43 — auth matrix, BR-31, BR-07/10/11, AC-31
+| * 8c84d4c 2026-09-18 docs(lab-03): address review on #43 — auth matrix, BR-31, BR-07/10/11, AC-31
+| * 39cabce 2026-09-15 docs(lab-03): fill GitHub Issue numbers #36-#42
+| * 492dd30 2026-09-15 docs(lab-03): Sprint 3 engineering contract
+|/  
+*   ab23c4d 2026-09-05 Merge pull request #35 from Chessuker/docs/lab-02-final-evidence
+|\  
+| * 6a8b879 2026-09-05 docs(lab-02) (origin/docs/lab-02-final-evidence)
+* | d56579a 2026-09-05 Merge pull request #34 from Chessuker/docs/lab-02-final-evidence
+|\| 
+| * 08e34bb 2026-09-05 docs(lab-02)
+|/  
+*   9936b8c 2026-09-05 Merge pull request #33 from Chessuker/lab2-staging
+|\  
+| *   229659e 2026-09-05 Merge pull request #32 from Chessuker/feature/7-ui-responsive-e2e (origin/lab2-staging)
+| |\  
+| | * dad25b8 2026-09-05 feature 7: refine zen green UI, responsive styles, and implement Playwright E2E tests (origin/feature/7-ui-responsive-e2e)
+| |/  
+| *   f097031 2026-09-04 Merge pull request #31 from Chessuker/feature/6-ticket-detail-attachments
+| |\  
+| | * 4db72b0 2026-09-04 fix MIME check (origin/feature/6-ticket-detail-attachments)
+| | * f7f2a07 2026-09-04 feature 5: implement ticket detail view, attachment upload, download, soft removal, and ownership guards
+| |/  
+| *   accbb70 2026-08-30 Merge pull request #30 from Chessuker/feature/5-my-tickets-list
+| |\  
+| | * 91ed7cb 2026-08-29 feature 5: implement My Tickets listing with search, filtering, pagination, and empty/no-results states (origin/feature/5-my-tickets-list)
+| |/  
+| *   7f597a1 2026-08-29 Merge pull request #29 from Chessuker/feature/4-create-ticket
+| |\  
+| | * 8fbcb0b 2026-08-28 feature 4: implement ticket creation API, resilient create form UI, and automated tests (origin/feature/4-create-ticket, feature/4-create-ticket)
+* | |   f8d1155 2026-08-28 Merge pull request #28 from Chessuker/feature/3-requester-context
+|\ \ \  
+| | |/  
+| |/|   
+| * | 3a7f601 2026-08-28 feature 3: implement requester context, selector screen, and change requester shell action (origin/feature/3-requester-context, feature/3-requester-context)
+| |/  

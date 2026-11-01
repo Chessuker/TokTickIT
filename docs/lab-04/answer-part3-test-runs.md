@@ -4,7 +4,7 @@ Link: [`docs/lab-04/tests.md`](tests.md) — rendered in full after this page: t
 
 ---
 
-## 1. Regression run on `feature/58-e2e-release` — every suite, nothing skipped
+## 1. Final run on `main` (`dca9244`) — every suite, nothing skipped
 
 | Suite | Command | Files | Tests | Passed | Failed | Skipped |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -13,7 +13,7 @@ Link: [`docs/lab-04/tests.md`](tests.md) — rendered in full after this page: t
 | End-to-end — Playwright (Lab 2, 3 and 4) | `npx playwright test` | 13 | 134 | 134 | 0 | 0 |
 | **Total** | | **58** | **1 418** | **1 418** | **0** | **0** |
 
-These numbers are from the full run on the `feature/58-e2e-release` branch (code = `lab4-staging` after PR #64 plus the #58 fixes), before the release PR. They are **not** a run on `main`: the suites are run again on `main` after the release merge, and this table and the files below are replaced with that run's output.
+Run on 2026-11-01 on `main` at `dca9244`, the merge of the release PR #66, against the freshly re-seeded database. The same totals were seen before the release on `feature/58-e2e-release` (the regression run in tests.md §5, Issue #58 log); the table above is the run on `main`. Lint: 0 errors (exit 0), the 5 existing warnings in `src/test/auth.tsx`.
 
 The verbatim output of each command is in [`test-runs/`](test-runs/) — `server.txt`, `client.txt`, `e2e.txt`, `lint.txt` — with terminal colour codes stripped and nothing else changed; each file's first two lines name the command, the branch and the commit it ran against. The images below are those files rendered by [`scripts/capture-test-runs.mjs`](scripts/capture-test-runs.mjs).
 

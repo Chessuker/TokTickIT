@@ -1,0 +1,102 @@
+$ npm run test:server
+# docs/58-final-run @ dca9244 + uncommitted docs/artifacts only (code = this commit) · 2026-11-01T14:44:53.981Z
+
+
+> toktickit@1.0.0 test:server
+> npm --prefix server run test
+
+
+> toktickit-server@1.0.0 test
+> vitest run
+
+
+ RUN  v3.2.7 D:/OpalFolder/KMUTT/CPE334/TokTickIT/server
+
+ ✓ tests/seed.test.ts (35 tests) 810ms
+   ✓ seed > uses bcrypt by default, producing a hash that verifies the seeded password  777ms
+ ✓ tests/lab-04/staff-dashboard.api.test.ts (13 tests) 193ms
+ ✓ tests/lab-03/staff-queue.api.test.ts (38 tests) 284ms
+ ✓ tests/lab-03/staff-ticket-detail.api.test.ts (52 tests) 628ms
+ ✓ tests/lab-03/comments-notes.api.test.ts (44 tests) 665ms
+   ✓ POST /api/tickets/:id/comments — body rules (API-22, AC-14, BR-22) > creates a trimmed comment with server-set author and time  423ms
+ ✓ tests/lab-04/actions-taken.api.test.ts (50 tests) 687ms
+ ✓ tests/lab-03/authorization.api.test.ts (52 tests) 706ms
+   ✓ Unauthenticated calls (API-13, AC-12, BR-30) > 'get' '/api/auth/me' answers 401 UNAUTHORIZED with no data  415ms
+ ✓ tests/tickets.api.test.ts (64 tests) 740ms
+   ✓ POST /api/tickets — valid create (API-01, AC-01) > returns 201 with the created ticket and its ticket number  425ms
+ ✓ tests/lab-04/ticket-workflow.api.test.ts (52 tests) 782ms
+   ✓ resolution gate (API-14, API-15, AC-12, BR-14) > API-14: refuses to resolve an owned ticket with no Action, and changes nothing  421ms
+ ✓ tests/lab-03/auth.api.test.ts (36 tests) 1146ms
+   ✓ POST /api/auth/login — valid login (API-01, API-05, AC-01) > returns 200 with the SessionUser and sets the session cookie  435ms
+ ✓ tests/attachments.api.test.ts (39 tests) 1207ms
+ ✓ tests/lab-04/dashboardMetrics.test.ts (27 tests) 12ms
+ ✓ tests/lab-04/actionRules.test.ts (48 tests) 15ms
+ ✓ tests/lab-03/users-admin.api.test.ts (69 tests) 1389ms
+   ✓ POST /api/admin/users (API-41, AC-26, BR-24) > creates the user with mustChangePassword and a verifiable hash, and returns none of it  470ms
+ ✓ tests/lab-03/queueQuery.test.ts (36 tests) 10ms
+ ✓ tests/lab-04/appendOnly.test.ts (3 tests) 13ms
+ ✓ tests/lab-03/ticketWorkflow.test.ts (172 tests) 25ms
+ ✓ tests/ticketNumber.test.ts (8 tests) 13ms
+ ✓ tests/lab-03/session.test.ts (6 tests) 8ms
+ ✓ tests/lab-04/resolutionGate.test.ts (15 tests) 8ms
+ ✓ tests/lab-04/regression.api.test.ts (17 tests) 147ms
+ ✓ tests/lab-04/requester-dashboard.api.test.ts (18 tests) 145ms
+ ✓ tests/lab-04/ticketListQuery.test.ts (8 tests) 6ms
+ ✓ tests/lab-03/loginThrottle.test.ts (5 tests) 4ms
+ ✓ tests/lab-03/passwordPolicy.test.ts (10 tests) 7ms
+ ✓ tests/app.test.ts (9 tests) 91ms
+
+ Test Files  26 passed (26)
+      Tests  926 passed (926)
+   Start at  21:44:46
+   Duration  7.38s (transform 2.49s, setup 0ms, collect 50.49s, tests 9.74s, environment 5ms, prepare 10.51s)
+
+stderr | tests/tickets.api.test.ts > POST /api/tickets — failure handling (api-spec §1.3) > returns a safe 500 envelope when the insert fails
+[n1tp8yp0mvxxyozk] POST /api/tickets: Error: relation "Ticket" does not exist
+    at D:\OpalFolder\KMUTT\CPE334\TokTickIT\server\tests\tickets.api.test.ts:285:58
+    at file:///D:/OpalFolder/KMUTT/CPE334/TokTickIT/server/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///D:/OpalFolder/KMUTT/CPE334/TokTickIT/server/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26
+    at file:///D:/OpalFolder/KMUTT/CPE334/TokTickIT/server/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///D:/OpalFolder/KMUTT/CPE334/TokTickIT/server/node_modules/@vitest/runner/dist/chunk-hooks.js:1863:10)
+    at runTest (file:///D:/OpalFolder/KMUTT/CPE334/TokTickIT/server/node_modules/@vitest/runner/dist/chunk-hooks.js:1574:12)
+    at processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at runSuite (file:///D:/OpalFolder/KMUTT/CPE334/TokTickIT/server/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)
+    at runSuite (file:///D:/OpalFolder/KMUTT/CPE334/TokTickIT/server/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)
+
+stderr | tests/attachments.api.test.ts > GET /api/attachments/:id/download (API-11, AC-09, BR-09, BR-10) > answers 404 when the row exists but the stored file is gone
+[attachment-integrity] missing stored file d4e5f6a7-1111-4222-8333-444455556666 Error: ENOENT: no such file or directory, open 'C:\Users\ADMIN\AppData\Local\Temp\toktickit-uploads-VQic2v\never-written.pdf'
+    at open (node:internal/fs/promises:1281:25)
+    at readFile (node:internal/fs/promises:1929:14)
+    at D:\OpalFolder\KMUTT\CPE334\TokTickIT\server\src\app.ts:605:17 {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\ADMIN\\AppData\\Local\\Temp\\toktickit-uploads-VQic2v\\never-written.pdf'
+}
+
+stderr | tests/tickets.api.test.ts > GET /api/tickets — search, filter, sort, pagination (API-06, AC-10) > returns a safe 500 envelope when the query fails
+[2o7q6khxmvxxyp3b] GET /api/tickets: Error: relation "Ticket" does not exist
+    at D:\OpalFolder\KMUTT\CPE334\TokTickIT\server\tests\tickets.api.test.ts:562:7
+    at file:///D:/OpalFolder/KMUTT/CPE334/TokTickIT/server/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///D:/OpalFolder/KMUTT/CPE334/TokTickIT/server/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26
+    at file:///D:/OpalFolder/KMUTT/CPE334/TokTickIT/server/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///D:/OpalFolder/KMUTT/CPE334/TokTickIT/server/node_modules/@vitest/runner/dist/chunk-hooks.js:1863:10)
+    at runTest (file:///D:/OpalFolder/KMUTT/CPE334/TokTickIT/server/node_modules/@vitest/runner/dist/chunk-hooks.js:1574:12)
+    at processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at runSuite (file:///D:/OpalFolder/KMUTT/CPE334/TokTickIT/server/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)
+    at runSuite (file:///D:/OpalFolder/KMUTT/CPE334/TokTickIT/server/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)
+
+stderr | tests/app.test.ts > Express API Endpoints > GET /api/categories returns a safe 500 envelope when the database call fails
+[kvj7zmx6mvxxyq1m] GET /api/categories: Error: connection refused
+    at D:\OpalFolder\KMUTT\CPE334\TokTickIT\server\tests\app.test.ts:109:63
+    at file:///D:/OpalFolder/KMUTT/CPE334/TokTickIT/server/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///D:/OpalFolder/KMUTT/CPE334/TokTickIT/server/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26
+    at file:///D:/OpalFolder/KMUTT/CPE334/TokTickIT/server/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///D:/OpalFolder/KMUTT/CPE334/TokTickIT/server/node_modules/@vitest/runner/dist/chunk-hooks.js:1863:10)
+    at runTest (file:///D:/OpalFolder/KMUTT/CPE334/TokTickIT/server/node_modules/@vitest/runner/dist/chunk-hooks.js:1574:12)
+    at processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at runSuite (file:///D:/OpalFolder/KMUTT/CPE334/TokTickIT/server/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)
+    at runSuite (file:///D:/OpalFolder/KMUTT/CPE334/TokTickIT/server/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)
