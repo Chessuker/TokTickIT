@@ -17,7 +17,9 @@ const SEEDED = 'TKT-2026-9000'
 test.describe('IT Staff Ticket Queue (E2E-05, AC-16, AC-17)', () => {
   test('lists tickets of every requester with the nine columns and pages them', async ({ page }) => {
     await loginAs(page, IT_STAFF)
-    await expect(page).toHaveURL(/\/staff\/queue$/)
+    // Lab 4 (Issue #56): IT Staff land on the Dashboard; the Queue is one link away.
+    await expect(page).toHaveURL(/\/dashboard$/)
+    await page.goto('/staff/queue')
 
     await page.getByLabel('Search').fill(SEEDED)
     await expect(page.getByText('Showing 1 to 10 of 24 tickets')).toBeVisible()
@@ -37,6 +39,7 @@ test.describe('IT Staff Ticket Queue (E2E-05, AC-16, AC-17)', () => {
 
   test('filters by status chips, owner and IT priority, and sorts by status in workflow order', async ({ page }) => {
     await loginAs(page, IT_STAFF)
+    await page.goto('/staff/queue')
     await page.getByLabel('Search').fill(SEEDED)
     await expect(page.getByText(/of 24 tickets/)).toBeVisible()
 
@@ -68,6 +71,7 @@ test.describe('IT Staff Ticket Queue (E2E-05, AC-16, AC-17)', () => {
 
   test('the requester-resolved icon shows on a flagged row and sortable headers set aria-sort', async ({ page }) => {
     await loginAs(page, IT_STAFF)
+    await page.goto('/staff/queue')
     await page.getByLabel('Search').fill('TKT-2026-900014')
     await expect(page.getByText('Showing 1 to 1 of 1 ticket')).toBeVisible()
     await expect(page.getByLabel('Requester reports resolved')).toBeVisible()
@@ -101,6 +105,7 @@ test.describe('IT Staff Ticket Queue (E2E-05, AC-16, AC-17)', () => {
   test('renders cards instead of a table at mobile width with no horizontal scroll (AC-33)', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await loginAs(page, IT_STAFF)
+    await page.goto('/staff/queue')
     await page.getByLabel('Search').fill(SEEDED)
 
     await expect(page.getByTestId('queue-cards')).toBeVisible()

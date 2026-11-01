@@ -72,11 +72,11 @@ describe('relativeTime', () => {
     expect(relativeTime(iso, NOW)).toBe(expected)
   })
 
-  it('falls back to a locale date once the comment is older than a month', () => {
+  // Lab 4 (Issue #57): the fallback is the Bangkok date every screen uses, not
+  // the machine's locale (a Thai-locale browser printed a Buddhist-era year).
+  it('falls back to the Bangkok date once the comment is older than a month', () => {
     const iso = '2026-06-01T12:00:00.000Z'
-    expect(relativeTime(iso, NOW)).toBe(
-      new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' }),
-    )
+    expect(relativeTime(iso, NOW)).toBe('1 Jun 2026')
     expect(relativeTime(iso, NOW)).not.toMatch(/ago$/)
   })
 

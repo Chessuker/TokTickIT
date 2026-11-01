@@ -1,0 +1,15 @@
+# E2E-02: a follow-up assigned to Robert Wilson (inactive IT Staff), sent directly to the API as Priya.
+
+POST /api/staff/tickets/<ticket>/actions
+{ "followUpRequired": true, "followUpNote": "n", "followUpAssigneeId": "<Robert Wilson>", ... }
+
+HTTP 400
+{
+  "error": {
+    "code": "VALIDATION_FAILED",
+    "message": "One or more fields are invalid.",
+    "fields": {
+      "followUpAssigneeId": "The follow-up must be assigned to an active IT Staff member."
+    }
+  }
+}

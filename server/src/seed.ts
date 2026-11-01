@@ -5,8 +5,10 @@ import {
   CATEGORIES,
   RELATED_SYSTEMS,
   TICKETS,
+  TICKET_ACTIONS,
   TICKET_COMMENTS,
   TICKET_INTERNAL_NOTES,
+  TICKET_STATUS_CHANGES,
   USERS,
 } from './seedData.js';
 import type { ThreadSeed } from './seedData.js';
@@ -131,6 +133,56 @@ export async function seed(client: typeof prisma = prisma, options: SeedOptions 
       create: { id: note.id, ...fields },
     });
   }
+
+  // Lab 4 Actions Taken (specification.md §7, BR-30). Keyed on fixed ids like
+  // the threads, so a re-run resets each seeded Action — follow-up state and
+  // version included — and leaves Actions created through the app alone.
+  for (const action of TICKET_ACTIONS) {
+    const followUp = action.followUp;
+    const fields = {
+      ticketId: lookup(ticketIds, action.ticketNumber, 'ticket'),
+      performedById: lookup(userIds, action.performedByEmail, 'user'),
+      actionAt: new Date(action.actionAt),
+      description: action.description,
+      result: action.result,
+      attachmentNotes: action.attachmentNotes,
+      followUpRequired: followUp !== null,
+      followUpNote: followUp?.note ?? null,
+      followUpAssigneeId: followUp ? lookup(userIds, followUp.assigneeEmail, 'user') : null,
+      followUpStatus: followUp?.status ?? null,
+      followUpClosedAt: followUp?.closedAt ? new Date(followUp.closedAt) : null,
+      followUpClosedById: followUp?.closedByEmail ? lookup(userIds, followUp.closedByEmail, 'user') : null,
+      version: 0,
+      updatedById: null,
+      createdAt: new Date(action.actionAt),
+      updatedAt: new Date(followUp?.closedAt ?? action.actionAt),
+    };
+
+    await client.ticketAction.upsert({
+      where: { id: action.id },
+      update: fields,
+      create: { id: action.id, ...fields },
+    });
+  }
+
+  // Status history (BR-18). The application only ever appends to this table;
+  // the seed may rewrite its own fixed rows because they are fixtures, not
+  // history anyone recorded.
+  for (const change of TICKET_STATUS_CHANGES) {
+    const fields = {
+      ticketId: lookup(ticketIds, change.ticketNumber, 'ticket'),
+      fromStatus: change.fromStatus,
+      toStatus: change.toStatus,
+      changedById: lookup(userIds, change.changedByEmail, 'user'),
+      createdAt: new Date(change.createdAt),
+    };
+
+    await client.ticketStatusChange.upsert({
+      where: { id: change.id },
+      update: fields,
+      create: { id: change.id, ...fields },
+    });
+  }
 }
 
 /** A seeded ticket naming a category, system or user the seed did not create is a bug in the data. */
@@ -156,6 +208,9 @@ async function main(): Promise<void> {
     seededTickets,
     comments,
     internalNotes,
+    actions,
+    openFollowUps,
+    statusChanges,
   ] =
     await Promise.all([
       prisma.category.count(),
@@ -167,6 +222,9 @@ async function main(): Promise<void> {
       prisma.ticket.count({ where: { ticketNumber: { startsWith: 'TKT-2026-9000' } } }),
       prisma.ticketComment.count(),
       prisma.ticketInternalNote.count(),
+      prisma.ticketAction.count(),
+      prisma.ticketAction.count({ where: { followUpStatus: 'Open' } }),
+      prisma.ticketStatusChange.count(),
     ]);
 
   // Counts only — never an email, password or hash (BR-09, BR-29).
@@ -180,6 +238,9 @@ async function main(): Promise<void> {
     seededTickets,
     comments,
     internalNotes,
+    actions,
+    openFollowUps,
+    statusChanges,
   });
 }
 

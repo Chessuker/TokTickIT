@@ -20,9 +20,22 @@ export type ErrorCode =
   | 'NOT_FOUND'
   | 'CONFLICT'
   | 'INVALID_TRANSITION'
+  | 'STALE_UPDATE'
+  | 'TICKET_LOCKED'
+  | 'RESOLUTION_BLOCKED'
   | 'FILE_TOO_LARGE'
   | 'UNSUPPORTED_MEDIA_TYPE'
   | 'INTERNAL_ERROR';
+
+/**
+ * The only additions Lab 4 allows to the envelope (Lab 4 api-spec.md §1.2):
+ * `current` on `409 STALE_UPDATE`, `unmet` on `409 RESOLUTION_BLOCKED`. Typed
+ * narrowly so nothing else (a row, a stack) can ride along.
+ */
+export interface ErrorExtras {
+  current?: { version: number };
+  unmet?: string[];
+}
 
 export interface ErrorBody {
   error: {
@@ -30,7 +43,7 @@ export interface ErrorBody {
     message: string;
     fields?: Record<string, string>;
     correlationId?: string;
-  };
+  } & ErrorExtras;
 }
 
 export const SAFE_INTERNAL_MESSAGE = 'Something went wrong. Please try again.';
@@ -38,12 +51,15 @@ export const SAFE_INTERNAL_MESSAGE = 'Something went wrong. Please try again.';
 export function errorBody(
   code: ErrorCode,
   message: string,
-  fields?: Record<string, string>
+  fields?: Record<string, string>,
+  extras?: ErrorExtras
 ): ErrorBody {
   const body: ErrorBody = { error: { code, message } };
   if (fields) {
     body.error.fields = fields;
   }
+  if (extras?.current) body.error.current = extras.current;
+  if (extras?.unmet) body.error.unmet = extras.unmet;
   return body;
 }
 
@@ -52,9 +68,10 @@ export function sendError(
   status: number,
   code: ErrorCode,
   message: string,
-  fields?: Record<string, string>
+  fields?: Record<string, string>,
+  extras?: ErrorExtras
 ): Response {
-  return res.status(status).json(errorBody(code, message, fields));
+  return res.status(status).json(errorBody(code, message, fields, extras));
 }
 
 export function sendValidationFailed(res: Response, fields: Record<string, string>): Response {

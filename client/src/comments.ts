@@ -1,8 +1,14 @@
+import { formatBangkok, formatBangkokDate } from './components/lab-04/dates'
+
 /**
  * Rules and helpers shared by the Public Comments panel and, later, the
  * Internal Notes panel (Lab 3 BR-22, ui-spec.md §2 "Public vs Internal").
  * Kept apart from the components so the component files export components
  * only (fast refresh) and the helpers can be unit-tested on their own.
+ *
+ * Lab 4 (Issue #57): absolute dates go through the Bangkok helpers, so a
+ * Thai-locale browser shows the same "3 Oct 2026" as every other screen
+ * instead of a Buddhist-calendar year. The dashboards reuse `relativeTime`.
  */
 
 /** The server's limit (BR-22); the counter and the disabled submit mirror it. */
@@ -25,18 +31,11 @@ export function relativeTime(iso: string, now: number = Date.now()): string {
   const days = Math.round(hours / 24)
   if (days < 30) return `${days} day${days === 1 ? '' : 's'} ago`
 
-  return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' })
+  return formatBangkokDate(iso)
 }
 
-/** The full timestamp shown on hover. */
+/** The full timestamp shown on hover, in Bangkok time; empty for a bad value. */
 export function fullTimestamp(iso: string): string {
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return ''
-  return date.toLocaleString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  const text = formatBangkok(iso)
+  return text === '—' ? '' : text
 }

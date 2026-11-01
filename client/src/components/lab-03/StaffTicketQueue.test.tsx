@@ -528,3 +528,51 @@ describe('StaffTicketQueue — search box and history (UI-11)', () => {
   })
 })
 
+
+// ---------------------------------------------------------------------------
+// Lab 4 UI-21 (Issue #56, ui-spec.md §3.7, AC-20): the two dashboard
+// drill-down filters arrive in the URL, show as removable chips, and are sent.
+// ---------------------------------------------------------------------------
+
+describe('StaffTicketQueue — dashboard drill-down filters (Lab 4 UI-21)', () => {
+  it('sends followUp=mine and requesterResolved=true from the URL and shows a chip for each', async () => {
+    const fetchMock = renderQueue(TICKETS, { initialEntry: '/staff/queue?followUp=mine&requesterResolved=true&status=Open' })
+
+    const chips = await screen.findByTestId('drilldown-chips')
+    expect(within(chips).getByRole('button', { name: 'Remove filter: My open follow-ups' })).toBeInTheDocument()
+    expect(within(chips).getByRole('button', { name: 'Remove filter: Requester reports resolved' })).toBeInTheDocument()
+    await waitFor(() => expect(lastQueueQuery(fetchMock).get('followUp')).toBe('mine'))
+    expect(lastQueueQuery(fetchMock).get('requesterResolved')).toBe('true')
+    expect(lastQueueQuery(fetchMock).getAll('status')).toEqual(['Open'])
+  })
+
+  it('removes one chip at a time, keeping the other filters', async () => {
+    const user = userEvent.setup()
+    const fetchMock = renderQueue(TICKETS, { initialEntry: '/staff/queue?followUp=mine&requesterResolved=true' })
+
+    await user.click(await screen.findByRole('button', { name: 'Remove filter: My open follow-ups' }))
+
+    await waitFor(() => expect(lastQueueQuery(fetchMock).get('followUp')).toBeNull())
+    expect(lastQueueQuery(fetchMock).get('requesterResolved')).toBe('true')
+    expect(screen.queryByRole('button', { name: 'Remove filter: My open follow-ups' })).toBeNull()
+  })
+
+  it('Clear filters removes them too', async () => {
+    const user = userEvent.setup()
+    const fetchMock = renderQueue(TICKETS, { initialEntry: '/staff/queue?followUp=mine&requesterResolved=true' })
+    await screen.findByTestId('drilldown-chips')
+
+    await user.click(screen.getByRole('button', { name: /clear filters/i }))
+
+    await waitFor(() => expect(screen.queryByTestId('drilldown-chips')).toBeNull())
+    expect(lastQueueQuery(fetchMock).get('followUp')).toBeNull()
+    expect(lastQueueQuery(fetchMock).get('requesterResolved')).toBeNull()
+  })
+
+  it('shows no chip and sends neither when the URL has none (Lab 3 behaviour)', async () => {
+    const fetchMock = renderQueue(TICKETS)
+    await screen.findByRole('table')
+    expect(screen.queryByTestId('drilldown-chips')).toBeNull()
+    expect(lastQueueQuery(fetchMock).has('followUp')).toBe(false)
+  })
+})

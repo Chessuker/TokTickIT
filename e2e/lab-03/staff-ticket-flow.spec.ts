@@ -47,6 +47,8 @@ test.describe('IT Staff ticket operations (E2E-05)', () => {
     await expect(page.getByLabel('Current Status')).toHaveValue('InProgress')
 
     // --- A public comment and a private note ------------------------------
+    // Lab 4: Actions Taken is now the default tab, so open Public Comments first.
+    await page.getByRole('tab', { name: /public comments/i }).click()
     await page.getByLabel('Add public comment').fill('We are replacing the battery today.')
     await page.getByRole('button', { name: 'Post Comment' }).click()
     await expect(page.getByTestId('comment-list')).toContainText('We are replacing the battery today.')
@@ -55,6 +57,15 @@ test.describe('IT Staff ticket operations (E2E-05)', () => {
     await page.getByLabel('Add internal note').fill('Vendor RMA 12345 — do not share with the requester.')
     await page.getByRole('button', { name: 'Add Internal Note' }).click()
     await expect(page.getByTestId('note-list')).toContainText('Vendor RMA 12345')
+
+    // --- Lab 4 resolution gate: Resolved needs a recorded Action (BR-14) ---
+    await expect(page.getByLabel('Current Status').locator('option', { hasText: 'Resolved' })).toHaveCount(0)
+    await page.getByRole('tab', { name: /actions taken/i }).click()
+    await page.getByRole('button', { name: /record action/i }).click()
+    await page.getByLabel(/^Action Description/).fill('Replaced the laptop battery.')
+    await page.getByLabel(/^Result/).fill('Battery holds charge for a full day.')
+    await page.getByRole('button', { name: 'Save action' }).click()
+    await expect(page.getByTestId('actions-list')).toContainText('Replaced the laptop battery.')
 
     // --- Resolved and Closed, both behind a confirmation ------------------
     await page.getByLabel('Current Status').selectOption('Resolved')
@@ -106,17 +117,19 @@ test.describe('IT Staff ticket operations (E2E-05)', () => {
     expect((await refused.json()).error.code).toBe('INVALID_TRANSITION')
     expect((await refused.json()).error.message).toMatch(/owner/i)
 
-    // Assigning an owner opens the ticket and unlocks the two targets (BR-31).
+    // Assigning an owner opens the ticket and unlocks In Progress (BR-31).
+    // Lab 4: Resolved stays out until an Action is recorded (BR-14), and the
+    // gate hint says so.
     await page.getByRole('button', { name: 'Claim' }).click()
     await expect(status).toHaveValue('Open')
     await expect(status.locator('option')).toHaveText([
       'Open',
       'In Progress',
       'Waiting for Requester',
-      'Resolved',
       'Cancelled',
     ])
     await expect(page.getByTestId('owner-required-hint')).toHaveCount(0)
+    await expect(page.getByTestId('resolution-gate-hint')).toContainText('at least one action is recorded')
   })
 
   test('a transition outside the matrix is refused and the screen keeps the real status (AC-21)', async ({ page }) => {
@@ -157,6 +170,9 @@ test.describe('IT Staff ticket operations (E2E-05)', () => {
     await expect(page.getByTestId('operational-readonly')).toBeVisible()
     await expect(page.getByLabel('Current Status')).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Claim' })).toHaveCount(0)
+    // Open the tab first (Lab 4 default is Actions Taken), so "no composer" is a real check.
+    await page.getByRole('tab', { name: /public comments/i }).click()
+    await expect(page.getByTestId('comment-list').or(page.getByTestId('no-comments'))).toBeVisible()
     await expect(page.getByLabel('Add public comment')).toHaveCount(0)
 
     await page.getByRole('tab', { name: /internal notes/i }).click()
@@ -236,6 +252,8 @@ test.describe('IT Staff ticket operations (E2E-05)', () => {
     await row.getByRole('link', { name: /open ticket/i }).click()
     await expect(page.getByTestId('ticket-fields')).toBeVisible()
     await expect(page.getByTestId('requester-resolved')).toContainText('Requester reports resolved')
+    // Lab 4: Actions Taken is the default tab on the staff detail.
+    await page.getByRole('tab', { name: /public comments/i }).click()
     await expect(page.getByTestId('comment-list')).toContainText('The laptop has been fine since yesterday.')
     await expect(page.getByTestId('comment-list')).toContainText(REQUESTER_A.name)
   })

@@ -28,6 +28,7 @@ function renderShell(user: SessionUser, overrides: Parameters<typeof authValue>[
       <AuthStub value={value}>
         <Routes>
           <Route element={<AppShell />}>
+            <Route path="/dashboard" element={<h1>Dashboard</h1>} />
             <Route path="/tickets" element={<h1>My Tickets</h1>} />
             <Route path="/tickets/new" element={<h1>Create Ticket</h1>} />
             <Route path="/staff/queue" element={<h1>Ticket Queue</h1>} />
@@ -57,9 +58,10 @@ describe('AppShell — identity and role navigation (UI-08, AC-11)', () => {
   })
 
   it.each([
-    ['Requester', JENNIFER, ['My Tickets', 'Create Ticket'], ['Queue', 'Users']],
-    ['IT Staff', PRIYA, ['Queue'], ['My Tickets', 'Create Ticket', 'Users']],
-    ['Administrator', ADMIN, ['Users', 'Queue'], ['My Tickets', 'Create Ticket']],
+    // Lab 4 (Issue #56): Dashboard is the first item for every role.
+    ['Requester', JENNIFER, ['Dashboard', 'My Tickets', 'Create Ticket'], ['Queue', 'Users']],
+    ['IT Staff', PRIYA, ['Dashboard', 'Queue'], ['My Tickets', 'Create Ticket', 'Users']],
+    ['Administrator', ADMIN, ['Dashboard', 'Users', 'Queue'], ['My Tickets', 'Create Ticket']],
   ])('renders only the %s navigation', (_label, user, present, absent) => {
     renderShell(user, {}, '/tickets')
 
@@ -80,7 +82,7 @@ describe('AppShell — identity and role navigation (UI-08, AC-11)', () => {
 
   it('links the app name to the role home', () => {
     renderShell(ADMIN, {}, '/staff/queue')
-    expect(screen.getByRole('link', { name: 'TokTickIT' })).toHaveAttribute('href', '/admin/users')
+    expect(screen.getByRole('link', { name: 'TokTickIT' })).toHaveAttribute('href', '/dashboard')
   })
 
   it('collapses to the app name and Log out while a password change is pending (AC-02)', () => {
@@ -212,4 +214,28 @@ describe('AppShell — identity change discards loaded data', () => {
 
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(404, {})))
+})
+
+// Lab 4 UI-19 (Issue #56, ui-spec.md §3.0, AC-22): Dashboard is first and marked current.
+describe('AppShell — Dashboard navigation (Lab 4 UI-19)', () => {
+  it.each([
+    ['Requester', JENNIFER],
+    ['IT Staff', PRIYA],
+    ['Administrator', ADMIN],
+  ])('marks Dashboard as the current page for %s, and nothing else', (_label, user) => {
+    renderShell(user, {}, '/dashboard')
+
+    const nav = screen.getByRole('navigation', { name: /main/i })
+    const links = within(nav).getAllByRole('link')
+    expect(links[0]).toHaveTextContent('Dashboard')
+    expect(links[0]).toHaveAttribute('href', '/dashboard')
+    expect(links[0]).toHaveAttribute('aria-current', 'page')
+    expect(links.slice(1).every((link) => !link.hasAttribute('aria-current'))).toBe(true)
+  })
+
+  it('moves the current mark away from Dashboard on another page', () => {
+    renderShell(PRIYA, {}, '/staff/queue')
+    expect(screen.getByRole('link', { name: 'Dashboard' })).not.toHaveAttribute('aria-current')
+    expect(screen.getByRole('link', { name: 'Queue' })).toHaveAttribute('aria-current', 'page')
+  })
 })

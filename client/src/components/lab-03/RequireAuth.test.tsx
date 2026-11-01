@@ -102,7 +102,8 @@ describe('RequireAuth (UI-09)', () => {
 
   it('points the Forbidden state at the role home', () => {
     renderGuarded(authValue(PRIYA), '/admin/users')
-    expect(screen.getByRole('link', { name: /go to your home/i })).toHaveAttribute('href', '/staff/queue')
+    // Lab 4 (Issue #56): the role home is the dashboard (BR-31).
+    expect(screen.getByRole('link', { name: /go to your home/i })).toHaveAttribute('href', '/dashboard')
   })
 
   it('lets an Administrator into the shared staff area', () => {

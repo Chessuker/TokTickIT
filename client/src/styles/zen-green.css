@@ -40,7 +40,12 @@ body {
 }
 
 /* Focus ring — V-05: visible on every interactive element. */
-.zg-app :focus-visible {
+.zg-app :focus-visible,
+/* A datetime-local input has a calendar-picker button inside its own shadow
+   tree. When Tab reaches that button the input matches neither :focus nor
+   :focus-visible, only :focus-within, so without this the stop shows no ring
+   at all (found by STY-02 in Issue #57). */
+.zg-app input[type='datetime-local']:focus-within {
   outline: 2px solid var(--zg-secondary);
   outline-offset: 2px;
   border-radius: 4px;
@@ -1836,6 +1841,13 @@ body {
   gap: 0.5rem;
 }
 
+/* The Sort select never narrower than its longest choice ("Recently updated"
+   was cut to "Recently updatec" at 820 px, found in the #58 capture); the
+   toolbar wraps instead. */
+.zg-queue-toolbar .zg-filter:not(.zg-filter-search):not(.zg-filter-action) {
+  min-width: 13.5rem;
+}
+
 .zg-queue-filters {
   display: flex;
   flex-wrap: wrap;
@@ -2297,3 +2309,714 @@ body {
     order: -1;
   }
 }
+
+/* ==========================================================================
+ * Lab 4 — Actions Taken (docs/lab-04/ui-spec.md §1.2, §3.3, §3.6)
+ * ========================================================================== */
+
+/*
+ * Follow-up badges: text and icon carry the meaning, the colour repeats it
+ * (V-17). Cancelled reuses the Cancelled status colours, already measured at
+ * ≥ 4.5:1 in Lab 3 (V-07).
+ */
+.zg-badge-followup-open {
+  background: var(--zg-warning-bg);
+  border-color: var(--zg-warning);
+  color: #92400e;
+}
+
+.zg-badge-followup-completed {
+  background: var(--zg-pale);
+  border-color: var(--zg-secondary);
+  color: #14532d;
+}
+
+.zg-badge-followup-cancelled {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  color: #4b5563;
+  text-decoration: line-through;
+}
+
+/*
+ * The panel is green-bordered, never amber: amber stays reserved for Internal
+ * Notes, so shared and private content can never be confused (V-12).
+ */
+.zg-actions-panel {
+  display: block;
+}
+
+.zg-actions-panel-requester {
+  padding: 1rem 1.25rem;
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-border);
+  border-left: 4px solid var(--zg-secondary);
+  border-radius: 8px;
+  box-shadow: var(--zg-shadow);
+}
+
+.zg-actions-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.zg-caption-shared {
+  margin-top: 0;
+}
+
+.zg-actions-open-count {
+  color: #92400e;
+  font-weight: 600;
+}
+
+.zg-owner-tag {
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+
+/*
+ * Fixed layout, so the table always fits its wrapper: the long Description
+ * and Result cells clamp to two lines instead of widening the table, and the
+ * expanded detail row can never be clipped at the right edge.
+ */
+.zg-actions-table {
+  table-layout: fixed;
+  width: 100%;
+  /*
+   * The shared .zg-table minimum (66rem) is sized for the queue's ten columns
+   * at the page container width. This table sits inside a card inside a tab,
+   * so it is narrower; six columns fit from the 992 px breakpoint up, which is
+   * the only width the table is used at (cards below it).
+   */
+  min-width: 0;
+}
+
+.zg-actions-table th:nth-child(1) { width: 15%; }
+.zg-actions-table th:nth-child(2) { width: 23%; }
+.zg-actions-table th:nth-child(3) { width: 22%; }
+.zg-actions-table th:nth-child(4) { width: 14%; }
+.zg-actions-table th:nth-child(5) { width: 17%; }
+.zg-actions-table th:nth-child(6) { width: 9%; }
+
+/* A badge is one atom: never broken inside its pill (V-04). */
+.zg-actions-table .zg-badge {
+  white-space: nowrap;
+}
+
+.zg-actions-table td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Table: the expanded row reads as part of the row above it. */
+.zg-actions-table tr.is-expanded td {
+  background: var(--zg-pale);
+  border-bottom-color: transparent;
+}
+
+.zg-actions-table .zg-action-detail-row td {
+  padding: 0 0.75rem 1rem;
+  background: var(--zg-pale);
+  white-space: normal;
+}
+
+.zg-actions-table .zg-action-detail-row:hover td {
+  background: var(--zg-pale);
+}
+
+.zg-action-assignee-inline {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+}
+
+/* Cards (tablet, mobile, and the Requester's read-only list at every width). */
+.zg-action-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.zg-action-card {
+  padding: 0.9rem 1rem;
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-border);
+  border-left: 4px solid var(--zg-secondary);
+  border-radius: 8px;
+  min-width: 0;
+}
+
+.zg-action-view {
+  padding-top: 0.75rem;
+  min-width: 0;
+}
+
+.zg-action-card .zg-action-view {
+  padding-top: 0;
+}
+
+.zg-action-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem 1.5rem;
+  margin: 0;
+}
+
+.zg-action-field {
+  min-width: 0;
+}
+
+.zg-action-field dd {
+  margin: 0;
+}
+
+.zg-action-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.zg-action-followup {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.zg-action-assignee {
+  font-size: 0.9rem;
+}
+
+.zg-action-meta {
+  margin-top: 0.75rem;
+}
+
+.zg-action-buttons {
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.zg-btn-danger-outline {
+  border-color: var(--zg-error);
+  color: #b91c1c;
+}
+
+.zg-btn-danger-outline:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+/* Create / edit form: date and follow-up on the left, texts on the right. */
+.zg-action-form {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-secondary);
+  border-radius: 8px;
+}
+
+.zg-action-form .zg-subsection-title {
+  margin-top: 0;
+}
+
+.zg-action-form-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 2fr;
+  gap: 0 1.5rem;
+}
+
+.zg-action-form-side,
+.zg-action-form-main {
+  min-width: 0;
+}
+
+.zg-textarea-short {
+  min-height: 4.5rem;
+}
+
+.zg-readonly-value {
+  margin: 0;
+  padding: 0.55rem 0;
+  font-weight: 600;
+}
+
+.zg-callout-info {
+  background: var(--zg-pale);
+  border-color: var(--zg-secondary);
+  border-left-width: 4px;
+  color: #14532d;
+}
+
+/* Switch: a real button with role="switch" and aria-checked (V-06). */
+.zg-switch-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.zg-switch-label {
+  margin: 0;
+  cursor: pointer;
+}
+
+.zg-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 1px solid var(--zg-border);
+  border-radius: 999px;
+  background: #e5e7eb;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.zg-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(1.5rem - 6px);
+  height: calc(1.5rem - 6px);
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease;
+}
+
+.zg-switch.is-on {
+  background: var(--zg-secondary);
+  border-color: var(--zg-secondary);
+}
+
+.zg-switch.is-on .zg-switch-thumb {
+  transform: translateX(1.25rem);
+}
+
+.zg-switch:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zg-switch,
+  .zg-switch-thumb {
+    transition: none;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .zg-action-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /*
+   * The form's Save / Cancel stay reachable above the on-screen keyboard
+   * (ui-spec.md §4) and keep the 44 px tap targets.
+   */
+  .zg-action-form-actions {
+    position: sticky;
+    bottom: 0;
+    margin: 0 -1rem -1rem;
+    padding: 0.75rem 1rem;
+    background: var(--zg-surface);
+    border-top: 1px solid var(--zg-border);
+    border-radius: 0 0 8px 8px;
+  }
+
+  .zg-action-form-actions .zg-btn,
+  .zg-action-buttons .zg-btn,
+  .zg-switch {
+    min-height: 44px;
+  }
+
+  .zg-switch {
+    width: 3.25rem;
+  }
+
+  .zg-switch-thumb {
+    top: 50%;
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-top: -0.75rem;
+  }
+
+  .zg-switch.is-on .zg-switch-thumb {
+    transform: translateX(1.45rem);
+  }
+}
+
+/* ==========================================================================
+ * Lab 4 — Ticket workflow and History (docs/lab-04/ui-spec.md §3.4, §3.5)
+ * ========================================================================== */
+
+/* A control whose change was refused as stale keeps the user's choice, marked. */
+.zg-select.is-stale {
+  border-color: var(--zg-warning);
+  background-color: var(--zg-warning-bg);
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
+}
+
+.zg-gate-hint {
+  margin-top: 0.6rem;
+  font-size: 0.875rem;
+}
+
+.zg-gate-hint ul {
+  padding-left: 1.1rem;
+}
+
+.zg-gate-hint .zg-link-button {
+  /* Top-aligned, so the list bullet sits on the first line when the link wraps. */
+  vertical-align: top;
+  font-weight: 600;
+  text-align: left;
+}
+
+/* History timeline: oldest at the top, one dot per row on a shared rail. */
+.zg-history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
+.zg-history-row {
+  position: relative;
+  display: flex;
+  gap: 0.75rem;
+  padding: 0 0 1rem;
+}
+
+.zg-history-row:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 0.42rem;
+  top: 1.1rem;
+  bottom: 0;
+  width: 2px;
+  background: var(--zg-border);
+}
+
+.zg-history-dot {
+  flex: 0 0 auto;
+  width: 0.85rem;
+  height: 0.85rem;
+  margin-top: 0.3rem;
+  border-radius: 50%;
+  background: var(--zg-secondary);
+  border: 2px solid var(--zg-surface);
+  box-shadow: 0 0 0 1px var(--zg-secondary);
+}
+
+.zg-history-body {
+  min-width: 0;
+}
+
+.zg-history-change {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.zg-history-arrow {
+  color: var(--zg-text-muted);
+}
+
+.zg-history-meta,
+.zg-history-time {
+  color: var(--zg-text-muted);
+  font-size: 0.875rem;
+}
+
+.zg-history-meta {
+  margin-top: 0.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.zg-history-legacy {
+  margin: 0.35rem 0 0;
+  font-size: 0.875rem;
+}
+
+/* The Requester's collapsible "Status history" heading. */
+.zg-disclosure {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.zg-disclosure:focus-visible {
+  outline: 3px solid var(--zg-secondary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ==========================================================================
+ * Lab 4 — Dashboards (docs/lab-04/ui-spec.md §1.3, §1.4, §3.1, §3.2)
+ * ========================================================================== */
+
+.zg-metric-section {
+  margin-bottom: 1rem;
+}
+
+.zg-dash-subheading {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+}
+
+.zg-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.75rem;
+}
+
+.zg-metric-grid-compact {
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+}
+
+/* The whole card is the link, so the whole card is the target (≥ 44 px). */
+.zg-metric-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-height: 44px;
+  padding: 0.9rem 1rem;
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-border);
+  border-radius: 8px;
+  color: var(--zg-text);
+  text-decoration: none;
+  min-width: 0;
+}
+
+a.zg-metric-card:hover,
+a.zg-metric-card:focus-visible {
+  background: var(--zg-pale);
+  border-color: var(--zg-secondary);
+  color: var(--zg-text);
+}
+
+a.zg-metric-card:focus-visible {
+  outline: 2px solid var(--zg-secondary);
+  outline-offset: 2px;
+}
+
+.zg-metric-label {
+  color: var(--zg-text-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.zg-metric-value {
+  color: var(--zg-primary);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.zg-metric-compact {
+  padding: 0.65rem 0.8rem;
+}
+
+.zg-metric-compact .zg-metric-value {
+  font-size: 1.5rem;
+}
+
+.zg-metric-caption {
+  color: var(--zg-text-muted);
+  font-size: 0.8rem;
+}
+
+.zg-metric-cue {
+  margin-top: auto;
+  padding-top: 0.25rem;
+  color: var(--zg-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* "Waiting for you" > 0: a border and a caption, not colour alone. */
+.zg-metric-card.needs-attention {
+  border-left: 4px solid var(--zg-warning);
+}
+
+.zg-metric-attention {
+  color: #92400e;
+  font-weight: 600;
+}
+
+.zg-metric-skeleton {
+  height: 2rem;
+  width: 3.5rem;
+  border-radius: 6px;
+}
+
+.zg-metric-users-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.15rem 0.75rem;
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+}
+
+.zg-metric-users-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.zg-metric-users-list dt {
+  font-weight: 400;
+  color: var(--zg-text-muted);
+}
+
+.zg-metric-users-list dd {
+  margin: 0;
+  font-weight: 700;
+  color: var(--zg-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.zg-dash-lists {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.zg-dash-list {
+  min-width: 0;
+}
+
+.zg-dash-list-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.zg-dash-view-all {
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.zg-dash-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.zg-dash-rows li + li {
+  border-top: 1px solid var(--zg-border);
+}
+
+/* One link per row: number and badge on the first line, summary, then the time. */
+.zg-dash-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'number badge'
+    'summary summary'
+    'time time';
+  gap: 0.15rem 0.5rem;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.55rem 0.25rem;
+  color: var(--zg-text);
+  text-decoration: none;
+}
+
+.zg-dash-row:hover,
+.zg-dash-row:focus-visible {
+  background: var(--zg-pale);
+  color: var(--zg-text);
+}
+
+.zg-dash-row .zg-ticket-number {
+  grid-area: number;
+  font-size: 0.85rem;
+}
+
+.zg-dash-row .zg-badge {
+  grid-area: badge;
+  white-space: nowrap;
+}
+
+.zg-dash-summary {
+  grid-area: summary;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zg-dash-time {
+  grid-area: time;
+  color: var(--zg-text-muted);
+  font-size: 0.8rem;
+}
+
+.zg-dash-quick {
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 991.98px) {
+  .zg-dash-lists {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 575.98px) {
+  .zg-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .zg-metric-value {
+    font-size: 1.6rem;
+  }
+}
+
+/* A badge used as a card label hugs its text on one line (it was stretched by
+   the column flex and wrapped "Waiting for Requester" into a two-line box). */
+.zg-metric-label {
+  align-self: flex-start;
+  max-width: 100%;
+}
+
+/* Never cut a status name off (V-04): when a card is too narrow for
+   "Waiting for Requester" on one line (six cards across at 1280 px, two on a
+   phone), the text wraps inside the badge, which still hugs it. Found in the
+   #58 release capture; the ellipsis used before hid the word. */
+.zg-metric-label .zg-badge {
+  display: inline-block;
+  max-width: 100%;
+  white-space: normal;
+  vertical-align: top;
+  border-radius: 0.75rem;
+}
+
+.zg-metric-compact {
+  padding: 0.65rem 0.7rem;
+}
+
+/* Tablet: the four primary cards as 2 × 2 rather than 3 + 1. */
+@media (min-width: 576px) and (max-width: 991.98px) {
+  .zg-metric-grid:not(.zg-metric-grid-compact) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+

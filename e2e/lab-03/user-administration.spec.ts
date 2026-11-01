@@ -29,6 +29,7 @@ function uniqueAccount(prefix: string, label: string) {
 test.describe('Administrator user management (E2E-06)', () => {
   test('search and filter the directory (AC-25)', async ({ page }) => {
     await loginAs(page, ADMIN)
+    await page.goto('/admin/users') // Lab 4: the Administrator lands on /dashboard
     await expect(page).toHaveURL(/\/admin\/users$/)
 
     const table = page.getByTestId('user-table')
@@ -56,6 +57,7 @@ test.describe('Administrator user management (E2E-06)', () => {
     const { email, name } = uniqueAccount('e2e.newstaff', 'E2E New Staff')
 
     await loginAs(page, ADMIN)
+    await page.goto('/admin/users') // Lab 4: the Administrator lands on /dashboard
     await page.getByRole('button', { name: 'Create User' }).click()
 
     const panel = page.getByTestId('user-panel')
@@ -92,14 +94,15 @@ test.describe('Administrator user management (E2E-06)', () => {
     await page.getByLabel(/^confirm new password/i).fill(NEXT_PASSWORD)
     await page.getByRole('button', { name: /continue/i }).click()
 
-    // IT Staff land on the queue once the change is done.
-    await expect(page).toHaveURL(/\/staff\/queue$/)
+    // IT Staff land on their home once the change is done (Lab 4: the Dashboard).
+    await expect(page).toHaveURL(/\/dashboard$/)
   })
 
   test('edit a role, and the guards on self and the last administrator (AC-27, AC-29)', async ({ page }) => {
     const { email, name } = uniqueAccount('e2e.rolechange', 'E2E Role Change')
 
     await loginAs(page, ADMIN)
+    await page.goto('/admin/users') // Lab 4: the Administrator lands on /dashboard
 
     // A throwaway account to promote and demote.
     await page.getByRole('button', { name: 'Create User' }).click()
@@ -154,6 +157,7 @@ test.describe('Administrator user management (E2E-06)', () => {
     const { email, name } = uniqueAccount('e2e.deactivate', 'E2E Deactivate Me')
 
     await loginAs(page, ADMIN)
+    await page.goto('/admin/users') // Lab 4: the Administrator lands on /dashboard
     await page.getByRole('button', { name: 'Create User' }).click()
     const panel = page.getByTestId('user-panel')
     await panel.getByLabel(/full name/i).fill(name)
@@ -183,6 +187,7 @@ test.describe('Administrator user management (E2E-06)', () => {
     const { email, name } = uniqueAccount('e2e.resetme', 'E2E Reset Me')
 
     await loginAs(page, ADMIN)
+    await page.goto('/admin/users') // Lab 4: the Administrator lands on /dashboard
     await page.getByRole('button', { name: 'Create User' }).click()
     let panel = page.getByTestId('user-panel')
     await panel.getByLabel(/full name/i).fill(name)
@@ -198,10 +203,11 @@ test.describe('Administrator user management (E2E-06)', () => {
     await page.getByLabel(/^new password/i).fill(NEXT_PASSWORD)
     await page.getByLabel(/^confirm new password/i).fill(NEXT_PASSWORD)
     await page.getByRole('button', { name: /continue/i }).click()
-    await expect(page).toHaveURL(/\/tickets$/)
+    await expect(page).toHaveURL(/\/dashboard$/) // Lab 4: every role's home
 
     // The administrator hands out a new initial password.
     await switchUser(page, ADMIN)
+    await page.goto('/admin/users') // Lab 4: the Administrator lands on /dashboard
     await page.getByLabel('Search').fill(email)
     await page.getByRole('button', { name: `Edit ${name}` }).click()
     panel = page.getByTestId('user-panel')

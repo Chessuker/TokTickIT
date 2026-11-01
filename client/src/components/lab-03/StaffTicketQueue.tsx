@@ -4,6 +4,7 @@ import { apiFetch } from '../../apiClient'
 import { useAuth } from '../../context/auth'
 import { useMediaQuery } from '../../useMediaQuery'
 import { ItPriorityBadge, OwnerName, PriorityBadge, StatusBadge } from '../Badges'
+import { formatBangkokDate } from '../lab-04/dates'
 import { Forbidden } from './RequireAuth'
 
 /**
@@ -109,12 +110,6 @@ const SORTABLE: Record<string, string> = {
   updatedAt: 'updatedAt',
 }
 
-function formatDate(value: string): string {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '—'
-  return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' })
-}
-
 /** What the URL currently asks for, with the defaults filled in. */
 interface QueueParams {
   search: string
@@ -122,6 +117,9 @@ interface QueueParams {
   itPriority: string
   owner: string
   category: string
+  /** Lab 4 dashboard drill-downs (ui-spec.md §3.7): set only from a link, removable. */
+  followUp: string
+  requesterResolved: string
   sort: string
   page: number
   pageSize: number
@@ -137,6 +135,8 @@ function readParams(params: URLSearchParams): QueueParams {
     itPriority: params.get('itPriority') ?? '',
     owner: params.get('owner') ?? '',
     category: params.get('category') ?? '',
+    followUp: params.get('followUp') === 'mine' ? 'mine' : '',
+    requesterResolved: params.get('requesterResolved') === 'true' ? 'true' : '',
     sort: SORT_VALUES.includes(sort) ? sort : DEFAULT_SORT,
     page: Number.isInteger(page) && page >= 1 ? page : 1,
     pageSize: (PAGE_SIZES as readonly number[]).includes(pageSize) ? pageSize : DEFAULT_PAGE_SIZE,
@@ -151,6 +151,8 @@ function toSearchParams(next: QueueParams): URLSearchParams {
   if (next.itPriority) params.set('itPriority', next.itPriority)
   if (next.owner) params.set('owner', next.owner)
   if (next.category) params.set('category', next.category)
+  if (next.followUp) params.set('followUp', next.followUp)
+  if (next.requesterResolved) params.set('requesterResolved', next.requesterResolved)
   if (next.sort !== DEFAULT_SORT) params.set('sort', next.sort)
   if (next.page !== 1) params.set('page', String(next.page))
   if (next.pageSize !== DEFAULT_PAGE_SIZE) params.set('pageSize', String(next.pageSize))
@@ -309,12 +311,18 @@ function StaffTicketQueue() {
   }, [queryString, params.sort, params.page, params.pageSize, reloadToken])
 
   const hasActiveFilters = Boolean(
-    params.search || params.statuses.length || params.itPriority || params.owner || params.category,
+    params.search ||
+      params.statuses.length ||
+      params.itPriority ||
+      params.owner ||
+      params.category ||
+      params.followUp ||
+      params.requesterResolved,
   )
 
   const clearFilters = () => {
     setSearchInput('')
-    update({ search: '', statuses: [], itPriority: '', owner: '', category: '' })
+    update({ search: '', statuses: [], itPriority: '', owner: '', category: '', followUp: '', requesterResolved: '' })
   }
 
   const toggleStatus = (status: string) => {
@@ -447,6 +455,36 @@ function StaffTicketQueue() {
           </button>
         </div>
       </div>
+
+      {/*
+       * Lab 4 (ui-spec.md §3.7): the two filters only a dashboard link sets.
+       * Always visible while set, whether the filter panel is open or not, so
+       * the list never looks unfiltered when it is.
+       */}
+      {(params.followUp || params.requesterResolved) && (
+        <div className="zg-chip-group mb-3" data-testid="drilldown-chips" aria-label="Filters from the dashboard">
+          {params.followUp && (
+            <button
+              type="button"
+              className="zg-chip zg-chip-toggle is-selected"
+              aria-label="Remove filter: My open follow-ups"
+              onClick={() => update({ followUp: '' })}
+            >
+              My open follow-ups <i className="bi bi-x" aria-hidden="true" />
+            </button>
+          )}
+          {params.requesterResolved && (
+            <button
+              type="button"
+              className="zg-chip zg-chip-toggle is-selected"
+              aria-label="Remove filter: Requester reports resolved"
+              onClick={() => update({ requesterResolved: '' })}
+            >
+              Requester reports resolved <i className="bi bi-x" aria-hidden="true" />
+            </button>
+          )}
+        </div>
+      )}
 
       {filtersOpen && (
         <div className="zg-queue-filters" id="queue-filters">
@@ -622,11 +660,11 @@ function StaffTicketQueue() {
                     <dl className="zg-ticket-card-meta">
                       <div>
                         <dt>Created</dt>
-                        <dd>{formatDate(ticket.createdAt)}</dd>
+                        <dd>{formatBangkokDate(ticket.createdAt)}</dd>
                       </div>
                       <div>
                         <dt>Updated</dt>
-                        <dd>{formatDate(ticket.updatedAt)}</dd>
+                        <dd>{formatBangkokDate(ticket.updatedAt)}</dd>
                       </div>
                     </dl>
                   </Link>
@@ -678,7 +716,7 @@ function StaffTicketQueue() {
                       <td className="zg-cell-tight">
                         <span className="zg-ticket-number">{ticket.ticketNumber}</span>
                       </td>
-                      <td className="zg-cell-tight zg-cell-date">{formatDate(ticket.createdAt)}</td>
+                      <td className="zg-cell-tight zg-cell-date">{formatBangkokDate(ticket.createdAt)}</td>
                       <td className="zg-cell-summary" title={ticket.summary}>
                         <span className="zg-clamp-2" tabIndex={0}>
                           {ticket.summary}
@@ -709,7 +747,7 @@ function StaffTicketQueue() {
                           {ticket.owner && ticket.owner.id === user?.id && <span className="zg-you-tag">You</span>}
                         </span>
                       </td>
-                      <td className="zg-cell-tight zg-cell-date">{formatDate(ticket.updatedAt)}</td>
+                      <td className="zg-cell-tight zg-cell-date">{formatBangkokDate(ticket.updatedAt)}</td>
                       <td className="zg-cell-tight">
                         <Link
                           className="zg-btn zg-btn-secondary zg-btn-sm"

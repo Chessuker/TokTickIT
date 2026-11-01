@@ -10,6 +10,7 @@ import {
   formatBytes,
 } from '../attachments'
 import type { RejectedFile } from '../attachments'
+import { useSingleFlight } from '../useSingleFlight'
 
 /**
  * Create Ticket form (ui-spec.md §3.2, FR-01, FR-07, AC-01, AC-12).
@@ -212,6 +213,8 @@ function CreateTicketForm() {
     setAttachmentReport({ uploaded, failed })
   }
 
+  const flight = useSingleFlight()
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
 
@@ -224,6 +227,7 @@ function CreateTicketForm() {
     }
 
     setFieldErrors({})
+    if (!flight.begin()) return
     setSubmitting(true)
 
     try {
@@ -261,6 +265,7 @@ function CreateTicketForm() {
         'Could not reach the server. Your details are still here — check your connection and try again.',
       )
     } finally {
+      flight.end()
       setSubmitting(false)
     }
   }

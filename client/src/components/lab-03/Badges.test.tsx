@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import {
   ActiveBadge,
+  FollowUpBadge,
   ItPriorityBadge,
   OwnerName,
   PriorityBadge,
@@ -76,5 +77,25 @@ describe('OwnerName and RequesterResolvedBadge', () => {
     expect(badge).toHaveTextContent('Requester reports resolved')
     expect(badge).toHaveClass('zg-badge-requester-resolved')
     expect(badge.getAttribute('title')).toMatch(/Reported resolved/)
+  })
+})
+
+/** UI-23 — Lab 4 ui-spec.md §1.2, V-07, V-17: follow-up state in text, icon and colour. */
+describe('FollowUpBadge', () => {
+  it.each([
+    ['Open', 'Follow-up open', 'zg-badge-followup-open', 'bi-clock'],
+    ['Completed', 'Follow-up done', 'zg-badge-followup-completed', 'bi-check-circle'],
+    ['Cancelled', 'Follow-up cancelled', 'zg-badge-followup-cancelled', 'bi-x-circle'],
+  ])('renders %s with its label, class and icon', (status, label, className, icon) => {
+    const { container } = render(<FollowUpBadge status={status} />)
+    const badge = screen.getByText(label)
+    expect(badge).toHaveClass('zg-badge', className)
+    expect(container.querySelector(`.${icon}`)).not.toBeNull()
+    expect(container.querySelector('i')).toHaveAttribute('aria-hidden', 'true')
+  })
+
+  it('renders nothing when there is no follow-up', () => {
+    const { container } = render(<FollowUpBadge status={null} />)
+    expect(container).toBeEmptyDOMElement()
   })
 })

@@ -8,8 +8,10 @@ import { validateCreateTicketInput } from './ticketValidation.js';
 import { getSessionUser, requireAuth, requireRole } from './auth.js';
 import { authRouter } from './authRoutes.js';
 import { staffRouter } from './staffRoutes.js';
+import { requesterDashboardRouter } from './dashboardRoutes.js';
+import { listTicketActions } from './actionRoutes.js';
 import { adminRouter } from './adminRoutes.js';
-import { parseTicketListQuery, toOrderBy } from './ticketListQuery.js';
+import { parseTicketListQuery, ticketListWhere, toOrderBy } from './ticketListQuery.js';
 import { sendError, sendInternalError, sendValidationFailed } from './httpErrors.js';
 import {
   ALLOWED_TYPES_LABEL,
@@ -49,6 +51,10 @@ app.use('/api/auth', authRouter);
 // Role-gated inside the router, so every `/api/staff/*` path refuses a
 // Requester before lookup.
 app.use('/api/staff', staffRouter);
+
+// Lab 4: the Requester dashboard (api-spec.md §3.6). The staff dashboard lives
+// on `staffRouter` above.
+app.use('/api/dashboard', requesterDashboardRouter);
 
 // Administrator user management (api-spec.md §3.18 – §3.22). Same shape:
 // anything but an Administrator is refused before a user is loaded (AC-30).
@@ -276,18 +282,7 @@ app.get('/api/tickets', requireAuth, requireRole('Requester'), async (req, res) 
 
   const requester = getSessionUser(res);
 
-  const where: Record<string, unknown> = { requesterId: requester.id };
-  if (query.categoryId) where.categoryId = query.categoryId;
-  if (query.status) where.status = query.status;
-  if (query.search) {
-    // Case-insensitive partial match. `ticketNumber` is included so pasting a
-    // number straight from an email finds the ticket without picking a filter.
-    where.OR = [
-      { ticketNumber: { contains: query.search, mode: 'insensitive' } },
-      { summary: { contains: query.search, mode: 'insensitive' } },
-      { description: { contains: query.search, mode: 'insensitive' } }
-    ];
-  }
+  const where = ticketListWhere(query, requester.id);
 
   try {
     // The count and the page are read with the same `where`, so the metadata
@@ -718,6 +713,58 @@ app.get('/api/tickets/:id/comments', requireAuth, async (req, res) => {
     res.json({ data: comments });
   } catch (error) {
     sendInternalError(res, 'GET /api/tickets/:id/comments', error);
+  }
+});
+
+// GET /api/tickets/:id/actions — the ticket's Actions Taken for its Requester
+// (Lab 4 api-spec.md §3.2, BR-04, AC-03, AC-08). Same access rule as the
+// comments above: owner, IT Staff or Administrator; another Requester's
+// ticket is 403 with no Action data. Read-only — every write lives under
+// `/api/staff`, which a Requester cannot reach.
+app.get('/api/tickets/:id/actions', requireAuth, async (req, res) => {
+  try {
+    const ticket = await loadTicketAccess(res, String(req.params.id));
+    if (!ticket) return;
+
+    res.json({ data: await listTicketActions(ticket.id) });
+  } catch (error) {
+    sendInternalError(res, 'GET /api/tickets/:id/actions', error);
+  }
+});
+
+// GET /api/tickets/:id/history — status history, oldest first (Lab 4
+// api-spec.md §3.5, FR-06, BR-18, AC-16, AD-12). Same access rule as the two
+// lists above. There is no write route: rows are appended only inside the
+// workflow transactions in `staffRoutes.ts`.
+//
+// Ticket creation is not stored; `createdAt` and `createdBy` (the Requester)
+// let the UI draw it as the first row.
+app.get('/api/tickets/:id/history', requireAuth, async (req, res) => {
+  try {
+    const ticket = await loadTicketAccess(res, String(req.params.id));
+    if (!ticket) return;
+
+    const [origin, changes] = await Promise.all([
+      prisma.ticket.findFirst({
+        where: { id: ticket.id },
+        select: { createdAt: true, requester: { select: { id: true, name: true, role: true } } }
+      }),
+      prisma.ticketStatusChange.findMany({
+        where: { ticketId: ticket.id },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        select: {
+          id: true,
+          fromStatus: true,
+          toStatus: true,
+          createdAt: true,
+          changedBy: { select: { id: true, name: true, role: true } }
+        }
+      })
+    ]);
+
+    res.json({ createdAt: origin?.createdAt, createdBy: origin?.requester, data: changes });
+  } catch (error) {
+    sendInternalError(res, 'GET /api/tickets/:id/history', error);
   }
 });
 

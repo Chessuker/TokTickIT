@@ -174,6 +174,11 @@ function stubApi(options: StubOptions = {}) {
       return new Response(JSON.stringify({ ok: true }), { status: 201 })
     }
 
+    // Lab 4: the read-only "Work done by IT" panel (ui-spec.md §3.6).
+    if (url.pathname === `/api/tickets/${TICKET_ID}/actions` && method === 'GET') {
+      return new Response(JSON.stringify({ data: [] }), { status: 200 })
+    }
+
     if (url.pathname === `/api/tickets/${TICKET_ID}/comments` && method === 'GET') {
       return new Response(JSON.stringify({ data: [...thread] }), { status: 200 })
     }

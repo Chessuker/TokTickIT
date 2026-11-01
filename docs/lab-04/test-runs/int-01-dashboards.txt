@@ -1,0 +1,89 @@
+# Recorded 2026-10-31 on feature/58-e2e-release, code = lab4-staging ccbcc2e (PR #64), against a freshly migrated and seeded database (toktickit_release).
+
+INT-01 — dashboard numbers against raw SQL on the seeded database
+
+Requester dashboard — Jennifer Anderson
+  ok   open (active)                                        API   4   SQL   4
+  ok   waitingForMe                                         API   1   SQL   1
+  ok   resolved                                             API   0   SQL   0
+  ok   closed                                               API   1   SQL   1
+  ok   totalTickets                                         API   6   SQL   6
+  ok   list rows owned by someone else                      API   0   SQL   0
+  ok   drill-down open → My Tickets total                   list   4   card   4
+  ok   drill-down waitingForMe → My Tickets total           list   1   card   1
+  ok   drill-down resolved → My Tickets total               list   0   card   0
+  ok   drill-down closed → My Tickets total                 list   1   card   1
+
+Requester dashboard — Ploy Charoen
+  ok   open (active)                                        API   0   SQL   0
+  ok   waitingForMe                                         API   0   SQL   0
+  ok   resolved                                             API   0   SQL   0
+  ok   closed                                               API   0   SQL   0
+  ok   totalTickets                                         API   0   SQL   0
+  ok   list rows owned by someone else                      API   0   SQL   0
+  ok   drill-down open → My Tickets total                   list   0   card   0
+  ok   drill-down waitingForMe → My Tickets total           list   0   card   0
+  ok   drill-down resolved → My Tickets total               list   0   card   0
+  ok   drill-down closed → My Tickets total                 list   0   card   0
+
+Staff dashboard — Priya Raman
+  ok   unassigned                                           API   6   SQL   6
+  ok   requesterReportsResolved                             API   0   SQL   0
+  ok   byStatus.New                                         API   4   SQL   4
+  ok   byStatus.Open                                        API   4   SQL   4
+  ok   byStatus.InProgress                                  API   4   SQL   4
+  ok   byStatus.WaitingForRequester                         API   2   SQL   2
+  ok   byStatus.Reopened                                    API   2   SQL   2
+  ok   byStatus.Resolved                                    API   3   SQL   3
+  ok   byItPriority.High                                    API   6   SQL   6
+  ok   byItPriority.Medium                                  API   6   SQL   6
+  ok   byItPriority.Low                                     API   4   SQL   4
+  ok   mine                                                 API   3   SQL   3
+  ok   myFollowUps (follow-ups)                             API   1   SQL   1
+  ok   myFollowUps.ticketCount                              API   1   SQL   1
+  ok   myRecentActions length                               API   5   SQL   5
+  ok   drill-down unassigned → Queue total                  list   6   card   6
+  ok   drill-down requesterReportsResolved → Queue total    list   0   card   0
+  ok   drill-down byStatus.New → Queue total                list   4   card   4
+  ok   drill-down byStatus.Open → Queue total               list   4   card   4
+  ok   drill-down byStatus.InProgress → Queue total         list   4   card   4
+  ok   drill-down byStatus.WaitingForRequester → Queue total list   2   card   2
+  ok   drill-down byStatus.Reopened → Queue total           list   2   card   2
+  ok   drill-down byStatus.Resolved → Queue total           list   3   card   3
+  ok   drill-down byItPriority.High → Queue total           list   6   card   6
+  ok   drill-down byItPriority.Medium → Queue total         list   6   card   6
+  ok   drill-down byItPriority.Low → Queue total            list   4   card   4
+  ok   drill-down mine → Queue total                        list   3   card   3
+  ok   drill-down myFollowUps → Queue total                 list   1   card   1
+
+Staff dashboard — System Administrator
+  ok   unassigned                                           API   6   SQL   6
+  ok   requesterReportsResolved                             API   0   SQL   0
+  ok   byStatus.New                                         API   4   SQL   4
+  ok   byStatus.Open                                        API   4   SQL   4
+  ok   byStatus.InProgress                                  API   4   SQL   4
+  ok   byStatus.WaitingForRequester                         API   2   SQL   2
+  ok   byStatus.Reopened                                    API   2   SQL   2
+  ok   byStatus.Resolved                                    API   3   SQL   3
+  ok   byItPriority.High                                    API   6   SQL   6
+  ok   byItPriority.Medium                                  API   6   SQL   6
+  ok   byItPriority.Low                                     API   4   SQL   4
+  ok   mine is null                                         API null   SQL null
+  ok   myFollowUps is null                                  API null   SQL null
+  ok   users.active.Requester                               API   5   SQL   5
+  ok   users.active.ITStaff                                 API   3   SQL   3
+  ok   users.active.Administrator                           API   1   SQL   1
+  ok   users.inactive                                       API   2   SQL   2
+  ok   drill-down unassigned → Queue total                  list   6   card   6
+  ok   drill-down requesterReportsResolved → Queue total    list   0   card   0
+  ok   drill-down byStatus.New → Queue total                list   4   card   4
+  ok   drill-down byStatus.Open → Queue total               list   4   card   4
+  ok   drill-down byStatus.InProgress → Queue total         list   4   card   4
+  ok   drill-down byStatus.WaitingForRequester → Queue total list   2   card   2
+  ok   drill-down byStatus.Reopened → Queue total           list   2   card   2
+  ok   drill-down byStatus.Resolved → Queue total           list   3   card   3
+  ok   drill-down byItPriority.High → Queue total           list   6   card   6
+  ok   drill-down byItPriority.Medium → Queue total         list   6   card   6
+  ok   drill-down byItPriority.Low → Queue total            list   4   card   4
+
+INT-01 PASSED: every dashboard number equals its SQL query, and every drill-down list total equals its card.

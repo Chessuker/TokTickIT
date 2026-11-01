@@ -29,6 +29,8 @@ function renderScreen(user: SessionUser, options: { withShell?: boolean; setUser
             <Route path="/change-password" element={<ChangePassword />} />
           )}
           <Route path="/tickets" element={<h1>My Tickets</h1>} />
+          {/* Lab 4 (Issue #56): the dashboard is every role's home (BR-31). */}
+          <Route path="/dashboard" element={<h1>Dashboard</h1>} />
         </Routes>
       </AuthStub>
     </MemoryRouter>,
@@ -185,7 +187,7 @@ describe('ChangePassword — forced mode (UI-07, AC-02, AC-10)', () => {
 
     await user.click(screen.getByRole('button', { name: /continue/i }))
 
-    expect(await screen.findByRole('heading', { name: /my tickets/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /^dashboard$/i })).toBeInTheDocument()
     expect(setUser).toHaveBeenCalledWith(updated)
   })
 })
